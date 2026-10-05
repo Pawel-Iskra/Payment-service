@@ -17,7 +17,7 @@ public class PaymentService {
 
 
     private static final BigDecimal BIG_DECIMAL_ZERO = new BigDecimal(0);
-    private static final String PAYMENT_NOT_VALID = "Given payment request is not valid (the amount is below zero or currency field is empty).";
+    private static final String PAYMENT_NOT_VALID = "Given payment request is not valid (the amount is not positive or currency field is empty).";
     private static final String PAYMENT_NOT_ADDED_TO_STORAGE = "Due to an error, the payment was not added to the payment storage";
     private static final String PAYMENT_SUCCESSFULLY_ADDED_TO_STORAGE = "Payment was successfully added to the payment storage";
 
@@ -26,8 +26,8 @@ public class PaymentService {
 
 
     public PaymentResponse createPayment(PaymentRequest paymentRequest) {
-        boolean isRequestValid = validatePaymentRequest(paymentRequest);
-        if (isRequestValid) {
+        boolean isRequestValid = isPaymentRequestValid(paymentRequest);
+        if (!isRequestValid) {
             return buildPaymentResponseValidationFailed(paymentRequest);
         }
         Payment payment = buildPaymentFromDto(paymentRequest);
@@ -38,8 +38,8 @@ public class PaymentService {
         }
     }
 
-    private boolean validatePaymentRequest(PaymentRequest paymentRequest) {
-        return paymentRequest.amount().compareTo(BIG_DECIMAL_ZERO) >= 0 && !paymentRequest.currency().isBlank();
+    private boolean isPaymentRequestValid(PaymentRequest paymentRequest) {
+        return BIG_DECIMAL_ZERO.compareTo(paymentRequest.amount()) < 0 && !paymentRequest.currency().isBlank();
     }
 
 
