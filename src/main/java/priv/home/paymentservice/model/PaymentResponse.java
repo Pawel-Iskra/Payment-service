@@ -1,0 +1,26 @@
+package priv.home.paymentservice.model;
+
+
+import lombok.Builder;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+@Builder
+public class PaymentResponse {
+
+    private final UUID id;
+    private final BigDecimal amount;
+    private final String currency;
+    private final PaymentStatus paymentStatus;
+
+    @Override
+    public String toString() {
+        return "PaymentResponse{" +
+                "\nid=" + id +
+                ", \namount=" + amount +
+                ", \ncurrency='" + currency + '\'' +
+                ", \npaymentStatus=" + paymentStatus +
+                "\n}";
+    }
+}
