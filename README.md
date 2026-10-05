@@ -1,2 +1,2 @@
 # Payment-service
-a service for payments
+a payment service for my personal educational purposes
