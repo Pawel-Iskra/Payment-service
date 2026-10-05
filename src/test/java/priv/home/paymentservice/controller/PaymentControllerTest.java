@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 @ExtendWith(MockitoExtension.class)
 class PaymentControllerTest {
 
+
     private static final String PAYMENT_SUCCESSFULLY_ADDED_TO_STORAGE = "Payment was successfully added to the payment storage";
 
     @Mock
@@ -46,10 +47,7 @@ class PaymentControllerTest {
 
 
     private PaymentRequest getProperPaymentRequest() {
-        return new PaymentRequest(
-                new BigDecimal("123.45"),
-                "PLN"
-        );
+        return new PaymentRequest(new BigDecimal("123.45"), "PLN");
     }
 
     private PaymentResponse getSuccessfullPaymentResponse(PaymentRequest paymentRequest) {

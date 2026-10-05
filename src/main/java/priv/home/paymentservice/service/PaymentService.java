@@ -18,7 +18,6 @@ public class PaymentService {
 
     private static final BigDecimal BIG_DECIMAL_ZERO = new BigDecimal(0);
     private static final String PAYMENT_NOT_VALID = "Given payment request is not valid (the amount is not positive or currency field is empty).";
-    private static final String PAYMENT_NOT_ADDED_TO_STORAGE = "Due to an error, the payment was not added to the payment storage";
     private static final String PAYMENT_SUCCESSFULLY_ADDED_TO_STORAGE = "Payment was successfully added to the payment storage";
 
 
@@ -31,26 +30,24 @@ public class PaymentService {
             return buildPaymentResponseValidationFailed(paymentRequest);
         }
         Payment payment = buildPaymentFromDto(paymentRequest);
-        if (paymentStorage.addPaymentToStorage(payment)) {
-            return buildPaymentResponse(payment, PAYMENT_SUCCESSFULLY_ADDED_TO_STORAGE, Boolean.TRUE);
-        } else {
-            return buildPaymentResponse(payment, PAYMENT_NOT_ADDED_TO_STORAGE, Boolean.FALSE);
-        }
+        paymentStorage.addPaymentToStorage(payment);
+        return buildPaymentSuccessfulResponse(payment);
     }
+
 
     private boolean isPaymentRequestValid(PaymentRequest paymentRequest) {
         return BIG_DECIMAL_ZERO.compareTo(paymentRequest.amount()) < 0 && !paymentRequest.currency().isBlank();
     }
 
 
-    private PaymentResponse buildPaymentResponse(Payment payment, String responseMessage, boolean isAddedToStore) {
+    private PaymentResponse buildPaymentSuccessfulResponse(Payment payment) {
         return PaymentResponse.builder()
                 .id(payment.getId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
                 .paymentStatus(payment.getPaymentStatus())
-                .isSuccessfullyAddedToPaymentStorage(isAddedToStore)
-                .responseMessage(responseMessage)
+                .isSuccessfullyAddedToPaymentStorage(Boolean.TRUE)
+                .responseMessage(PAYMENT_SUCCESSFULLY_ADDED_TO_STORAGE)
                 .build();
     }
 
