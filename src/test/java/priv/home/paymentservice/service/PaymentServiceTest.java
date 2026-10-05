@@ -3,15 +3,20 @@ package priv.home.paymentservice.service;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import priv.home.paymentservice.data.PaymentStorage;
 import priv.home.paymentservice.dto.PaymentRequest;
+import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 
 import java.math.BigDecimal;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -25,7 +30,36 @@ class PaymentServiceTest {
 
 
     @Test
-    public void checkIfValuesInPaymentDomainAreEqualToValuesInPaymentRequest() {
+    public void shouldAddPaymentToStorage() {
+        // given
+        PaymentRequest paymentRequest = getValidPaymentRequest();
+
+        // when
+        underTest.createPayment(paymentRequest);
+
+        // then
+        verify(paymentStorage).addPaymentToStorage(any(Payment.class));
+    }
+
+    @Test
+    public void shouldAddPaymentToStorageWithCorrectValues() {
+        // given
+        PaymentRequest paymentRequest = getValidPaymentRequest();
+        ArgumentCaptor<Payment> paymentArgumentCaptor = ArgumentCaptor.forClass(Payment.class);
+
+        // when + then
+        underTest.createPayment(paymentRequest);
+        verify(paymentStorage).addPaymentToStorage(paymentArgumentCaptor.capture());
+        Payment savedPayment = paymentArgumentCaptor.getValue();
+
+        Assertions.assertThat(savedPayment.getAmount()).isEqualTo(paymentRequest.amount());
+        Assertions.assertThat(savedPayment.getCurrency()).isEqualTo(paymentRequest.currency());
+        Assertions.assertThat(savedPayment.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
+        Assertions.assertThat(savedPayment.getId()).isNotNull();
+    }
+
+    @Test
+    public void shouldCreatePaymentWithRequestedAmountAndCurrency() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
 
@@ -38,7 +72,7 @@ class PaymentServiceTest {
     }
 
     @Test
-    public void isUuidGeneratedWhenPaymentIsCreated() {
+    public void shouldGenerateIdForNewPayment() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
 
@@ -50,7 +84,7 @@ class PaymentServiceTest {
     }
 
     @Test
-    public void isStatusCreatedWhenPaymentIsCreated() {
+    public void shouldCreatePaymentWithCreatedStatus() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
 

@@ -6,6 +6,5 @@ import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 
-@NotNull
-public record PaymentRequest(@Positive BigDecimal amount, @NotBlank String currency) {
+public record PaymentRequest(@NotNull @Positive BigDecimal amount, @NotBlank String currency) {
 }

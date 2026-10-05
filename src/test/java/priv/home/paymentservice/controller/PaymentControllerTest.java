@@ -40,7 +40,8 @@ class PaymentControllerTest {
         ResponseEntity<PaymentResponse> result = underTest.createPayment(properPaymentRequest);
 
         // then
-        Assertions.assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Assertions.assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        Assertions.assertThat(result.getBody()).isEqualTo(paymentResponse);
     }
 
 
