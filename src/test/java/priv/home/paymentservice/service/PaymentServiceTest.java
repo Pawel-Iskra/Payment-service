@@ -18,9 +18,6 @@ import java.math.BigDecimal;
 class PaymentServiceTest {
 
 
-    private static final String PAYMENT_NOT_VALID = "Given payment request is not valid (the amount is not positive or currency field is empty).";
-    private static final String PAYMENT_SUCCESSFULLY_ADDED_TO_STORAGE = "Payment was successfully added to the payment storage";
-
     @Mock
     private PaymentStorage paymentStorage;
     @InjectMocks
@@ -53,7 +50,7 @@ class PaymentServiceTest {
     }
 
     @Test
-    public void isStatusCreatedAndSuitableMessageWhenPaymentIsCreated() {
+    public void isStatusCreatedWhenPaymentIsCreated() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
 
@@ -62,20 +59,6 @@ class PaymentServiceTest {
 
         // then
         Assertions.assertThat(paymentResponseResult.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
-        Assertions.assertThat(paymentResponseResult.getResponseMessage()).isEqualTo(PAYMENT_SUCCESSFULLY_ADDED_TO_STORAGE);
-    }
-
-    @Test
-    public void whenRequestInvalidThenStatusNotCreatedAndSuitableMessage() {
-        // given
-        PaymentRequest paymentRequest = getNotValidPaymentRequest();
-
-        // when
-        PaymentResponse paymentResponseResult = underTest.createPayment(paymentRequest);
-
-        // then
-        Assertions.assertThat(paymentResponseResult.getPaymentStatus()).isNull();
-        Assertions.assertThat(paymentResponseResult.getResponseMessage()).isEqualTo(PAYMENT_NOT_VALID);
     }
 
 
@@ -83,7 +66,4 @@ class PaymentServiceTest {
         return new PaymentRequest(new BigDecimal("123.45"), "PLN");
     }
 
-    private PaymentRequest getNotValidPaymentRequest() {
-        return new PaymentRequest(new BigDecimal("0"), "PLN");
-    }
 }

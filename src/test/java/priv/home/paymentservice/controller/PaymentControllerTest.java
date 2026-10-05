@@ -23,8 +23,6 @@ import static org.mockito.ArgumentMatchers.any;
 class PaymentControllerTest {
 
 
-    private static final String PAYMENT_SUCCESSFULLY_ADDED_TO_STORAGE = "Payment was successfully added to the payment storage";
-
     @Mock
     private PaymentService paymentService;
     @InjectMocks
@@ -42,7 +40,7 @@ class PaymentControllerTest {
         ResponseEntity<PaymentResponse> result = underTest.createPayment(properPaymentRequest);
 
         // then
-        Assertions.assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        Assertions.assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
 
@@ -56,8 +54,6 @@ class PaymentControllerTest {
                 .amount(paymentRequest.amount())
                 .currency(paymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
-                .responseMessage(PAYMENT_SUCCESSFULLY_ADDED_TO_STORAGE)
-                .isSuccessfullyAddedToPaymentStorage(Boolean.TRUE)
                 .build();
     }
 

@@ -1,5 +1,6 @@
 package priv.home.paymentservice.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,12 +22,8 @@ public class PaymentController {
 
 
     @PostMapping
-    public ResponseEntity<PaymentResponse> createPayment(@RequestBody PaymentRequest paymentRequest) {
+    public ResponseEntity<PaymentResponse> createPayment(@Valid @RequestBody PaymentRequest paymentRequest) {
         PaymentResponse paymentResponse = paymentService.createPayment(paymentRequest);
-
-        if (paymentResponse.isSuccessfullyAddedToPaymentStorage()) {
-            return new ResponseEntity<>(paymentResponse, HttpStatus.CREATED);
-        }
         return new ResponseEntity<>(paymentResponse, HttpStatus.OK);
     }
 }

@@ -15,7 +15,5 @@ public class PaymentResponse {
     private final BigDecimal amount;
     private final String currency;
     private final PaymentStatus paymentStatus;
-    private final boolean isSuccessfullyAddedToPaymentStorage;
-    private final String responseMessage;
 
 }
