@@ -3,46 +3,72 @@ package priv.home.paymentservice.service;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import priv.home.paymentservice.data.PaymentStorage;
-import priv.home.paymentservice.dto.PaymentDto;
+import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 
-import java.util.Optional;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
 @AllArgsConstructor
 public class PaymentService {
 
+
+    private static final BigDecimal BIG_DECIMAL_ZERO = new BigDecimal(0);
+    private static final String PAYMENT_NOT_VALID = "Given payment request is not valid (the amount is below zero or currency field is empty).";
+    private static final String PAYMENT_NOT_ADDED_TO_STORAGE = "Due to an error, the payment was not added to the payment storage";
+    private static final String PAYMENT_SUCCESSFULLY_ADDED_TO_STORAGE = "Payment was successfully added to the payment storage";
+
+
     private final PaymentStorage paymentStorage;
 
 
-    public Optional<PaymentResponse> createPayment(PaymentDto paymentDto) {
-        Payment payment = buildPaymentFromDto(paymentDto);
+    public PaymentResponse createPayment(PaymentRequest paymentRequest) {
+        boolean isRequestValid = validatePaymentRequest(paymentRequest);
+        if (isRequestValid) {
+            return buildPaymentResponseValidationFailed(paymentRequest);
+        }
+        Payment payment = buildPaymentFromDto(paymentRequest);
         if (paymentStorage.addPaymentToStorage(payment)) {
-            return Optional.ofNullable(buildPaymentResponse(payment));
+            return buildPaymentResponse(payment, PAYMENT_SUCCESSFULLY_ADDED_TO_STORAGE, Boolean.TRUE);
         } else {
-            return Optional.empty();
+            return buildPaymentResponse(payment, PAYMENT_NOT_ADDED_TO_STORAGE, Boolean.FALSE);
         }
     }
 
+    private boolean validatePaymentRequest(PaymentRequest paymentRequest) {
+        return paymentRequest.amount().compareTo(BIG_DECIMAL_ZERO) >= 0 && !paymentRequest.currency().isBlank();
+    }
 
-    private PaymentResponse buildPaymentResponse(Payment payment) {
+
+    private PaymentResponse buildPaymentResponse(Payment payment, String responseMessage, boolean isAddedToStore) {
         return PaymentResponse.builder()
                 .id(payment.getId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
                 .paymentStatus(payment.getPaymentStatus())
+                .isSuccessfullyAddedToPaymentStorage(isAddedToStore)
+                .responseMessage(responseMessage)
+                .build();
+    }
+
+    private PaymentResponse buildPaymentResponseValidationFailed(PaymentRequest paymentRequest) {
+        return PaymentResponse.builder()
+                .amount(paymentRequest.amount())
+                .currency(paymentRequest.currency())
+                .isSuccessfullyAddedToPaymentStorage(Boolean.FALSE)
+                .responseMessage(PAYMENT_NOT_VALID)
                 .build();
     }
 
 
-    private Payment buildPaymentFromDto(PaymentDto paymentDto) {
+    private Payment buildPaymentFromDto(PaymentRequest paymentRequest) {
         return Payment.builder()
                 .id(generateUuid())
-                .amount(paymentDto.getAmount())
-                .currency(paymentDto.getCurrency())
+                .amount(paymentRequest.amount())
+                .currency(paymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
                 .build();
     }
