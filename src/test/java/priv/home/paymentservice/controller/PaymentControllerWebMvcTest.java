@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
@@ -28,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class PaymentControllerWebMvcTest {
 
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
+    private static final String NOT_FOUND_MESSAGE = "Not found payment with given id = %s";
     private static final String CURRENCY_PLN = "PLN";
     private static final String POST_PATH = "/payments";
     private static final String GET_PATH = "/payments/{id}";
@@ -49,7 +51,7 @@ public class PaymentControllerWebMvcTest {
     public void shouldReturnHttpCreatedForProperRequest() throws Exception {
         // given
         UUID paymentId = generateUuid();
-        String json_request = getRequestJsonWithValues(VALID_AMOUNT.toString(), CURRENCY_PLN);
+        String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT.toString(), CURRENCY_PLN);
         PaymentResponse paymentResponse = getPaymentResponse(
                 getValidPaymentFromRequest(gePaymentRequest(VALID_AMOUNT, CURRENCY_PLN), paymentId));
         when(paymentService.createPayment(any(PaymentRequest.class))).thenReturn(paymentResponse);
@@ -57,30 +59,36 @@ public class PaymentControllerWebMvcTest {
         // then
         mockMvc.perform(post(POST_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json_request))
-                .andExpect(status().isCreated());
+                        .content(jsonRequest))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(paymentId.toString()))
+                .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.toString()))
+                .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
+                .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
     }
 
     @Test
     public void shouldReturnHttpBadRequestForInvalidRequest() throws Exception {
         // given
-        String invalid_json_request = getRequestJsonWithValues("0", CURRENCY_PLN);
+        String invalidJsonRequest = getRequestJsonWithValues("0", CURRENCY_PLN);
 
         // then
         mockMvc.perform(post(POST_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalid_json_request))
+                        .content(invalidJsonRequest))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     public void shouldReturnHttpNotFoundForNotExistingPayment() throws Exception {
         // given
-        String randomUuid = generateUuid().toString();
+        String paymentId = generateUuid().toString();
 
         // then
-        mockMvc.perform(get(GET_PATH, randomUuid))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get(GET_PATH, paymentId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.httpStatus").value("404 NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value(String.format(NOT_FOUND_MESSAGE, paymentId)));
     }
 
     @Test
@@ -93,7 +101,11 @@ public class PaymentControllerWebMvcTest {
 
         // then
         mockMvc.perform(get(GET_PATH, paymentId))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(paymentId.toString()))
+                .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.toString()))
+                .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
+                .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
     }
 
 
