@@ -62,7 +62,7 @@ public class PaymentControllerWebMvcTest {
                         .content(jsonRequest))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(paymentId.toString()))
-                .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.toString()))
+                .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.doubleValue()))
                 .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
                 .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
     }
@@ -103,7 +103,7 @@ public class PaymentControllerWebMvcTest {
         mockMvc.perform(get(GET_PATH, paymentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(paymentId.toString()))
-                .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.toString()))
+                .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.doubleValue()))
                 .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
                 .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
     }
