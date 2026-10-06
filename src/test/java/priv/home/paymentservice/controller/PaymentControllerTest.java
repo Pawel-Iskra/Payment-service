@@ -10,13 +10,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import priv.home.paymentservice.dto.PaymentRequest;
+import priv.home.paymentservice.exceptions.SinglePaymentNotFoundException;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 import priv.home.paymentservice.service.PaymentService;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +45,32 @@ class PaymentControllerTest {
         // then
         Assertions.assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         Assertions.assertThat(result.getBody()).isEqualTo(paymentResponse);
+    }
+
+    @Test
+    public void shouldReturnHttpOKForExistingPayment() {
+        // given
+        PaymentRequest properPaymentRequest = getProperPaymentRequest();
+        PaymentResponse paymentResponse = getSuccessfullPaymentResponse(properPaymentRequest);
+        Mockito.when(paymentService.retrieveSinglePaymentByPaymentId(any())).thenReturn(Optional.of(paymentResponse));
+
+        // when
+        ResponseEntity<PaymentResponse> result = underTest.retrievePayment(paymentResponse.getId());
+
+        // then
+        Assertions.assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+
+    @Test
+    public void shouldThrowExceptionForNotExistingPayment() {
+        // given
+        Mockito.when(paymentService.retrieveSinglePaymentByPaymentId(any())).thenReturn(Optional.empty());
+
+        // when + then
+        SinglePaymentNotFoundException exceptionThrown = assertThrows(
+                SinglePaymentNotFoundException.class, () -> underTest.retrievePayment(generateUuid()));
+        Assertions.assertThat(exceptionThrown.getMessage()).contains("Not found payment with given id");
     }
 
 
