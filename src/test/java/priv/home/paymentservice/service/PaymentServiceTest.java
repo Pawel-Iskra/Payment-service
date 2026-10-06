@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import priv.home.paymentservice.data.PaymentStorage;
 import priv.home.paymentservice.dto.PaymentRequest;
@@ -14,6 +15,8 @@ import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 
 import java.math.BigDecimal;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -95,9 +98,50 @@ class PaymentServiceTest {
         Assertions.assertThat(paymentResponseResult.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
     }
 
+    @Test
+    public void shouldReturnExistingPaymentFromStorage() {
+        // given
+        PaymentRequest validPaymentRequest = getValidPaymentRequest();
+        Payment validPayment = getValidPaymentFromRequest(validPaymentRequest);
+        Mockito.when(paymentStorage.retrievePaymentByPaymentId(any())).thenReturn(Optional.of(validPayment));
+
+        // when
+        Optional<PaymentResponse> result = underTest.retrieveSinglePaymentByPaymentId(validPayment.getPaymentId());
+
+        // then
+        Assertions.assertThat(result).isNotEmpty();
+        Assertions.assertThat(result.get().getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
+        Assertions.assertThat(result.get().getCurrency()).isEqualTo(validPayment.getCurrency());
+        Assertions.assertThat(result.get().getAmount()).isEqualTo(validPayment.getAmount());
+    }
+
+    @Test
+    public void shouldReturnEmptyOptionalForNotExistingPayment() {
+        // given
+        Mockito.when(paymentStorage.retrievePaymentByPaymentId(any())).thenReturn(Optional.empty());
+
+        // when
+        Optional<PaymentResponse> result = underTest.retrieveSinglePaymentByPaymentId(generateUuid());
+
+        // then
+        Assertions.assertThat(result).isEmpty();
+    }
+
+    private Payment getValidPaymentFromRequest(PaymentRequest validPaymentRequest) {
+        return Payment.builder()
+                .paymentId(generateUuid())
+                .amount(validPaymentRequest.amount())
+                .currency(validPaymentRequest.currency())
+                .paymentStatus(PaymentStatus.CREATED)
+                .build();
+    }
+
 
     private PaymentRequest getValidPaymentRequest() {
         return new PaymentRequest(new BigDecimal("123.45"), "PLN");
     }
 
+    private UUID generateUuid() {
+        return UUID.randomUUID();
+    }
 }
