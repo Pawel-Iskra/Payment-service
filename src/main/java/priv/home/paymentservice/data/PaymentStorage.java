@@ -11,7 +11,7 @@ import java.util.UUID;
 @Component
 public class PaymentStorage {
 
-    private static final Map<UUID, Payment> paymentStorage = new HashMap<>();
+    private final Map<UUID, Payment> paymentStorage = new HashMap<>();
 
 
     public void addPaymentToStorage(Payment payment) {
