@@ -11,7 +11,7 @@ import java.util.UUID;
 @Getter
 public class Payment {
 
-    private final UUID id;
+    private final UUID paymentId;
     private final BigDecimal amount;
     private final String currency;
     private final PaymentStatus paymentStatus;

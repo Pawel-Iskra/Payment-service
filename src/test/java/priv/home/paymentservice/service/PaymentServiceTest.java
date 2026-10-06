@@ -55,7 +55,7 @@ class PaymentServiceTest {
         Assertions.assertThat(savedPayment.getAmount()).isEqualTo(paymentRequest.amount());
         Assertions.assertThat(savedPayment.getCurrency()).isEqualTo(paymentRequest.currency());
         Assertions.assertThat(savedPayment.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
-        Assertions.assertThat(savedPayment.getId()).isNotNull();
+        Assertions.assertThat(savedPayment.getPaymentId()).isNotNull();
     }
 
     @Test

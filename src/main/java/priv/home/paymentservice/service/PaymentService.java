@@ -8,6 +8,7 @@ import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -24,10 +25,15 @@ public class PaymentService {
         return buildPaymentSuccessfulResponse(payment);
     }
 
+    public Optional<PaymentResponse> retrieveSinglePaymentByPaymentId(UUID paymentId) {
+        Optional<Payment> paymentOptional = paymentStorage.retrievePaymentByPaymentId(paymentId);
+        return paymentOptional.map(this::buildPaymentSuccessfulResponse);
+    }
+
 
     private PaymentResponse buildPaymentSuccessfulResponse(Payment payment) {
         return PaymentResponse.builder()
-                .id(payment.getId())
+                .id(payment.getPaymentId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
                 .paymentStatus(payment.getPaymentStatus())
@@ -37,7 +43,7 @@ public class PaymentService {
 
     private Payment buildPaymentFromDto(PaymentRequest paymentRequest) {
         return Payment.builder()
-                .id(generateUuid())
+                .paymentId(generateUuid())
                 .amount(paymentRequest.amount())
                 .currency(paymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
