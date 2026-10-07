@@ -13,6 +13,7 @@ import priv.home.paymentservice.model.PaymentStatus;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -26,6 +27,17 @@ class PaymentStorageJdbcContainerTest {
             SELECT payment_id, amount, currency, payment_status
             FROM payment
             WHERE  payment_id = ?""";
+    private static final String CREATE_TABLE_PAYMENT_SQL = """
+            CREATE TABLE payment (
+                payment_id UUID PRIMARY KEY,
+                amount DECIMAL(12, 2) NOT NULL,
+                currency VARCHAR(3) NOT NULL,
+                payment_status VARCHAR(256) NOT NULL
+            )
+            """;
+    private static final String INSERT_PAYMENT_SQL = """
+            INSERT INTO payment (payment_id, amount, currency, payment_status)
+            VALUES (?, ?, ?, ?)""";
 
 
     @Container
@@ -45,20 +57,37 @@ class PaymentStorageJdbcContainerTest {
 
         jdbcTemplate = new JdbcTemplate(dataSource);
         paymentStorageJdbc = new PaymentStorageJdbc(jdbcTemplate);
-
-        jdbcTemplate.execute("""
-                CREATE TABLE payment (
-                    payment_id UUID PRIMARY KEY,
-                    amount DECIMAL(12, 2) NOT NULL,
-                    currency VARCHAR(3) NOT NULL,
-                    payment_status VARCHAR(256) NOT NULL
-                )
-                """);
+        jdbcTemplate.execute(CREATE_TABLE_PAYMENT_SQL);
     }
 
 
     @Test
     public void shouldAddPaymentToDb() {
+        // given
+        UUID paymentId = generateUuid();
+        Payment payment = getValidPayment(paymentId);
+
+        // when
+        jdbcTemplate.update(
+                INSERT_PAYMENT_SQL,
+                payment.getPaymentId(),
+                payment.getAmount(),
+                payment.getCurrency(),
+                payment.getPaymentStatus().name());
+
+        // then
+        Optional<Payment> paymentFromDbOptional = paymentStorageJdbc.retrievePaymentByPaymentId(paymentId);
+
+        Assertions.assertTrue(paymentFromDbOptional.isPresent());
+        Payment paymentFromDb = paymentFromDbOptional.get();
+        Assertions.assertEquals(paymentId, paymentFromDb.getPaymentId());
+        Assertions.assertEquals(VALID_AMOUNT, paymentFromDb.getAmount());
+        Assertions.assertEquals(CURRENCY_PLN, paymentFromDb.getCurrency());
+        Assertions.assertEquals(PaymentStatus.CREATED, paymentFromDb.getPaymentStatus());
+    }
+
+    @Test
+    public void shouldRetrievePaymentFromDb() {
         // given
         UUID paymentId = generateUuid();
         Payment payment = getValidPayment(paymentId);
