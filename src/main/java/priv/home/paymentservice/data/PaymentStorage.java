@@ -47,5 +47,6 @@ public class PaymentStorage {
                                 .currency(resultSet.getString("currency"))
                                 .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
                                 .build(), paymentId));
+        // possible EmptyResultDataAccessException?
     }
 }
