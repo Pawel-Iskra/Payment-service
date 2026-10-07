@@ -127,6 +127,7 @@ class PaymentServiceTest {
         Assertions.assertThat(result).isEmpty();
     }
 
+
     private Payment getValidPaymentFromRequest(PaymentRequest validPaymentRequest) {
         return Payment.builder()
                 .paymentId(generateUuid())
@@ -135,7 +136,6 @@ class PaymentServiceTest {
                 .paymentStatus(PaymentStatus.CREATED)
                 .build();
     }
-
 
     private PaymentRequest getValidPaymentRequest() {
         return new PaymentRequest(new BigDecimal("123.45"), "PLN");

@@ -1,24 +1,25 @@
 package priv.home.paymentservice.data;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
-
+@SpringBootTest
 @Testcontainers
-class PaymentStorageJdbcContainerTest {
+class PaymentStorageContainerLiquibaseTest {
 
     private static final String POSTGRES_IMAGE = "postgres:18";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
@@ -27,38 +28,25 @@ class PaymentStorageJdbcContainerTest {
             SELECT payment_id, amount, currency, payment_status
             FROM payment
             WHERE  payment_id = ?""";
-    private static final String CREATE_TABLE_PAYMENT_SQL = """
-            CREATE TABLE payment (
-                payment_id UUID PRIMARY KEY,
-                amount DECIMAL(12, 2) NOT NULL,
-                currency VARCHAR(3) NOT NULL,
-                payment_status VARCHAR(256) NOT NULL
-            )
-            """;
     private static final String INSERT_PAYMENT_SQL = """
             INSERT INTO payment (payment_id, amount, currency, payment_status)
             VALUES (?, ?, ?, ?)""";
 
 
     @Container
-    private final PostgreSQLContainer postgresContainer = new PostgreSQLContainer(POSTGRES_IMAGE);
+    private static final PostgreSQLContainer POSTGRES_CONTAINER = new PostgreSQLContainer(POSTGRES_IMAGE);
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry){
+        registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
+        registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
+    }
 
+    @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
     private PaymentStorageJdbc paymentStorageJdbc;
 
-
-    @BeforeEach
-    void setUp() {
-        DataSource dataSource = DataSourceBuilder.create()
-                .url(postgresContainer.getJdbcUrl())
-                .username(postgresContainer.getUsername())
-                .password(postgresContainer.getPassword())
-                .build();
-
-        jdbcTemplate = new JdbcTemplate(dataSource);
-        paymentStorageJdbc = new PaymentStorageJdbc(jdbcTemplate);
-        jdbcTemplate.execute(CREATE_TABLE_PAYMENT_SQL);
-    }
 
 
     @Test

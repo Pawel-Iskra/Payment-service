@@ -18,12 +18,10 @@ public class PaymentStorageJdbc {
     private static final String INSERT_SQL = """
             INSERT INTO payment (payment_id, amount, currency, payment_status)
             VALUES (?, ?, ?, ?)""";
-
     private static final String SELECT_BY_ID_SQL = """
             SELECT payment_id, amount, currency, payment_status
             FROM payment
             WHERE  payment_id = ?""";
-
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -51,6 +49,7 @@ public class PaymentStorageJdbc {
         } catch (EmptyResultDataAccessException exception) {
             resultFromDb = Optional.empty();
         }
+        //  try/catch: infrastructure layer explains infra exception into the contract required by the higher layer
         return resultFromDb;
     }
 }
