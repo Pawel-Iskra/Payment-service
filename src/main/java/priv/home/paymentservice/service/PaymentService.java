@@ -2,7 +2,7 @@ package priv.home.paymentservice.service;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import priv.home.paymentservice.data.PaymentStorage;
+import priv.home.paymentservice.data.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
@@ -16,17 +16,17 @@ import java.util.UUID;
 public class PaymentService {
 
 
-    private final PaymentStorage paymentStorage;
+    private final PaymentStorageJdbc paymentStorageJdbc;
 
 
     public PaymentResponse createPayment(PaymentRequest paymentRequest) {
         Payment payment = buildPaymentFromDto(paymentRequest);
-        paymentStorage.addPaymentToStorage(payment);
+        paymentStorageJdbc.addPaymentToStorage(payment);
         return buildPaymentSuccessfulResponse(payment);
     }
 
     public Optional<PaymentResponse> retrieveSinglePaymentByPaymentId(UUID paymentId) {
-        Optional<Payment> paymentOptional = paymentStorage.retrievePaymentByPaymentId(paymentId);
+        Optional<Payment> paymentOptional = paymentStorageJdbc.retrievePaymentByPaymentId(paymentId);
         return paymentOptional.map(this::buildPaymentSuccessfulResponse);
     }
 

@@ -8,7 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import priv.home.paymentservice.data.PaymentStorage;
+import priv.home.paymentservice.data.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
@@ -27,7 +27,7 @@ class PaymentServiceTest {
 
 
     @Mock
-    private PaymentStorage paymentStorage;
+    private PaymentStorageJdbc paymentStorageJdbc;
     @InjectMocks
     private PaymentService underTest;
 
@@ -41,7 +41,7 @@ class PaymentServiceTest {
         underTest.createPayment(paymentRequest);
 
         // then
-        verify(paymentStorage).addPaymentToStorage(any(Payment.class));
+        verify(paymentStorageJdbc).addPaymentToStorage(any(Payment.class));
     }
 
     @Test
@@ -52,7 +52,7 @@ class PaymentServiceTest {
 
         // when + then
         underTest.createPayment(paymentRequest);
-        verify(paymentStorage).addPaymentToStorage(paymentArgumentCaptor.capture());
+        verify(paymentStorageJdbc).addPaymentToStorage(paymentArgumentCaptor.capture());
         Payment savedPayment = paymentArgumentCaptor.getValue();
 
         Assertions.assertThat(savedPayment.getAmount()).isEqualTo(paymentRequest.amount());
@@ -103,7 +103,7 @@ class PaymentServiceTest {
         // given
         PaymentRequest validPaymentRequest = getValidPaymentRequest();
         Payment validPayment = getValidPaymentFromRequest(validPaymentRequest);
-        Mockito.when(paymentStorage.retrievePaymentByPaymentId(any())).thenReturn(Optional.of(validPayment));
+        Mockito.when(paymentStorageJdbc.retrievePaymentByPaymentId(any())).thenReturn(Optional.of(validPayment));
 
         // when
         Optional<PaymentResponse> result = underTest.retrieveSinglePaymentByPaymentId(validPayment.getPaymentId());
@@ -118,7 +118,7 @@ class PaymentServiceTest {
     @Test
     public void shouldReturnEmptyOptionalForNotExistingPayment() {
         // given
-        Mockito.when(paymentStorage.retrievePaymentByPaymentId(any())).thenReturn(Optional.empty());
+        Mockito.when(paymentStorageJdbc.retrievePaymentByPaymentId(any())).thenReturn(Optional.empty());
 
         // when
         Optional<PaymentResponse> result = underTest.retrieveSinglePaymentByPaymentId(generateUuid());

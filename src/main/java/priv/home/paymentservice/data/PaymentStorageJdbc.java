@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Component
 @AllArgsConstructor
-public class PaymentStorage {
+public class PaymentStorageJdbc {
 
 
     private static final String INSERT_SQL = """
