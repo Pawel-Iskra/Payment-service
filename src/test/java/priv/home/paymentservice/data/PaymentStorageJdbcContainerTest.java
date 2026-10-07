@@ -62,12 +62,10 @@ class PaymentStorageJdbcContainerTest {
 
 
     @Test
-    public void shouldAddPaymentToDb() {
+    public void shouldRetrievePaymentFromDb() {
         // given
         UUID paymentId = generateUuid();
         Payment payment = getValidPayment(paymentId);
-
-        // when
         jdbcTemplate.update(
                 INSERT_PAYMENT_SQL,
                 payment.getPaymentId(),
@@ -75,9 +73,10 @@ class PaymentStorageJdbcContainerTest {
                 payment.getCurrency(),
                 payment.getPaymentStatus().name());
 
-        // then
+        // when
         Optional<Payment> paymentFromDbOptional = paymentStorageJdbc.retrievePaymentByPaymentId(paymentId);
 
+        // then
         Assertions.assertTrue(paymentFromDbOptional.isPresent());
         Payment paymentFromDb = paymentFromDbOptional.get();
         Assertions.assertEquals(paymentId, paymentFromDb.getPaymentId());
@@ -87,7 +86,7 @@ class PaymentStorageJdbcContainerTest {
     }
 
     @Test
-    public void shouldRetrievePaymentFromDb() {
+    public void shouldAddPaymentToDb() {
         // given
         UUID paymentId = generateUuid();
         Payment payment = getValidPayment(paymentId);
@@ -110,6 +109,18 @@ class PaymentStorageJdbcContainerTest {
         Assertions.assertEquals(VALID_AMOUNT, paymentFromDb.getAmount());
         Assertions.assertEquals(CURRENCY_PLN, paymentFromDb.getCurrency());
         Assertions.assertEquals(PaymentStatus.CREATED, paymentFromDb.getPaymentStatus());
+    }
+
+    @Test
+    public void shouldReturnEmptyOptionalForNotExistingPayment() {
+        // given
+        UUID paymentId = generateUuid();
+
+        // when
+        Optional<Payment> paymentFromDbOptional = paymentStorageJdbc.retrievePaymentByPaymentId(paymentId);
+
+        // then
+        Assertions.assertTrue(paymentFromDbOptional.isEmpty());
     }
 
 

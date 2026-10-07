@@ -1,6 +1,7 @@
 package priv.home.paymentservice.data;
 
 import lombok.AllArgsConstructor;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import priv.home.paymentservice.model.Payment;
@@ -38,15 +39,18 @@ public class PaymentStorageJdbc {
     }
 
     public Optional<Payment> retrievePaymentByPaymentId(UUID paymentId) {
-        return Optional.ofNullable(
-                jdbcTemplate.queryForObject(
-                        SELECT_BY_ID_SQL,
-                        (resultSet, row) -> Payment.builder()
-                                .paymentId(resultSet.getObject("payment_id", UUID.class))
-                                .amount(resultSet.getBigDecimal("amount"))
-                                .currency(resultSet.getString("currency"))
-                                .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
-                                .build(), paymentId));
-        // possible EmptyResultDataAccessException?
+        Optional<Payment> resultFromDb;
+        try {
+            resultFromDb = Optional.ofNullable(jdbcTemplate.queryForObject(SELECT_BY_ID_SQL,
+                    (resultSet, row) -> Payment.builder()
+                            .paymentId(resultSet.getObject("payment_id", UUID.class))
+                            .amount(resultSet.getBigDecimal("amount"))
+                            .currency(resultSet.getString("currency"))
+                            .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
+                            .build(), paymentId));
+        } catch (EmptyResultDataAccessException exception) {
+            resultFromDb = Optional.empty();
+        }
+        return resultFromDb;
     }
 }
