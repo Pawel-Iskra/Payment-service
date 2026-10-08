@@ -1,6 +1,5 @@
 package priv.home.paymentservice.data;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Testcontainers
@@ -77,12 +77,12 @@ class PaymentStorageContainerLiquibaseTest {
         Optional<Payment> paymentFromDbOptional = paymentStorageJdbc.retrievePaymentByPaymentId(paymentId);
 
         // then
-        Assertions.assertTrue(paymentFromDbOptional.isPresent());
+        assertTrue(paymentFromDbOptional.isPresent());
         Payment paymentFromDb = paymentFromDbOptional.get();
-        Assertions.assertEquals(paymentId, paymentFromDb.getPaymentId());
-        Assertions.assertEquals(VALID_AMOUNT, paymentFromDb.getAmount());
-        Assertions.assertEquals(CURRENCY_PLN, paymentFromDb.getCurrency());
-        Assertions.assertEquals(PaymentStatus.CREATED, paymentFromDb.getPaymentStatus());
+        assertEquals(paymentId, paymentFromDb.getPaymentId());
+        assertEquals(VALID_AMOUNT, paymentFromDb.getAmount());
+        assertEquals(CURRENCY_PLN, paymentFromDb.getCurrency());
+        assertEquals(PaymentStatus.CREATED, paymentFromDb.getPaymentStatus());
     }
 
     @Test
@@ -104,11 +104,11 @@ class PaymentStorageContainerLiquibaseTest {
                         .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
                         .build(), paymentId);
 
-        Assertions.assertNotNull(paymentFromDb);
-        Assertions.assertEquals(paymentId, paymentFromDb.getPaymentId());
-        Assertions.assertEquals(VALID_AMOUNT, paymentFromDb.getAmount());
-        Assertions.assertEquals(CURRENCY_PLN, paymentFromDb.getCurrency());
-        Assertions.assertEquals(PaymentStatus.CREATED, paymentFromDb.getPaymentStatus());
+        assertNotNull(paymentFromDb);
+        assertEquals(paymentId, paymentFromDb.getPaymentId());
+        assertEquals(VALID_AMOUNT, paymentFromDb.getAmount());
+        assertEquals(CURRENCY_PLN, paymentFromDb.getCurrency());
+        assertEquals(PaymentStatus.CREATED, paymentFromDb.getPaymentStatus());
     }
 
     @Test
@@ -120,7 +120,7 @@ class PaymentStorageContainerLiquibaseTest {
         Optional<Payment> paymentFromDbOptional = paymentStorageJdbc.retrievePaymentByPaymentId(paymentId);
 
         // then
-        Assertions.assertTrue(paymentFromDbOptional.isEmpty());
+        assertTrue(paymentFromDbOptional.isEmpty());
     }
 
     @Test
