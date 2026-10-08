@@ -1,6 +1,7 @@
 package priv.home.paymentservice.data;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,9 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 class PaymentStorageContainerLiquibaseTest {
 
+    private static final String POSTGRES_IMAGE = "postgres:18";
     private static final String IDEMPOTENCY_KEY_FIRST = "abc-123";
     private static final String IDEMPOTENCY_KEY_SECOND = "abc-124";
-    private static final String POSTGRES_IMAGE = "postgres:18";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String CURRENCY_PLN = "PLN";
     private static final String SELECT_BY_ID_SQL = """
@@ -53,6 +54,11 @@ class PaymentStorageContainerLiquibaseTest {
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private PaymentStorageJdbc paymentStorageJdbc;
+
+    @BeforeEach
+    public void cleanTablePayment() {
+        jdbcTemplate.update("DELETE FROM payment");
+    }
 
 
     @Test
@@ -141,11 +147,13 @@ class PaymentStorageContainerLiquibaseTest {
         startThreadsForInsert.countDown();
 
         // then
-        boolean firstPaymentAddedToDb = first.get();
-        boolean secondPaymentAddedToDb = second.get();
+        boolean isFirstPaymentAddedToDb = first.get();
+        boolean isSecondPaymentAddedToDb = second.get();
         executor.shutdown();
+        assertThat(isFirstPaymentAddedToDb).isNotEqualTo(isSecondPaymentAddedToDb);
 
-        assertThat(firstPaymentAddedToDb).isNotEqualTo(secondPaymentAddedToDb);
+        Integer countRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment", Integer.class);
+        assertThat(countRecords).isOne();
     }
 
 
