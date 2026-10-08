@@ -1,14 +1,15 @@
-package priv.home.paymentservice.model;
+package priv.home.paymentservice.dto;
 
 import lombok.Builder;
 import lombok.Getter;
+import priv.home.paymentservice.model.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 @Builder
 @Getter
-public class PaymentCreationResponse {
+public class PaymentCreationDto {
 
     private final UUID paymentId;
     private final BigDecimal amount;

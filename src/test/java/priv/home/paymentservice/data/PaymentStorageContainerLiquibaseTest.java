@@ -21,6 +21,7 @@ import java.util.UUID;
 @Testcontainers
 class PaymentStorageContainerLiquibaseTest {
 
+    private static final String IDEMPOTENCY_KEY_VALUE = "abc-123";
     private static final String POSTGRES_IMAGE = "postgres:18";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String CURRENCY_PLN = "PLN";
@@ -80,7 +81,7 @@ class PaymentStorageContainerLiquibaseTest {
         Payment payment = getValidPayment(paymentId);
 
         // when
-        paymentStorageJdbc.addPaymentToStorage(payment);
+        paymentStorageJdbc.addPaymentToStorage(IDEMPOTENCY_KEY_VALUE, payment);
 
         // then
         Payment paymentFromDb = jdbcTemplate.queryForObject(

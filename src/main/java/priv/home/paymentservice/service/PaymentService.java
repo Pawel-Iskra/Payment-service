@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import priv.home.paymentservice.data.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
-import priv.home.paymentservice.model.PaymentCreationResponse;
+import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 
@@ -20,13 +20,13 @@ public class PaymentService {
     private final PaymentStorageJdbc paymentStorageJdbc;
 
 
-    public PaymentCreationResponse createPayment(String idempotencyKey, PaymentRequest paymentRequest) {
+    public PaymentCreationDto createPayment(String idempotencyKey, PaymentRequest paymentRequest) {
         Optional<Payment> resultFromDbOptional = retrieveSinglePaymentByIdempotencyKey(idempotencyKey);
         if (resultFromDbOptional.isPresent()) {
             return buildPaymentAlreadyExistPaymentCreationResponse(resultFromDbOptional.get());
         }
         Payment payment = buildPaymentFromDto(paymentRequest);
-        paymentStorageJdbc.addPaymentToStorage(payment);
+        paymentStorageJdbc.addPaymentToStorage(idempotencyKey, payment);
         return buildPaymentSuccessfulPaymentCreationResponse(payment);
     }
 
@@ -40,8 +40,8 @@ public class PaymentService {
     }
 
 
-    private PaymentCreationResponse buildPaymentAlreadyExistPaymentCreationResponse(Payment payment) {
-        return PaymentCreationResponse.builder()
+    private PaymentCreationDto buildPaymentAlreadyExistPaymentCreationResponse(Payment payment) {
+        return PaymentCreationDto.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
@@ -50,8 +50,8 @@ public class PaymentService {
                 .build();
     }
 
-    private PaymentCreationResponse buildPaymentSuccessfulPaymentCreationResponse(Payment payment) {
-        return PaymentCreationResponse.builder()
+    private PaymentCreationDto buildPaymentSuccessfulPaymentCreationResponse(Payment payment) {
+        return PaymentCreationDto.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())

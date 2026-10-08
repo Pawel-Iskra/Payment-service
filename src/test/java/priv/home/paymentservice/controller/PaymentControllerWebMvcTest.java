@@ -9,7 +9,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
-import priv.home.paymentservice.model.PaymentCreationResponse;
+import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 import priv.home.paymentservice.service.PaymentService;
@@ -55,9 +55,9 @@ public class PaymentControllerWebMvcTest {
         // given
         UUID paymentId = generateUuid();
         String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT.toString(), CURRENCY_PLN);
-        PaymentCreationResponse paymentCreationResponse = getSuccessfullPaymentCreationResponse(
+        PaymentCreationDto paymentCreationDto = getSuccessfullPaymentCreationResponse(
                 getValidPaymentFromRequest(gePaymentRequest(VALID_AMOUNT, CURRENCY_PLN), paymentId));
-        when(paymentService.createPayment(any(String.class), any(PaymentRequest.class))).thenReturn(paymentCreationResponse);
+        when(paymentService.createPayment(any(String.class), any(PaymentRequest.class))).thenReturn(paymentCreationDto);
 
         // then
         mockMvc.perform(post(POST_PATH)
@@ -68,8 +68,7 @@ public class PaymentControllerWebMvcTest {
                 .andExpect(jsonPath("$.paymentId").value(paymentId.toString()))
                 .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.doubleValue()))
                 .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
-                .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()))
-                .andExpect(jsonPath("$.wasAlreadyInDb").value(false));
+                .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
     }
 
     @Test
@@ -77,9 +76,9 @@ public class PaymentControllerWebMvcTest {
         // given
         UUID paymentId = generateUuid();
         String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT.toString(), CURRENCY_PLN);
-        PaymentCreationResponse paymentCreationResponse = getPaymentAlreadyExistPaymentCreationResponse(
+        PaymentCreationDto paymentCreationDto = getPaymentAlreadyExistPaymentCreationResponse(
                 getValidPaymentFromRequest(gePaymentRequest(VALID_AMOUNT, CURRENCY_PLN), paymentId));
-        when(paymentService.createPayment(any(String.class), any(PaymentRequest.class))).thenReturn(paymentCreationResponse);
+        when(paymentService.createPayment(any(String.class), any(PaymentRequest.class))).thenReturn(paymentCreationDto);
 
         // then
         mockMvc.perform(post(POST_PATH)
@@ -90,8 +89,7 @@ public class PaymentControllerWebMvcTest {
                 .andExpect(jsonPath("$.paymentId").value(paymentId.toString()))
                 .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.doubleValue()))
                 .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
-                .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()))
-                .andExpect(jsonPath("$.wasAlreadyInDb").value(true));
+                .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
     }
 
     @Test
@@ -163,8 +161,8 @@ public class PaymentControllerWebMvcTest {
     }
 
 
-    private PaymentCreationResponse getPaymentAlreadyExistPaymentCreationResponse(Payment payment) {
-        return PaymentCreationResponse.builder()
+    private PaymentCreationDto getPaymentAlreadyExistPaymentCreationResponse(Payment payment) {
+        return PaymentCreationDto.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
@@ -173,8 +171,8 @@ public class PaymentControllerWebMvcTest {
                 .build();
     }
 
-    private PaymentCreationResponse getSuccessfullPaymentCreationResponse(Payment payment) {
-        return PaymentCreationResponse.builder()
+    private PaymentCreationDto getSuccessfullPaymentCreationResponse(Payment payment) {
+        return PaymentCreationDto.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())

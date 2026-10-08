@@ -5,9 +5,9 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.exceptions.SinglePaymentNotFoundException;
-import priv.home.paymentservice.model.PaymentCreationResponse;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.service.PaymentService;
 
@@ -26,16 +26,16 @@ public class PaymentController {
 
 
     @PostMapping
-    public ResponseEntity<PaymentCreationResponse> createPayment(
-            @RequestHeader(value = IDEMPOTENCY_KEY, required = true) String idempotencyKey,
+    public ResponseEntity<PaymentResponse> createPayment(
+            @RequestHeader(value = IDEMPOTENCY_KEY) String idempotencyKey,
             @Valid @RequestBody PaymentRequest paymentRequest
     ) {
 
-        PaymentCreationResponse paymentCreationResponse = paymentService.createPayment(idempotencyKey, paymentRequest);
-        if (paymentCreationResponse.isWasAlreadyInDb()) {
-            return new ResponseEntity<>(paymentCreationResponse, HttpStatus.OK);
+        PaymentCreationDto paymentCreationDto = paymentService.createPayment(idempotencyKey, paymentRequest);
+        if (paymentCreationDto.isWasAlreadyInDb()) {
+            return new ResponseEntity<>(buildPaymentResponseFromPaymentCreationDto(paymentCreationDto), HttpStatus.OK);
         }
-        return new ResponseEntity<>(paymentCreationResponse, HttpStatus.CREATED);
+        return new ResponseEntity<>(buildPaymentResponseFromPaymentCreationDto(paymentCreationDto), HttpStatus.CREATED);
     }
 
 
@@ -48,5 +48,15 @@ public class PaymentController {
         } else {
             throw new SinglePaymentNotFoundException(paymentId);
         }
+    }
+
+
+    private PaymentResponse buildPaymentResponseFromPaymentCreationDto(PaymentCreationDto paymentCreationDto) {
+        return PaymentResponse.builder()
+                .paymentId(paymentCreationDto.getPaymentId())
+                .amount(paymentCreationDto.getAmount())
+                .currency(paymentCreationDto.getCurrency())
+                .paymentStatus(paymentCreationDto.getPaymentStatus())
+                .build();
     }
 }

@@ -16,8 +16,8 @@ public class PaymentStorageJdbc {
 
 
     private static final String INSERT_SQL = """
-            INSERT INTO payment (payment_id, amount, currency, payment_status)
-            VALUES (?, ?, ?, ?)""";
+            INSERT INTO payment (payment_id, amount, currency, payment_status, idempotency_key)
+            VALUES (?, ?, ?, ?, ?)""";
     private static final String SELECT_BY_ID_SQL = """
             SELECT payment_id, amount, currency, payment_status
             FROM payment
@@ -30,13 +30,14 @@ public class PaymentStorageJdbc {
     private final JdbcTemplate jdbcTemplate;
 
 
-    public void addPaymentToStorage(Payment payment) {
+    public void addPaymentToStorage(String idempotencyKey, Payment payment) {
         jdbcTemplate.update(
                 INSERT_SQL,
                 payment.getPaymentId(),
                 payment.getAmount(),
                 payment.getCurrency(),
-                payment.getPaymentStatus().name()
+                payment.getPaymentStatus().name(),
+                idempotencyKey
         );
     }
 

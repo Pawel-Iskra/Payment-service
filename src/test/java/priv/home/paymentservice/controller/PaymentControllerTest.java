@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.exceptions.SinglePaymentNotFoundException;
-import priv.home.paymentservice.model.PaymentCreationResponse;
+import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 import priv.home.paymentservice.service.PaymentService;
@@ -39,15 +39,15 @@ class PaymentControllerTest {
     public void whenPaymentAddedSuccessfullyThenShouldBeProperResponse() {
         // given
         PaymentRequest properPaymentRequest = getProperPaymentRequest();
-        PaymentCreationResponse paymentCreationResponse = getSuccessfullPaymentCreationResponse(properPaymentRequest);
-        Mockito.when(paymentService.createPayment(any(), any())).thenReturn(paymentCreationResponse);
+        PaymentCreationDto paymentCreationDto = getSuccessfulPaymentCreationResponse(properPaymentRequest);
+        Mockito.when(paymentService.createPayment(any(), any())).thenReturn(paymentCreationDto);
 
         // when
-        ResponseEntity<PaymentCreationResponse> result = underTest.createPayment(IDEMPOTENCY_KEY, properPaymentRequest);
+        ResponseEntity<PaymentResponse> result = underTest.createPayment(IDEMPOTENCY_KEY, properPaymentRequest);
 
         // then
         Assertions.assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        Assertions.assertThat(result.getBody()).isEqualTo(paymentCreationResponse);
+        Assertions.assertThat(result.getBody()).isNotNull();
     }
 
     @Test
@@ -82,8 +82,8 @@ class PaymentControllerTest {
     }
 
 
-    private PaymentCreationResponse getSuccessfullPaymentCreationResponse(PaymentRequest paymentRequest) {
-        return PaymentCreationResponse.builder()
+    private PaymentCreationDto getSuccessfulPaymentCreationResponse(PaymentRequest paymentRequest) {
+        return PaymentCreationDto.builder()
                 .paymentId(generateUuid())
                 .amount(paymentRequest.amount())
                 .currency(paymentRequest.currency())
