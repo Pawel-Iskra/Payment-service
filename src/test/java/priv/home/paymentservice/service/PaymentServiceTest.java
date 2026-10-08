@@ -1,6 +1,5 @@
 package priv.home.paymentservice.service;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -8,10 +7,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 import priv.home.paymentservice.data.PaymentStorageJdbc;
+import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
-import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 
@@ -19,6 +19,8 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
@@ -27,6 +29,7 @@ import static org.mockito.Mockito.verify;
 class PaymentServiceTest {
 
     private static final String IDEMPOTENCY_KEY = "abc-123";
+    private static final String DUPLICATE_IDEMPOTENCY_KEY = "Duplicate idempotency key";
 
     @Mock
     private PaymentStorageJdbc paymentStorageJdbc;
@@ -57,10 +60,10 @@ class PaymentServiceTest {
         verify(paymentStorageJdbc).addPaymentToStorage(any(String.class), paymentArgumentCaptor.capture());
         Payment savedPayment = paymentArgumentCaptor.getValue();
 
-        Assertions.assertThat(savedPayment.getAmount()).isEqualTo(paymentRequest.amount());
-        Assertions.assertThat(savedPayment.getCurrency()).isEqualTo(paymentRequest.currency());
-        Assertions.assertThat(savedPayment.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
-        Assertions.assertThat(savedPayment.getPaymentId()).isNotNull();
+        assertThat(savedPayment.getAmount()).isEqualTo(paymentRequest.amount());
+        assertThat(savedPayment.getCurrency()).isEqualTo(paymentRequest.currency());
+        assertThat(savedPayment.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
+        assertThat(savedPayment.getPaymentId()).isNotNull();
     }
 
     @Test
@@ -69,11 +72,11 @@ class PaymentServiceTest {
         PaymentRequest paymentRequest = getValidPaymentRequest();
 
         // when
-        PaymentCreationDto paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+        PaymentCreationDto paymentCreationDto = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
-        Assertions.assertThat(paymentResponseResult.getAmount()).isEqualTo(paymentRequest.amount());
-        Assertions.assertThat(paymentResponseResult.getCurrency()).isEqualTo(paymentRequest.currency());
+        assertThat(paymentCreationDto.getAmount()).isEqualTo(paymentRequest.amount());
+        assertThat(paymentCreationDto.getCurrency()).isEqualTo(paymentRequest.currency());
     }
 
     @Test
@@ -85,7 +88,7 @@ class PaymentServiceTest {
         PaymentCreationDto paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
-        Assertions.assertThat(paymentResponseResult.getPaymentId()).isNotNull();
+        assertThat(paymentResponseResult.getPaymentId()).isNotNull();
     }
 
     @Test
@@ -97,7 +100,7 @@ class PaymentServiceTest {
         PaymentCreationDto paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
-        Assertions.assertThat(paymentResponseResult.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
+        assertThat(paymentResponseResult.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
     }
 
     @Test
@@ -108,13 +111,13 @@ class PaymentServiceTest {
         Mockito.when(paymentStorageJdbc.retrievePaymentByPaymentId(any())).thenReturn(Optional.of(validPayment));
 
         // when
-        Optional<PaymentResponse> result = underTest.retrieveSinglePaymentByPaymentId(validPayment.getPaymentId());
+        Optional<PaymentResponse> paymentResponseOptional = underTest.retrieveSinglePaymentByPaymentId(validPayment.getPaymentId());
 
         // then
-        Assertions.assertThat(result).isNotEmpty();
-        Assertions.assertThat(result.get().getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
-        Assertions.assertThat(result.get().getCurrency()).isEqualTo(validPayment.getCurrency());
-        Assertions.assertThat(result.get().getAmount()).isEqualTo(validPayment.getAmount());
+        assertThat(paymentResponseOptional).isNotEmpty();
+        assertThat(paymentResponseOptional.get().getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
+        assertThat(paymentResponseOptional.get().getCurrency()).isEqualTo(validPayment.getCurrency());
+        assertThat(paymentResponseOptional.get().getAmount()).isEqualTo(validPayment.getAmount());
     }
 
     @Test
@@ -126,7 +129,45 @@ class PaymentServiceTest {
         Optional<PaymentResponse> result = underTest.retrieveSinglePaymentByPaymentId(generateUuid());
 
         // then
-        Assertions.assertThat(result).isEmpty();
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    public void shouldHandleDuplicateKeyExceptionFoPaymentCreate() {
+        // given
+        PaymentRequest paymentRequest = getValidPaymentRequest();
+        Payment payment = getValidPaymentFromRequest(paymentRequest);
+        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(payment));
+        Mockito.doThrow(new DuplicateKeyException(DUPLICATE_IDEMPOTENCY_KEY))
+                .when(paymentStorageJdbc).addPaymentToStorage(any(), any());
+
+        // when
+        PaymentCreationDto paymentCreationDto = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+
+        // then
+        assertThat(paymentCreationDto.getAmount()).isEqualTo(payment.getAmount());
+        assertThat(paymentCreationDto.getCurrency()).isEqualTo(payment.getCurrency());
+        assertThat(paymentCreationDto.getPaymentId()).isEqualTo(payment.getPaymentId());
+        assertThat(paymentCreationDto.getPaymentStatus()).isEqualTo(payment.getPaymentStatus());
+        assertThat(paymentCreationDto.isWasAlreadyInDb()).isTrue();
+    }
+
+    @Test
+    public void shouldThrowDuplicateKeyExceptionFoPaymentCreate() {
+        // given
+        PaymentRequest paymentRequest = getValidPaymentRequest();
+        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.empty());
+        Mockito.doThrow(new DuplicateKeyException(DUPLICATE_IDEMPOTENCY_KEY))
+                .when(paymentStorageJdbc).addPaymentToStorage(any(), any());
+
+        // when + then
+        DuplicateKeyException thrown = assertThrows(DuplicateKeyException.class, () ->
+                underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest));
+        assertThat(thrown.getMessage()).isEqualTo(DUPLICATE_IDEMPOTENCY_KEY);
     }
 
 

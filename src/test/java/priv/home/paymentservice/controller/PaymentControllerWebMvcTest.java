@@ -55,7 +55,7 @@ public class PaymentControllerWebMvcTest {
         // given
         UUID paymentId = generateUuid();
         String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT.toString(), CURRENCY_PLN);
-        PaymentCreationDto paymentCreationDto = getSuccessfullPaymentCreationResponse(
+        PaymentCreationDto paymentCreationDto = getSuccessfulPaymentCreationResponse(
                 getValidPaymentFromRequest(gePaymentRequest(VALID_AMOUNT, CURRENCY_PLN), paymentId));
         when(paymentService.createPayment(any(String.class), any(PaymentRequest.class))).thenReturn(paymentCreationDto);
 
@@ -172,7 +172,7 @@ public class PaymentControllerWebMvcTest {
                 .build();
     }
 
-    private PaymentCreationDto getSuccessfullPaymentCreationResponse(Payment payment) {
+    private PaymentCreationDto getSuccessfulPaymentCreationResponse(Payment payment) {
         return PaymentCreationDto.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
