@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import priv.home.paymentservice.data.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
+import priv.home.paymentservice.model.PaymentCreationResponse;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
 
+    private static final String IDEMPOTENCY_KEY = "abc-123";
 
     @Mock
     private PaymentStorageJdbc paymentStorageJdbc;
@@ -38,7 +40,7 @@ class PaymentServiceTest {
         PaymentRequest paymentRequest = getValidPaymentRequest();
 
         // when
-        underTest.createPayment(paymentRequest);
+        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
         verify(paymentStorageJdbc).addPaymentToStorage(any(Payment.class));
@@ -51,7 +53,7 @@ class PaymentServiceTest {
         ArgumentCaptor<Payment> paymentArgumentCaptor = ArgumentCaptor.forClass(Payment.class);
 
         // when + then
-        underTest.createPayment(paymentRequest);
+        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
         verify(paymentStorageJdbc).addPaymentToStorage(paymentArgumentCaptor.capture());
         Payment savedPayment = paymentArgumentCaptor.getValue();
 
@@ -67,7 +69,7 @@ class PaymentServiceTest {
         PaymentRequest paymentRequest = getValidPaymentRequest();
 
         // when
-        PaymentResponse paymentResponseResult = underTest.createPayment(paymentRequest);
+        PaymentCreationResponse paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
         Assertions.assertThat(paymentResponseResult.getAmount()).isEqualTo(paymentRequest.amount());
@@ -80,10 +82,10 @@ class PaymentServiceTest {
         PaymentRequest paymentRequest = getValidPaymentRequest();
 
         // when
-        PaymentResponse paymentResponseResult = underTest.createPayment(paymentRequest);
+        PaymentCreationResponse paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
-        Assertions.assertThat(paymentResponseResult.getId()).isNotNull();
+        Assertions.assertThat(paymentResponseResult.getPaymentId()).isNotNull();
     }
 
     @Test
@@ -92,7 +94,7 @@ class PaymentServiceTest {
         PaymentRequest paymentRequest = getValidPaymentRequest();
 
         // when
-        PaymentResponse paymentResponseResult = underTest.createPayment(paymentRequest);
+        PaymentCreationResponse paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
         Assertions.assertThat(paymentResponseResult.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);

@@ -16,7 +16,7 @@ import java.util.UUID;
 
 
 //@Testcontainers
-// left fo my personal learning purpose
+// left as jdbc option
 class PaymentStorageContainerJdbcTest {
 
     private static final String POSTGRES_IMAGE = "postgres:18";

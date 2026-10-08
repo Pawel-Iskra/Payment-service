@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.exceptions.SinglePaymentNotFoundException;
+import priv.home.paymentservice.model.PaymentCreationResponse;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.service.PaymentService;
 
@@ -19,13 +20,22 @@ import java.util.UUID;
 @RequestMapping("/payments")
 public class PaymentController {
 
+    private static final String IDEMPOTENCY_KEY = "idempotency-key";
+
     private final PaymentService paymentService;
 
 
     @PostMapping
-    public ResponseEntity<PaymentResponse> createPayment(@Valid @RequestBody PaymentRequest paymentRequest) {
-        PaymentResponse paymentResponse = paymentService.createPayment(paymentRequest);
-        return new ResponseEntity<>(paymentResponse, HttpStatus.CREATED);
+    public ResponseEntity<PaymentCreationResponse> createPayment(
+            @RequestHeader(value = IDEMPOTENCY_KEY, required = true) String idempotencyKey,
+            @Valid @RequestBody PaymentRequest paymentRequest
+    ) {
+
+        PaymentCreationResponse paymentCreationResponse = paymentService.createPayment(idempotencyKey, paymentRequest);
+        if (paymentCreationResponse.isWasAlreadyInDb()) {
+            return new ResponseEntity<>(paymentCreationResponse, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(paymentCreationResponse, HttpStatus.CREATED);
     }
 
 

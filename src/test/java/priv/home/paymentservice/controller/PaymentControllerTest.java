@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.exceptions.SinglePaymentNotFoundException;
+import priv.home.paymentservice.model.PaymentCreationResponse;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 import priv.home.paymentservice.service.PaymentService;
@@ -25,6 +26,8 @@ import static org.mockito.ArgumentMatchers.any;
 @ExtendWith(MockitoExtension.class)
 class PaymentControllerTest {
 
+    private static final String IDEMPOTENCY_KEY = "idempotency-key";
+
 
     @Mock
     private PaymentService paymentService;
@@ -36,15 +39,15 @@ class PaymentControllerTest {
     public void whenPaymentAddedSuccessfullyThenShouldBeProperResponse() {
         // given
         PaymentRequest properPaymentRequest = getProperPaymentRequest();
-        PaymentResponse paymentResponse = getSuccessfullPaymentResponse(properPaymentRequest);
-        Mockito.when(paymentService.createPayment(any())).thenReturn(paymentResponse);
+        PaymentCreationResponse paymentCreationResponse = getSuccessfullPaymentCreationResponse(properPaymentRequest);
+        Mockito.when(paymentService.createPayment(any(), any())).thenReturn(paymentCreationResponse);
 
         // when
-        ResponseEntity<PaymentResponse> result = underTest.createPayment(properPaymentRequest);
+        ResponseEntity<PaymentCreationResponse> result = underTest.createPayment(IDEMPOTENCY_KEY, properPaymentRequest);
 
         // then
         Assertions.assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        Assertions.assertThat(result.getBody()).isEqualTo(paymentResponse);
+        Assertions.assertThat(result.getBody()).isEqualTo(paymentCreationResponse);
     }
 
     @Test
@@ -55,7 +58,7 @@ class PaymentControllerTest {
         Mockito.when(paymentService.retrieveSinglePaymentByPaymentId(any())).thenReturn(Optional.of(paymentResponse));
 
         // when
-        ResponseEntity<PaymentResponse> result = underTest.retrievePayment(paymentResponse.getId());
+        ResponseEntity<PaymentResponse> result = underTest.retrievePayment(paymentResponse.getPaymentId());
 
         // then
         Assertions.assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -78,9 +81,20 @@ class PaymentControllerTest {
         return new PaymentRequest(new BigDecimal("123.45"), "PLN");
     }
 
+
+    private PaymentCreationResponse getSuccessfullPaymentCreationResponse(PaymentRequest paymentRequest) {
+        return PaymentCreationResponse.builder()
+                .paymentId(generateUuid())
+                .amount(paymentRequest.amount())
+                .currency(paymentRequest.currency())
+                .paymentStatus(PaymentStatus.CREATED)
+                .wasAlreadyInDb(Boolean.FALSE)
+                .build();
+    }
+
     private PaymentResponse getSuccessfullPaymentResponse(PaymentRequest paymentRequest) {
         return PaymentResponse.builder()
-                .id(generateUuid())
+                .paymentId(generateUuid())
                 .amount(paymentRequest.amount())
                 .currency(paymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)

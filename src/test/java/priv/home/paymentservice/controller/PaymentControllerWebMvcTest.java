@@ -9,6 +9,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
+import priv.home.paymentservice.model.PaymentCreationResponse;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 import priv.home.paymentservice.service.PaymentService;
@@ -28,6 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(PaymentController.class)
 public class PaymentControllerWebMvcTest {
 
+    private static final String IDEMPOTENCY_KEY_NAME = "idempotency-key";
+    private static final String IDEMPOTENCY_KEY_VALUE = "abc-123";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String NOT_FOUND_MESSAGE = "Not found payment with given id = %s";
     private static final String CURRENCY_PLN = "PLN";
@@ -52,19 +55,43 @@ public class PaymentControllerWebMvcTest {
         // given
         UUID paymentId = generateUuid();
         String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT.toString(), CURRENCY_PLN);
-        PaymentResponse paymentResponse = getPaymentResponse(
+        PaymentCreationResponse paymentCreationResponse = getSuccessfullPaymentCreationResponse(
                 getValidPaymentFromRequest(gePaymentRequest(VALID_AMOUNT, CURRENCY_PLN), paymentId));
-        when(paymentService.createPayment(any(PaymentRequest.class))).thenReturn(paymentResponse);
+        when(paymentService.createPayment(any(String.class), any(PaymentRequest.class))).thenReturn(paymentCreationResponse);
 
         // then
         mockMvc.perform(post(POST_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
+                        .content(jsonRequest)
+                        .header(IDEMPOTENCY_KEY_NAME, IDEMPOTENCY_KEY_VALUE))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(paymentId.toString()))
+                .andExpect(jsonPath("$.paymentId").value(paymentId.toString()))
                 .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.doubleValue()))
                 .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
-                .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
+                .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()))
+                .andExpect(jsonPath("$.wasAlreadyInDb").value(false));
+    }
+
+    @Test
+    public void shouldReturnHttpOkForCreateAlreadyExistingInDbPayment() throws Exception {
+        // given
+        UUID paymentId = generateUuid();
+        String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT.toString(), CURRENCY_PLN);
+        PaymentCreationResponse paymentCreationResponse = getPaymentAlreadyExistPaymentCreationResponse(
+                getValidPaymentFromRequest(gePaymentRequest(VALID_AMOUNT, CURRENCY_PLN), paymentId));
+        when(paymentService.createPayment(any(String.class), any(PaymentRequest.class))).thenReturn(paymentCreationResponse);
+
+        // then
+        mockMvc.perform(post(POST_PATH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest)
+                        .header(IDEMPOTENCY_KEY_NAME, IDEMPOTENCY_KEY_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paymentId").value(paymentId.toString()))
+                .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.doubleValue()))
+                .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
+                .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()))
+                .andExpect(jsonPath("$.wasAlreadyInDb").value(true));
     }
 
     @Test
@@ -102,7 +129,7 @@ public class PaymentControllerWebMvcTest {
         // then
         mockMvc.perform(get(GET_PATH, paymentId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(paymentId.toString()))
+                .andExpect(jsonPath("$.paymentId").value(paymentId.toString()))
                 .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.doubleValue()))
                 .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
                 .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
@@ -128,10 +155,31 @@ public class PaymentControllerWebMvcTest {
 
     private PaymentResponse getPaymentResponse(Payment payment) {
         return PaymentResponse.builder()
-                .id(payment.getPaymentId())
+                .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
                 .paymentStatus(payment.getPaymentStatus())
+                .build();
+    }
+
+
+    private PaymentCreationResponse getPaymentAlreadyExistPaymentCreationResponse(Payment payment) {
+        return PaymentCreationResponse.builder()
+                .paymentId(payment.getPaymentId())
+                .amount(payment.getAmount())
+                .currency(payment.getCurrency())
+                .paymentStatus(payment.getPaymentStatus())
+                .wasAlreadyInDb(Boolean.TRUE)
+                .build();
+    }
+
+    private PaymentCreationResponse getSuccessfullPaymentCreationResponse(Payment payment) {
+        return PaymentCreationResponse.builder()
+                .paymentId(payment.getPaymentId())
+                .amount(payment.getAmount())
+                .currency(payment.getCurrency())
+                .paymentStatus(PaymentStatus.CREATED)
+                .wasAlreadyInDb(Boolean.FALSE)
                 .build();
     }
 
