@@ -133,7 +133,7 @@ class PaymentServiceTest {
     }
 
     @Test
-    public void shouldHandleDuplicateKeyExceptionFoPaymentCreate() {
+    public void shouldHandleDuplicateKeyExceptionForPaymentCreate() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
         Payment payment = getValidPaymentFromRequest(paymentRequest);
@@ -155,7 +155,7 @@ class PaymentServiceTest {
     }
 
     @Test
-    public void shouldThrowDuplicateKeyExceptionFoPaymentCreate() {
+    public void shouldThrowDuplicateKeyExceptionForPaymentCreate() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
         Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
