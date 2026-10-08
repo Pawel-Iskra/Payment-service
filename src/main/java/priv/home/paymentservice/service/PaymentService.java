@@ -31,9 +31,12 @@ public class PaymentService {
             paymentStorageJdbc.addPaymentToStorage(idempotencyKey, payment);
         } catch (DuplicateKeyException duplicateKeyException) {
             paymentFromDbOptional = retrieveSinglePaymentByIdempotencyKey(idempotencyKey);
-            return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDbOptional.get());
+            if (paymentFromDbOptional.isPresent()) {
+                return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDbOptional.get());
+            }
+            throw duplicateKeyException;
         }
-        return buildPaymentSuccessfulPaymentCreationDto(payment);
+        return buildPaymentSuccessfulPersistedPaymentCreationDto(payment);
     }
 
     public Optional<PaymentResponse> retrieveSinglePaymentByPaymentId(UUID paymentId) {
@@ -56,7 +59,7 @@ public class PaymentService {
                 .build();
     }
 
-    private PaymentCreationDto buildPaymentSuccessfulPaymentCreationDto(Payment payment) {
+    private PaymentCreationDto buildPaymentSuccessfulPersistedPaymentCreationDto(Payment payment) {
         return PaymentCreationDto.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())

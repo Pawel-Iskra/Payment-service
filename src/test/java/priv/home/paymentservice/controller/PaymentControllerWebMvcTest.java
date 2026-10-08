@@ -7,9 +7,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
-import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 import priv.home.paymentservice.service.PaymentService;
@@ -33,13 +33,13 @@ public class PaymentControllerWebMvcTest {
     private static final String IDEMPOTENCY_KEY_VALUE = "abc-123";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String NOT_FOUND_MESSAGE = "Not found payment with given id = %s";
-    private static final String CURRENCY_PLN = "PLN";
+    private static final String CURRENCY_PLN = "\"PLN\"";
     private static final String POST_PATH = "/payments";
     private static final String GET_PATH = "/payments/{id}";
     private static final String JSON_REQUEST = """
             {
                 "amount": %s,
-                "currency": "%s"
+                "currency": %s
             }
             """;
 
@@ -100,7 +100,8 @@ public class PaymentControllerWebMvcTest {
         // then
         mockMvc.perform(post(POST_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJsonRequest))
+                        .content(invalidJsonRequest)
+                        .header(IDEMPOTENCY_KEY_NAME, IDEMPOTENCY_KEY_VALUE))
                 .andExpect(status().isBadRequest());
     }
 

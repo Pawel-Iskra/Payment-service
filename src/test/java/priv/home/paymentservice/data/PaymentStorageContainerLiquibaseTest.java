@@ -141,11 +141,11 @@ class PaymentStorageContainerLiquibaseTest {
         startThreadsForInsert.countDown();
 
         // then
-        boolean firstSucceeded = first.get();
-        boolean secondSucceeded = second.get();
+        boolean firstPaymentAddedToDb = first.get();
+        boolean secondPaymentAddedToDb = second.get();
         executor.shutdown();
 
-        assertThat(firstSucceeded).isNotEqualTo(secondSucceeded);
+        assertThat(firstPaymentAddedToDb).isNotEqualTo(secondPaymentAddedToDb);
     }
 
 
