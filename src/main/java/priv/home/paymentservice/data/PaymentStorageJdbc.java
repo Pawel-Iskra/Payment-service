@@ -1,6 +1,7 @@
 package priv.home.paymentservice.data;
 
 import lombok.AllArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -30,7 +31,7 @@ public class PaymentStorageJdbc {
     private final JdbcTemplate jdbcTemplate;
 
 
-    public void addPaymentToStorage(String idempotencyKey, Payment payment) {
+    public void addPaymentToStorage(String idempotencyKey, Payment payment) throws DuplicateKeyException {
         jdbcTemplate.update(
                 INSERT_SQL,
                 payment.getPaymentId(),

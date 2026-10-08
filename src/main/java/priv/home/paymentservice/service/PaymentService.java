@@ -1,11 +1,12 @@
 package priv.home.paymentservice.service;
 
 import lombok.AllArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import priv.home.paymentservice.data.PaymentStorageJdbc;
+import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
-import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 
@@ -21,13 +22,18 @@ public class PaymentService {
 
 
     public PaymentCreationDto createPayment(String idempotencyKey, PaymentRequest paymentRequest) {
-        Optional<Payment> resultFromDbOptional = retrieveSinglePaymentByIdempotencyKey(idempotencyKey);
-        if (resultFromDbOptional.isPresent()) {
-            return buildPaymentAlreadyExistPaymentCreationResponse(resultFromDbOptional.get());
+        Optional<Payment> paymentFromDbOptional = retrieveSinglePaymentByIdempotencyKey(idempotencyKey);
+        if (paymentFromDbOptional.isPresent()) {
+            return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDbOptional.get());
         }
         Payment payment = buildPaymentFromDto(paymentRequest);
-        paymentStorageJdbc.addPaymentToStorage(idempotencyKey, payment);
-        return buildPaymentSuccessfulPaymentCreationResponse(payment);
+        try {
+            paymentStorageJdbc.addPaymentToStorage(idempotencyKey, payment);
+        } catch (DuplicateKeyException duplicateKeyException) {
+            paymentFromDbOptional = retrieveSinglePaymentByIdempotencyKey(idempotencyKey);
+            return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDbOptional.get());
+        }
+        return buildPaymentSuccessfulPaymentCreationDto(payment);
     }
 
     public Optional<PaymentResponse> retrieveSinglePaymentByPaymentId(UUID paymentId) {
@@ -40,7 +46,7 @@ public class PaymentService {
     }
 
 
-    private PaymentCreationDto buildPaymentAlreadyExistPaymentCreationResponse(Payment payment) {
+    private PaymentCreationDto buildPaymentAlreadyExistPaymentCreationDto(Payment payment) {
         return PaymentCreationDto.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
@@ -50,7 +56,7 @@ public class PaymentService {
                 .build();
     }
 
-    private PaymentCreationDto buildPaymentSuccessfulPaymentCreationResponse(Payment payment) {
+    private PaymentCreationDto buildPaymentSuccessfulPaymentCreationDto(Payment payment) {
         return PaymentCreationDto.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
