@@ -1,0 +1,44 @@
+package priv.home.paymentservice.publisher.kafka;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+import priv.home.paymentservice.model.Payment;
+import priv.home.paymentservice.publisher.PaymentEventPublisher;
+import priv.home.paymentservice.publisher.model.PaymentCreatedEvent;
+
+@Service
+public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
+
+
+    private final String kafkaTopic;
+    private final KafkaTemplate<String, PaymentCreatedEvent> kafkaTemplate;
+
+
+    public KafkaPaymentEventPublisher(
+            @Value("${payment-service.kafka-topic}") String kafkaTopic, // TODO: @ConfigurationProperties
+            KafkaTemplate<String, PaymentCreatedEvent> kafkaTemplate) {
+        this.kafkaTopic = kafkaTopic;
+        this.kafkaTemplate = kafkaTemplate;
+    }
+
+
+    @Override
+    public void publish(String idempotencyKey, Payment paymentToPublish) {
+
+        PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, paymentToPublish);
+
+        kafkaTemplate.send(kafkaTopic, paymentCreatedEvent);
+
+    }
+
+    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(String idempotencyKey, Payment paymentToPublish) {
+        return PaymentCreatedEvent.builder()
+                .paymentId(paymentToPublish.getPaymentId())
+                .amount(paymentToPublish.getAmount())
+                .currency(paymentToPublish.getCurrency())
+                .paymentStatus(paymentToPublish.getPaymentStatus())
+                .idempotencyKey(idempotencyKey)
+                .build();
+    }
+}

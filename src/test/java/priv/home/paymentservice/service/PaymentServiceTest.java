@@ -14,6 +14,7 @@ import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
+import priv.home.paymentservice.publisher.PaymentEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -33,6 +34,8 @@ class PaymentServiceTest {
 
     @Mock
     private PaymentStorageJdbc paymentStorageJdbc;
+    @Mock
+    private PaymentEventPublisher paymentEventPublisher;
     @InjectMocks
     private PaymentService underTest;
 
