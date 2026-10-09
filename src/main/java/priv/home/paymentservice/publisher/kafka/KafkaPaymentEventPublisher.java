@@ -1,5 +1,6 @@
 package priv.home.paymentservice.publisher.kafka;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -7,6 +8,7 @@ import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.publisher.PaymentEventPublisher;
 import priv.home.paymentservice.publisher.model.PaymentCreatedEvent;
 
+@Slf4j
 @Service
 public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
@@ -28,9 +30,17 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
         PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, paymentToPublish);
 
-        kafkaTemplate.send(kafkaTopic, paymentCreatedEvent);
-
+        kafkaTemplate.send(kafkaTopic, paymentCreatedEvent.getPaymentId().toString(), paymentCreatedEvent)
+                .whenComplete((result, exception) -> {
+                    if (exception != null) {
+                        log.error("Failed to publish PaymentCreatedEvent with id={}",
+                                paymentCreatedEvent.getPaymentId(), exception);
+                        return;
+                    }
+                    log.info("PaymentCreatedEvent published, paymentId={}", paymentCreatedEvent.getPaymentId());
+                });
     }
+
 
     private PaymentCreatedEvent getPaymentCreatedEventFromPayment(String idempotencyKey, Payment paymentToPublish) {
         return PaymentCreatedEvent.builder()
