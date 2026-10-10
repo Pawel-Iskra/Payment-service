@@ -1,4 +1,4 @@
-package priv.home.paymentservice.publisher.model;
+package priv.home.paymentservice.eventpublisher.model;
 
 import lombok.Builder;
 import lombok.Getter;

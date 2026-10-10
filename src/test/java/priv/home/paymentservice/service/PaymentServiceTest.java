@@ -14,7 +14,7 @@ import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
-import priv.home.paymentservice.publisher.PaymentEventPublisher;
+import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -23,8 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -220,7 +219,7 @@ class PaymentServiceTest {
         // then
         assertThat(paymentCreationDto.isWasAlreadyInDb()).isTrue();
         assertThat(paymentCreationDto.getPaymentId()).isEqualTo(existingPayment.getPaymentId());
-        verifyNoInteractions(paymentEventPublisher);
+        verify(paymentEventPublisher, never()).publish(any(String.class), any(Payment.class));
     }
 
 

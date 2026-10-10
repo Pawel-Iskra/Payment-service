@@ -9,7 +9,7 @@ import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
-import priv.home.paymentservice.publisher.PaymentEventPublisher;
+import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
 
 import java.util.Optional;
 import java.util.UUID;

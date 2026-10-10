@@ -1,4 +1,4 @@
-package priv.home.paymentservice.publisher;
+package priv.home.paymentservice.eventpublisher;
 
 import priv.home.paymentservice.model.Payment;
 

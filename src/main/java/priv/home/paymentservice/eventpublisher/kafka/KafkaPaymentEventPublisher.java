@@ -1,12 +1,12 @@
-package priv.home.paymentservice.publisher.kafka;
+package priv.home.paymentservice.eventpublisher.kafka;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import priv.home.paymentservice.model.Payment;
-import priv.home.paymentservice.publisher.PaymentEventPublisher;
-import priv.home.paymentservice.publisher.model.PaymentCreatedEvent;
+import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
+import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
 
 @Slf4j
 @Service
