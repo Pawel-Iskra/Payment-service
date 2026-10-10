@@ -14,6 +14,7 @@ import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
+import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -22,7 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +34,8 @@ class PaymentServiceTest {
 
     @Mock
     private PaymentStorageJdbc paymentStorageJdbc;
+    @Mock
+    private PaymentEventPublisher paymentEventPublisher;
     @InjectMocks
     private PaymentService underTest;
 
@@ -168,6 +171,55 @@ class PaymentServiceTest {
         DuplicateKeyException thrown = assertThrows(DuplicateKeyException.class, () ->
                 underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest));
         assertThat(thrown.getMessage()).isEqualTo(DUPLICATE_IDEMPOTENCY_KEY);
+    }
+
+    @Test
+    public void shouldCallPublishPaymentEventForPaymentCreate() {
+        // given
+        PaymentRequest paymentRequest = getValidPaymentRequest();
+        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
+                .thenReturn(Optional.empty());
+
+        // when
+        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+
+        // then
+        verify(paymentEventPublisher).publish(any(String.class), any(Payment.class));
+    }
+
+    @Test
+    public void shouldNotCallPublishPaymentEventForPaymentCreateWhenPaymentAlreadyExistInDb() {
+        // given
+        PaymentRequest paymentRequest = getValidPaymentRequest();
+        Payment payment = getValidPaymentFromRequest(paymentRequest);
+        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
+                .thenReturn(Optional.of(payment));
+
+        // when
+        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+
+        // then
+        verifyNoInteractions(paymentEventPublisher);
+    }
+
+    @Test
+    public void shouldNotPublishEventWhenDuplicateKeyExceptionAndPaymentExists() {
+        // given
+        PaymentRequest paymentRequest = getValidPaymentRequest();
+        Payment existingPayment = getValidPaymentFromRequest(paymentRequest);
+        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(existingPayment));
+        Mockito.doThrow(new DuplicateKeyException(DUPLICATE_IDEMPOTENCY_KEY))
+                .when(paymentStorageJdbc).addPaymentToStorage(any(), any());
+
+        // when
+        PaymentCreationDto paymentCreationDto = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+
+        // then
+        assertThat(paymentCreationDto.isWasAlreadyInDb()).isTrue();
+        assertThat(paymentCreationDto.getPaymentId()).isEqualTo(existingPayment.getPaymentId());
+        verify(paymentEventPublisher, never()).publish(any(String.class), any(Payment.class));
     }
 
 
