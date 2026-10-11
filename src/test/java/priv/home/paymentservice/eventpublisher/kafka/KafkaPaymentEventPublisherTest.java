@@ -48,7 +48,7 @@ class KafkaPaymentEventPublisherTest {
     public void shouldHandleCompletableFutureWhenEventSendSuccessfully(CapturedOutput output) {
         // given
         UUID paymentId = generateUuid();
-        Payment payment = getPayment(paymentId, VALID_AMOUNT, CURRENCY_PLN);
+        Payment payment = buildPayment(paymentId, VALID_AMOUNT, CURRENCY_PLN);
         CompletableFuture<SendResult<String, PaymentCreatedEvent>> completableFutureResult = new CompletableFuture<>();
         SendResult<String, PaymentCreatedEvent> sendResult = Mockito.mock(SendResult.class);
         Mockito.when(kafkaTemplate.send(any(String.class), any(String.class), any(PaymentCreatedEvent.class)))
@@ -79,7 +79,7 @@ class KafkaPaymentEventPublisherTest {
     public void shouldLogErrorWhenEventSendCompletedExceptionally(CapturedOutput output) {
         // given
         UUID paymentId = generateUuid();
-        Payment payment = getPayment(paymentId, VALID_AMOUNT, CURRENCY_PLN);
+        Payment payment = buildPayment(paymentId, VALID_AMOUNT, CURRENCY_PLN);
         CompletableFuture<SendResult<String, PaymentCreatedEvent>> completableFutureResult = new CompletableFuture<>();
         Mockito.when(kafkaTemplate.send(any(String.class), any(String.class), any(PaymentCreatedEvent.class)))
                 .thenReturn(completableFutureResult);
@@ -96,7 +96,7 @@ class KafkaPaymentEventPublisherTest {
     public void shouldLogErrorFromTryCatchWhenExceptionWhileEventSend(CapturedOutput output) {
         // given
         UUID paymentId = generateUuid();
-        Payment payment = getPayment(paymentId, VALID_AMOUNT, CURRENCY_PLN);
+        Payment payment = buildPayment(paymentId, VALID_AMOUNT, CURRENCY_PLN);
         Mockito.when(kafkaTemplate.send(any(String.class), any(String.class), any(PaymentCreatedEvent.class)))
                 .thenThrow(new RuntimeException());
 
@@ -108,7 +108,7 @@ class KafkaPaymentEventPublisherTest {
     }
 
 
-    private Payment getPayment(UUID paymentId, BigDecimal amount, String currency) {
+    private Payment buildPayment(UUID paymentId, BigDecimal amount, String currency) {
         return Payment.builder()
                 .paymentId(paymentId)
                 .amount(amount)

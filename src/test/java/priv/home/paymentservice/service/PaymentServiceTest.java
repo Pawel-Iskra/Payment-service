@@ -184,7 +184,7 @@ class PaymentServiceTest {
         underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
-        verify(paymentEventPublisher).publish(any(String.class), any(Payment.class));
+        verify(paymentEventPublisher, times(1)).publish(any(String.class), any(Payment.class));
     }
 
     @Test
