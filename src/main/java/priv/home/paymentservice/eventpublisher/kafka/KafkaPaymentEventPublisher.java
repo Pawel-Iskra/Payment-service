@@ -39,7 +39,10 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
                         log.info("PaymentCreatedEvent successfully acknowledged by Kafka, paymentId={}", paymentCreatedEvent.getPaymentId());
                     });
         } catch (Exception exception) { //  handle synchronous exceptions during send() invocation
-            log.info("Failed to initiate publishing of PaymentCreatedEvent, paymentId={}", paymentCreatedEvent.getPaymentId());
+            log.info(
+                    "Failed to initiate publishing of PaymentCreatedEvent, paymentId={}",
+                    paymentCreatedEvent.getPaymentId(),
+                    exception);
         }
     }
 

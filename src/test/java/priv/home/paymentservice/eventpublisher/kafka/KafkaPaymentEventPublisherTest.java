@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class KafkaPaymentEventPublisherTest {
 
+    private static final String IDEMPOTENCY_KEY = "abc-123";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String CURRENCY_PLN = "PLN";
     private static final String KAFKA_TOPIC = "payment-created";
@@ -58,7 +59,7 @@ class KafkaPaymentEventPublisherTest {
         ArgumentCaptor<String> paymentIdArgCpt = ArgumentCaptor.forClass(String.class);
 
         // when
-        underTest.publish(paymentId.toString(), payment);
+        underTest.publish(IDEMPOTENCY_KEY, payment);
         verify(kafkaTemplate).send(kafkaTopicArgCpt.capture(), paymentIdArgCpt.capture(), paymentCreatedEventArgCpt.capture());
         completableFutureResult.complete(sendResult);
 
@@ -68,11 +69,13 @@ class KafkaPaymentEventPublisherTest {
         String paymentIdWhileSending = paymentIdArgCpt.getValue();
 
         assertThat(output.getOut()).contains(EVENT_PUBLISHED_SUCCESSFULLY + paymentId);
+        assertThat(paymentCreatedEventToSend.getPaymentId()).isEqualTo(paymentId);
         assertThat(paymentCreatedEventToSend.getAmount()).isEqualTo(VALID_AMOUNT);
         assertThat(paymentCreatedEventToSend.getCurrency()).isEqualTo(CURRENCY_PLN);
+        assertThat(paymentCreatedEventToSend.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
+        assertThat(paymentCreatedEventToSend.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY);
         assertThat(kafkaTopicWhileSending).isEqualTo(KAFKA_TOPIC);
         assertThat(paymentIdWhileSending).isEqualTo(paymentId.toString());
-
     }
 
     @Test
@@ -85,7 +88,7 @@ class KafkaPaymentEventPublisherTest {
                 .thenReturn(completableFutureResult);
 
         // when
-        underTest.publish(paymentId.toString(), payment);
+        underTest.publish(IDEMPOTENCY_KEY, payment);
         completableFutureResult.completeExceptionally(new RuntimeException());
 
         // then
@@ -101,7 +104,7 @@ class KafkaPaymentEventPublisherTest {
                 .thenThrow(new RuntimeException());
 
         // when
-        underTest.publish(paymentId.toString(), payment);
+        underTest.publish(IDEMPOTENCY_KEY, payment);
 
         // then
         assertThat(output.getOut()).contains(PUBLISHING_INITIATION_FAILED + paymentId);
