@@ -27,7 +27,6 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
     @Override
     public void publish(String idempotencyKey, Payment paymentToPublish) {
-
         PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, paymentToPublish);
         try { // while initiation of sending
             kafkaTemplate.send(kafkaTopic, paymentCreatedEvent.getPaymentId().toString(), paymentCreatedEvent)

@@ -3,6 +3,7 @@ package priv.home.paymentservice.eventpublisher.kafka;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class KafkaPaymentEventPublisherTest {
@@ -43,28 +45,41 @@ class KafkaPaymentEventPublisherTest {
 
 
     @Test
-    public void shouldHandleCompletableFutureWhenEventSend(CapturedOutput output) {
+    public void shouldHandleCompletableFutureWhenEventSendSuccessfully(CapturedOutput output) {
         // given
         UUID paymentId = generateUuid();
-        Payment payment = getValidPayment(paymentId);
+        Payment payment = getPayment(paymentId, VALID_AMOUNT, CURRENCY_PLN);
         CompletableFuture<SendResult<String, PaymentCreatedEvent>> completableFutureResult = new CompletableFuture<>();
         SendResult<String, PaymentCreatedEvent> sendResult = Mockito.mock(SendResult.class);
         Mockito.when(kafkaTemplate.send(any(String.class), any(String.class), any(PaymentCreatedEvent.class)))
                 .thenReturn(completableFutureResult);
+        ArgumentCaptor<PaymentCreatedEvent> paymentCreatedEventArgCpt = ArgumentCaptor.forClass(PaymentCreatedEvent.class);
+        ArgumentCaptor<String> kafkaTopicArgCpt = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> paymentIdArgCpt = ArgumentCaptor.forClass(String.class);
 
         // when
         underTest.publish(paymentId.toString(), payment);
+        verify(kafkaTemplate).send(kafkaTopicArgCpt.capture(), paymentIdArgCpt.capture(), paymentCreatedEventArgCpt.capture());
         completableFutureResult.complete(sendResult);
 
         // then
+        PaymentCreatedEvent paymentCreatedEventToSend = paymentCreatedEventArgCpt.getValue();
+        String kafkaTopicWhileSending = kafkaTopicArgCpt.getValue();
+        String paymentIdWhileSending = paymentIdArgCpt.getValue();
+
         assertThat(output.getOut()).contains(EVENT_PUBLISHED_SUCCESSFULLY + paymentId);
+        assertThat(paymentCreatedEventToSend.getAmount()).isEqualTo(VALID_AMOUNT);
+        assertThat(paymentCreatedEventToSend.getCurrency()).isEqualTo(CURRENCY_PLN);
+        assertThat(kafkaTopicWhileSending).isEqualTo(KAFKA_TOPIC);
+        assertThat(paymentIdWhileSending).isEqualTo(paymentId.toString());
+
     }
 
     @Test
-    public void shouldLogErrorWhenEventSentCompletedExceptionally(CapturedOutput output) {
+    public void shouldLogErrorWhenEventSendCompletedExceptionally(CapturedOutput output) {
         // given
         UUID paymentId = generateUuid();
-        Payment payment = getValidPayment(paymentId);
+        Payment payment = getPayment(paymentId, VALID_AMOUNT, CURRENCY_PLN);
         CompletableFuture<SendResult<String, PaymentCreatedEvent>> completableFutureResult = new CompletableFuture<>();
         Mockito.when(kafkaTemplate.send(any(String.class), any(String.class), any(PaymentCreatedEvent.class)))
                 .thenReturn(completableFutureResult);
@@ -78,10 +93,10 @@ class KafkaPaymentEventPublisherTest {
     }
 
     @Test
-    public void shouldLogErrorFromTryCatchWhenExceptionWhileEventSent(CapturedOutput output) {
+    public void shouldLogErrorFromTryCatchWhenExceptionWhileEventSend(CapturedOutput output) {
         // given
         UUID paymentId = generateUuid();
-        Payment payment = getValidPayment(paymentId);
+        Payment payment = getPayment(paymentId, VALID_AMOUNT, CURRENCY_PLN);
         Mockito.when(kafkaTemplate.send(any(String.class), any(String.class), any(PaymentCreatedEvent.class)))
                 .thenThrow(new RuntimeException());
 
@@ -93,11 +108,11 @@ class KafkaPaymentEventPublisherTest {
     }
 
 
-    private Payment getValidPayment(UUID paymentId) {
+    private Payment getPayment(UUID paymentId, BigDecimal amount, String currency) {
         return Payment.builder()
                 .paymentId(paymentId)
-                .amount(VALID_AMOUNT)
-                .currency(CURRENCY_PLN)
+                .amount(amount)
+                .currency(currency)
                 .paymentStatus(PaymentStatus.CREATED)
                 .build();
     }
