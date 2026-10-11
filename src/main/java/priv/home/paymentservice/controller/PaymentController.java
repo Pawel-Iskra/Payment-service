@@ -28,9 +28,8 @@ public class PaymentController {
     @PostMapping
     public ResponseEntity<PaymentResponse> createPayment(
             @RequestHeader(value = IDEMPOTENCY_KEY) String idempotencyKey,
-            @Valid @RequestBody PaymentRequest paymentRequest
-    ) {
-
+            @Valid @RequestBody PaymentRequest paymentRequest)
+    {
         PaymentCreationDto paymentCreationDto = paymentService.createPayment(idempotencyKey, paymentRequest);
         if (paymentCreationDto.isWasAlreadyInDb()) {
             return new ResponseEntity<>(buildPaymentResponseFromPaymentCreationDto(paymentCreationDto), HttpStatus.OK);

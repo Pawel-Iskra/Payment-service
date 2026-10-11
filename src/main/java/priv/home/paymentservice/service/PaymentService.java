@@ -9,6 +9,7 @@ import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
+import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +20,7 @@ public class PaymentService {
 
 
     private final PaymentStorageJdbc paymentStorageJdbc;
+    private final PaymentEventPublisher eventPublisher;
 
 
     public PaymentCreationDto createPayment(String idempotencyKey, PaymentRequest paymentRequest) {
@@ -36,6 +38,7 @@ public class PaymentService {
             }
             throw duplicateKeyException;
         }
+        eventPublisher.publish(idempotencyKey, payment);
         return buildPaymentSuccessfulPersistedPaymentCreationDto(payment);
     }
 
