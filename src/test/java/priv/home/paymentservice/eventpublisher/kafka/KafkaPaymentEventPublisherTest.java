@@ -86,28 +86,36 @@ class KafkaPaymentEventPublisherTest {
         CompletableFuture<SendResult<String, PaymentCreatedEvent>> completableFutureResult = new CompletableFuture<>();
         Mockito.when(kafkaTemplate.send(any(String.class), any(String.class), any(PaymentCreatedEvent.class)))
                 .thenReturn(completableFutureResult);
+        String exceptionMessage = "Kafka broker unavailable";
 
         // when
         underTest.publish(IDEMPOTENCY_KEY, payment);
-        completableFutureResult.completeExceptionally(new RuntimeException());
+        completableFutureResult.completeExceptionally(new RuntimeException(exceptionMessage));
 
         // then
-        assertThat(output.getOut()).contains(ERROR_WHILE_PUBLISHING_EVENT + paymentId);
+        assertThat(output.getOut())
+                .contains(ERROR_WHILE_PUBLISHING_EVENT + paymentId)
+                .contains(RuntimeException.class.getCanonicalName())
+                .contains(exceptionMessage);
     }
 
     @Test
-    public void shouldLogErrorFromTryCatchWhenExceptionWhileEventSend(CapturedOutput output) {
+    public void shouldLogErrorWhenSendThrowsException(CapturedOutput output) {
         // given
         UUID paymentId = generateUuid();
         Payment payment = buildPayment(paymentId, VALID_AMOUNT, CURRENCY_PLN);
+        String exceptionMessage = "Error occurred while kafkaTemplate.send()";
         Mockito.when(kafkaTemplate.send(any(String.class), any(String.class), any(PaymentCreatedEvent.class)))
-                .thenThrow(new RuntimeException());
+                .thenThrow(new RuntimeException(exceptionMessage));
 
         // when
         underTest.publish(IDEMPOTENCY_KEY, payment);
 
         // then
-        assertThat(output.getOut()).contains(PUBLISHING_INITIATION_FAILED + paymentId);
+        assertThat(output.getOut())
+                .contains(PUBLISHING_INITIATION_FAILED + paymentId)
+                .contains(RuntimeException.class.getCanonicalName())
+                .contains(exceptionMessage);
     }
 
 

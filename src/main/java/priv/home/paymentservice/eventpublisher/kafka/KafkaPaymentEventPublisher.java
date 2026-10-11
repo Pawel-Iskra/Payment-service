@@ -28,19 +28,20 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
     @Override
     public void publish(String idempotencyKey, Payment paymentToPublish) {
         PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, paymentToPublish);
-        try { // while initiation of sending
+        try {
             kafkaTemplate.send(kafkaTopic, paymentCreatedEvent.getPaymentId().toString(), paymentCreatedEvent)
                     .whenComplete((result, exception) -> { // handle asynchronous completion of the send operation
                         if (exception != null) {
                             log.error("Error while publishing PaymentCreatedEvent, paymentId={}",
-                                    paymentCreatedEvent.getPaymentId(), exception);
+                                    paymentCreatedEvent.getPaymentId(),
+                                    exception);
                             return;
                         }
-                        log.info("PaymentCreatedEvent successfully acknowledged by Kafka, paymentId={}", paymentCreatedEvent.getPaymentId());
+                        log.info("PaymentCreatedEvent successfully acknowledged by Kafka, paymentId={}",
+                                paymentCreatedEvent.getPaymentId());
                     });
-        } catch (Exception exception) { //  handle synchronous exceptions during send() invocation
-            log.info(
-                    "Failed to initiate publishing of PaymentCreatedEvent, paymentId={}",
+        } catch (Exception exception) { // handle synchronous exceptions during send() invocation
+            log.error("Failed to initiate publishing of PaymentCreatedEvent, paymentId={}",
                     paymentCreatedEvent.getPaymentId(),
                     exception);
         }
