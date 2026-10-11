@@ -4,9 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
 import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
+import priv.home.paymentservice.model.Payment;
 
 @Slf4j
 @Service
@@ -29,16 +29,19 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
     public void publish(String idempotencyKey, Payment paymentToPublish) {
 
         PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, paymentToPublish);
-
-        kafkaTemplate.send(kafkaTopic, paymentCreatedEvent.getPaymentId().toString(), paymentCreatedEvent)
-                .whenComplete((result, exception) -> {
-                    if (exception != null) {
-                        log.error("Failed to publish PaymentCreatedEvent with id={}",
-                                paymentCreatedEvent.getPaymentId(), exception);
-                        return;
-                    }
-                    log.info("PaymentCreatedEvent published, paymentId={}", paymentCreatedEvent.getPaymentId());
-                });
+        try { // while initiation of sending
+            kafkaTemplate.send(kafkaTopic, paymentCreatedEvent.getPaymentId().toString(), paymentCreatedEvent)
+                    .whenComplete((result, exception) -> { // handle asynchronous completion of the send operation
+                        if (exception != null) {
+                            log.error("Error while publishing PaymentCreatedEvent, paymentId={}",
+                                    paymentCreatedEvent.getPaymentId(), exception);
+                            return;
+                        }
+                        log.info("PaymentCreatedEvent successfully acknowledged by Kafka, paymentId={}", paymentCreatedEvent.getPaymentId());
+                    });
+        } catch (Exception exception) { //  handle synchronous exceptions during send() invocation
+            log.info("Failed to initiate publishing of PaymentCreatedEvent, paymentId={}", paymentCreatedEvent.getPaymentId());
+        }
     }
 
 

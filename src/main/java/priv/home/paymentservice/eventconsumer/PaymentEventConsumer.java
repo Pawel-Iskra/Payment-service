@@ -1,4 +1,4 @@
-package priv.home.paymentservice.eventcomsumer;
+package priv.home.paymentservice.eventconsumer;
 
 
 import lombok.AllArgsConstructor;

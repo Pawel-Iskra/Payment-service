@@ -27,8 +27,9 @@ class KafkaPaymentEventPublisherTest {
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String CURRENCY_PLN = "PLN";
     private static final String KAFKA_TOPIC = "payment-created";
-    private static final String FAILED_TO_PUBLISH_EVENT = "Failed to publish PaymentCreatedEvent with id=";
-    private static final String EVENT_PUBLISHED = "PaymentCreatedEvent published, paymentId=";
+    private static final String ERROR_WHILE_PUBLISHING_EVENT = "Error while publishing PaymentCreatedEvent, paymentId=";
+    private static final String EVENT_PUBLISHED_SUCCESSFULLY = "PaymentCreatedEvent successfully acknowledged by Kafka, paymentId=";
+    private static final String PUBLISHING_INITIATION_FAILED = "Failed to initiate publishing of PaymentCreatedEvent, paymentId=";
 
     @Mock
     private KafkaTemplate<String, PaymentCreatedEvent> kafkaTemplate;
@@ -56,11 +57,11 @@ class KafkaPaymentEventPublisherTest {
         completableFutureResult.complete(sendResult);
 
         // then
-        assertThat(output.getOut()).contains(EVENT_PUBLISHED + paymentId);
+        assertThat(output.getOut()).contains(EVENT_PUBLISHED_SUCCESSFULLY + paymentId);
     }
 
     @Test
-    public void shouldLogErrorWhenExceptionWhileEventSent(CapturedOutput output) {
+    public void shouldLogErrorWhenEventSentCompletedExceptionally(CapturedOutput output) {
         // given
         UUID paymentId = generateUuid();
         Payment payment = getValidPayment(paymentId);
@@ -73,7 +74,22 @@ class KafkaPaymentEventPublisherTest {
         completableFutureResult.completeExceptionally(new RuntimeException());
 
         // then
-        assertThat(output.getOut()).contains(FAILED_TO_PUBLISH_EVENT + paymentId);
+        assertThat(output.getOut()).contains(ERROR_WHILE_PUBLISHING_EVENT + paymentId);
+    }
+
+    @Test
+    public void shouldLogErrorFromTryCatchWhenExceptionWhileEventSent(CapturedOutput output) {
+        // given
+        UUID paymentId = generateUuid();
+        Payment payment = getValidPayment(paymentId);
+        Mockito.when(kafkaTemplate.send(any(String.class), any(String.class), any(PaymentCreatedEvent.class)))
+                .thenThrow(new RuntimeException());
+
+        // when
+        underTest.publish(paymentId.toString(), payment);
+
+        // then
+        assertThat(output.getOut()).contains(PUBLISHING_INITIATION_FAILED + paymentId);
     }
 
 
