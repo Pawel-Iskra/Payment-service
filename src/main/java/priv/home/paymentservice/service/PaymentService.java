@@ -8,9 +8,9 @@ import org.springframework.stereotype.Service;
 import priv.home.paymentservice.data.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
-import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
 import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
 import priv.home.paymentservice.model.Payment;
+import priv.home.paymentservice.model.PaymentEventType;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 
@@ -21,9 +21,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class PaymentService {
 
-
     private final PaymentStorageJdbc paymentStorageJdbc;
-    private final PaymentEventPublisher eventPublisher;
 
 
     public PaymentCreationDto createPayment(String idempotencyKey, PaymentRequest paymentRequest) {
@@ -45,9 +43,8 @@ public class PaymentService {
         paymentStorageJdbc.addPaymentEventToOutbox(
                 generateUuid(),
                 payment.getPaymentId(),
-                PaymentCreatedEvent.class.getName(),
+                PaymentEventType.PAYMENT_CREATED_EVENT.name(),
                 generatePayload(paymentCreatedEvent));
-        eventPublisher.publish(idempotencyKey, payment);
         return buildPaymentSuccessfulPersistedPaymentCreationDto(payment);
     }
 

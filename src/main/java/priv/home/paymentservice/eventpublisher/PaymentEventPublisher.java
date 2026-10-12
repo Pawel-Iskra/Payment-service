@@ -1,8 +1,10 @@
 package priv.home.paymentservice.eventpublisher;
 
-import priv.home.paymentservice.model.Payment;
+import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
+
+import java.util.Collection;
 
 public interface PaymentEventPublisher {
 
-    void publish(String idempotencyKey, Payment paymentToPublish);
+    void publishPaymentEvents(Collection<PaymentCreatedEvent> eventsToPublish);
 }

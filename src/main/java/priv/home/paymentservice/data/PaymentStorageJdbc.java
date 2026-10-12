@@ -8,6 +8,7 @@ import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,6 +31,9 @@ public class PaymentStorageJdbc {
     private static final String INSERT_INTO_OUTBOX_EVENT_SQL = """
             INSERT INTO outbox_event (event_id, aggregate_id, event_type, payload, created_at)
             VALUES (?, ?, ?, CAST(? AS JSONB), ?)""";
+    private static final String SELECT_EVENTS_TO_PUBLISH_FROM_OUTBOX_EVENT_SQL = """
+            SELECT payload FROM outbox_event
+            WHERE published_at is NULL""";
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -86,5 +90,10 @@ public class PaymentStorageJdbc {
                 payload,
                 LocalDateTime.now()
         );
+    }
+
+    public List<String> retrieveEventsForPublish() {
+        return jdbcTemplate.query(SELECT_EVENTS_TO_PUBLISH_FROM_OUTBOX_EVENT_SQL,
+                (rs, rowNum) -> rs.getString("payload"));
     }
 }

@@ -11,10 +11,11 @@ import org.springframework.dao.DuplicateKeyException;
 import priv.home.paymentservice.data.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
+import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
+import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
-import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -173,22 +174,22 @@ class PaymentServiceTest {
         assertThat(thrown.getMessage()).isEqualTo(DUPLICATE_IDEMPOTENCY_KEY);
     }
 
+//    @Test
+//    public void shouldCallPublishPaymentEventForPaymentCreate() { // no more
+//        // given
+//        PaymentRequest paymentRequest = getValidPaymentRequest();
+//        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
+//                .thenReturn(Optional.empty());
+//
+//        // when
+//        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+//
+//        // then
+//        verify(paymentEventPublisher, times(1)).publishPaymentEvents(any());
+//    }
+
     @Test
-    public void shouldCallPublishPaymentEventForPaymentCreate() {
-        // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
-        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
-                .thenReturn(Optional.empty());
-
-        // when
-        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
-
-        // then
-        verify(paymentEventPublisher, times(1)).publish(eq(IDEMPOTENCY_KEY), any(Payment.class));
-    }
-
-    @Test
-    public void shouldNotCallPublishPaymentEventForPaymentCreateWhenPaymentAlreadyExistInDb() {
+    public void shouldNotCallPublishPaymentEventForPaymentCreateWhenPaymentAlreadyExistInDb() { // also no more
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
         Payment payment = getValidPaymentFromRequest(paymentRequest);
@@ -219,7 +220,7 @@ class PaymentServiceTest {
         // then
         assertThat(paymentCreationDto.isWasAlreadyInDb()).isTrue();
         assertThat(paymentCreationDto.getPaymentId()).isEqualTo(existingPayment.getPaymentId());
-        verify(paymentEventPublisher, never()).publish(any(String.class), any(Payment.class));
+        verify(paymentEventPublisher, never()).publishPaymentEvents(any());
     }
 
 
@@ -229,6 +230,16 @@ class PaymentServiceTest {
                 .amount(validPaymentRequest.amount())
                 .currency(validPaymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
+                .build();
+    }
+
+    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(String idempotencyKey, Payment paymentToPublish) {
+        return PaymentCreatedEvent.builder()
+                .paymentId(paymentToPublish.getPaymentId())
+                .amount(paymentToPublish.getAmount())
+                .currency(paymentToPublish.getCurrency())
+                .paymentStatus(paymentToPublish.getPaymentStatus())
+                .idempotencyKey(idempotencyKey)
                 .build();
     }
 

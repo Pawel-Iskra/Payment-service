@@ -16,6 +16,7 @@ import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -59,7 +60,7 @@ class KafkaPaymentEventPublisherTest {
         ArgumentCaptor<String> paymentIdArgCpt = ArgumentCaptor.forClass(String.class);
 
         // when
-        underTest.publish(IDEMPOTENCY_KEY, payment);
+        underTest.publishPaymentEvents(List.of(getPaymentCreatedEventFromPayment(IDEMPOTENCY_KEY, payment)));
         verify(kafkaTemplate).send(kafkaTopicArgCpt.capture(), paymentIdArgCpt.capture(), paymentCreatedEventArgCpt.capture());
         completableFutureResult.complete(sendResult);
 
@@ -89,7 +90,7 @@ class KafkaPaymentEventPublisherTest {
         String exceptionMessage = "Kafka broker unavailable";
 
         // when
-        underTest.publish(IDEMPOTENCY_KEY, payment);
+        underTest.publishPaymentEvents(List.of(getPaymentCreatedEventFromPayment(IDEMPOTENCY_KEY, payment)));
         completableFutureResult.completeExceptionally(new RuntimeException(exceptionMessage));
 
         // then
@@ -109,7 +110,7 @@ class KafkaPaymentEventPublisherTest {
                 .thenThrow(new RuntimeException(exceptionMessage));
 
         // when
-        underTest.publish(IDEMPOTENCY_KEY, payment);
+        underTest.publishPaymentEvents(List.of(getPaymentCreatedEventFromPayment(IDEMPOTENCY_KEY, payment)));
 
         // then
         assertThat(output.getOut())
@@ -118,6 +119,16 @@ class KafkaPaymentEventPublisherTest {
                 .contains(exceptionMessage);
     }
 
+
+    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(String idempotencyKey, Payment paymentToPublish) {
+        return PaymentCreatedEvent.builder()
+                .paymentId(paymentToPublish.getPaymentId())
+                .amount(paymentToPublish.getAmount())
+                .currency(paymentToPublish.getCurrency())
+                .paymentStatus(paymentToPublish.getPaymentStatus())
+                .idempotencyKey(idempotencyKey)
+                .build();
+    }
 
     private Payment buildPayment(UUID paymentId, BigDecimal amount, String currency) {
         return Payment.builder()
