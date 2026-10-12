@@ -9,3 +9,5 @@ databaseChangeLog:
       file: db/changelog/changesets/004-modify-timestamp-in-outbox-event-table.xml
   - include:
       file: db/changelog/changesets/005-modify-timestamp-in-outbox-event-table.xml
+  - include:
+      file: db/changelog/changesets/006-modify-column-name-in-outbox-event-table.xml

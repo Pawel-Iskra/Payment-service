@@ -1,15 +1,18 @@
 package priv.home.paymentservice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import priv.home.paymentservice.data.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
+import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
+import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
-import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -38,6 +41,12 @@ public class PaymentService {
             }
             throw duplicateKeyException;
         }
+        PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, payment);
+        paymentStorageJdbc.addPaymentEventToOutbox(
+                generateUuid(),
+                payment.getPaymentId(),
+                PaymentCreatedEvent.class.getName(),
+                generatePayload(paymentCreatedEvent));
         eventPublisher.publish(idempotencyKey, payment);
         return buildPaymentSuccessfulPersistedPaymentCreationDto(payment);
     }
@@ -81,7 +90,6 @@ public class PaymentService {
                 .build();
     }
 
-
     private Payment buildPaymentFromDto(PaymentRequest paymentRequest) {
         return Payment.builder()
                 .paymentId(generateUuid())
@@ -89,6 +97,26 @@ public class PaymentService {
                 .currency(paymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
                 .build();
+    }
+
+    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(String idempotencyKey, Payment paymentToPublish) {
+        return PaymentCreatedEvent.builder()
+                .paymentId(paymentToPublish.getPaymentId())
+                .amount(paymentToPublish.getAmount())
+                .currency(paymentToPublish.getCurrency())
+                .paymentStatus(paymentToPublish.getPaymentStatus())
+                .idempotencyKey(idempotencyKey)
+                .build();
+    }
+
+    private String generatePayload(PaymentCreatedEvent paymentCreatedEvent) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            return objectMapper.writeValueAsString(paymentCreatedEvent);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize object PaymentCreatedEvent to JSON, paymentId="
+                    + paymentCreatedEvent.getPaymentId(), e);
+        }
     }
 
     private UUID generateUuid() {
