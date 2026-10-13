@@ -92,7 +92,7 @@ class PaymentStorageContainerLiquibaseTest {
         Payment payment = getValidPayment(paymentId);
 
         // when
-        paymentStorageJdbc.addPaymentToStorage(IDEMPOTENCY_KEY_FIRST, payment);
+        paymentStorageJdbc.insertPaymentIfAbsent(IDEMPOTENCY_KEY_FIRST, payment);
 
         // then
         Payment paymentFromDb = jdbcTemplate.queryForObject(
@@ -134,7 +134,7 @@ class PaymentStorageContainerLiquibaseTest {
         Callable<Boolean> insertPayment = () -> {
             startThreadsForInsert.await();
             try {
-                paymentStorageJdbc.addPaymentToStorage(IDEMPOTENCY_KEY_SECOND, payment);
+                paymentStorageJdbc.insertPaymentIfAbsent(IDEMPOTENCY_KEY_SECOND, payment);
                 return true;
             } catch (DuplicateKeyException exception) {
                 return false;

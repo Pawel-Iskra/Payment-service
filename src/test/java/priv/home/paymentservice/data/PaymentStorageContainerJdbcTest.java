@@ -92,7 +92,7 @@ class PaymentStorageContainerJdbcTest {
         Payment payment = getValidPayment(paymentId);
 
         // when
-        paymentStorageJdbc.addPaymentToStorage(IDEMPOTENCY_KEY_VALUE, payment);
+        paymentStorageJdbc.insertPaymentIfAbsent(IDEMPOTENCY_KEY_VALUE, payment);
 
         // then
         Payment paymentFromDb = jdbcTemplate.queryForObject(

@@ -56,7 +56,7 @@ class PaymentServiceTest {
         underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
-        verify(paymentStorageJdbc).addPaymentToStorage(any(String.class), any(Payment.class));
+        verify(paymentStorageJdbc).insertPaymentIfAbsent(any(String.class), any(Payment.class));
     }
 
     @Test
@@ -67,7 +67,7 @@ class PaymentServiceTest {
 
         // when + then
         underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
-        verify(paymentStorageJdbc).addPaymentToStorage(any(String.class), paymentArgumentCaptor.capture());
+        verify(paymentStorageJdbc).insertPaymentIfAbsent(any(String.class), paymentArgumentCaptor.capture());
         Payment savedPayment = paymentArgumentCaptor.getValue();
 
         assertThat(savedPayment.getAmount()).isEqualTo(paymentRequest.amount());
@@ -151,7 +151,7 @@ class PaymentServiceTest {
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(payment));
         Mockito.doThrow(new DuplicateKeyException(DUPLICATE_IDEMPOTENCY_KEY))
-                .when(paymentStorageJdbc).addPaymentToStorage(any(), any());
+                .when(paymentStorageJdbc).insertPaymentIfAbsent(any(), any());
 
         // when
         PaymentCreationDto paymentCreationDto = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
@@ -172,7 +172,7 @@ class PaymentServiceTest {
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.empty());
         Mockito.doThrow(new DuplicateKeyException(DUPLICATE_IDEMPOTENCY_KEY))
-                .when(paymentStorageJdbc).addPaymentToStorage(any(), any());
+                .when(paymentStorageJdbc).insertPaymentIfAbsent(any(), any());
 
         // when + then
         DuplicateKeyException thrown = assertThrows(DuplicateKeyException.class, () ->
@@ -218,7 +218,7 @@ class PaymentServiceTest {
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(existingPayment));
         Mockito.doThrow(new DuplicateKeyException(DUPLICATE_IDEMPOTENCY_KEY))
-                .when(paymentStorageJdbc).addPaymentToStorage(any(), any());
+                .when(paymentStorageJdbc).insertPaymentIfAbsent(any(), any());
 
         // when
         PaymentCreationDto paymentCreationDto = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);

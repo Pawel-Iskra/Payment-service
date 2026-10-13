@@ -1,7 +1,6 @@
 package priv.home.paymentservice.service;
 
 import lombok.AllArgsConstructor;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import priv.home.paymentservice.data.OutboxStorageJdbc;
@@ -27,29 +26,27 @@ public class PaymentService {
     private final ObjectMapper objectMapper;
 
 
-    @Transactional  // TODO: new approach use SQL ON CONFLICT instead of DuplicateKeyException
+    @Transactional
     public PaymentCreationDto createPayment(String idempotencyKey, PaymentRequest paymentRequest) {
         Optional<Payment> paymentFromDbOptional = retrieveSinglePaymentByIdempotencyKey(idempotencyKey);
         if (paymentFromDbOptional.isPresent()) {
             return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDbOptional.get());
         }
-        Payment payment = buildPaymentFromDto(paymentRequest);
-        try {
-            paymentStorageJdbc.addPaymentToStorage(idempotencyKey, payment);
-        } catch (DuplicateKeyException duplicateKeyException) {
-            paymentFromDbOptional = retrieveSinglePaymentByIdempotencyKey(idempotencyKey);
-            if (paymentFromDbOptional.isPresent()) {
-                return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDbOptional.get());
-            }
-            throw duplicateKeyException;
+        Payment paymentToInsert = buildPaymentFromDto(paymentRequest);
+        Optional<Payment> insertedPaymentOptional = paymentStorageJdbc.insertPaymentIfAbsent(idempotencyKey, paymentToInsert);
+        if (insertedPaymentOptional.isEmpty()) {
+            Payment paymentFromDb = paymentStorageJdbc.retrievePaymentByIdempotencyKey(idempotencyKey)
+                    .orElseThrow(() -> new IllegalStateException("Payment not found after idempotency conflict"));
+            return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDb);
         }
-        PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, payment);
+        Payment paymentInserted = insertedPaymentOptional.get();
+        PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, paymentInserted);
         outboxStorageJdbc.addPaymentEventToOutbox(
                 generateUuid(),
-                payment.getPaymentId(),
+                paymentInserted.getPaymentId(),
                 PaymentEventType.PAYMENT_CREATED_EVENT.name(),
                 generatePayload(paymentCreatedEvent));
-        return buildPaymentSuccessfulPersistedPaymentCreationDto(payment);
+        return buildPaymentSuccessfulPersistedPaymentCreationDto(paymentInserted);
     }
 
     public Optional<PaymentResponse> retrieveSinglePaymentByPaymentId(UUID paymentId) {
