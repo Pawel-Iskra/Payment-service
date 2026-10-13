@@ -3,6 +3,8 @@ package priv.home.paymentservice.service;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import priv.home.paymentservice.data.OutboxStorageJdbc;
 import priv.home.paymentservice.data.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
@@ -21,9 +23,11 @@ import java.util.UUID;
 public class PaymentService {
 
     private final PaymentStorageJdbc paymentStorageJdbc;
+    private final OutboxStorageJdbc outboxStorageJdbc;
     private final ObjectMapper objectMapper;
 
 
+    @Transactional  // TODO: new approach use SQL ON CONFLICT instead of DuplicateKeyException
     public PaymentCreationDto createPayment(String idempotencyKey, PaymentRequest paymentRequest) {
         Optional<Payment> paymentFromDbOptional = retrieveSinglePaymentByIdempotencyKey(idempotencyKey);
         if (paymentFromDbOptional.isPresent()) {
@@ -40,7 +44,7 @@ public class PaymentService {
             throw duplicateKeyException;
         }
         PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, payment);
-        paymentStorageJdbc.addPaymentEventToOutbox(
+        outboxStorageJdbc.addPaymentEventToOutbox(
                 generateUuid(),
                 payment.getPaymentId(),
                 PaymentEventType.PAYMENT_CREATED_EVENT.name(),

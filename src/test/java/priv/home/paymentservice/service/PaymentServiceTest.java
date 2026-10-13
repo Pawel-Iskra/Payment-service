@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
+import priv.home.paymentservice.data.OutboxStorageJdbc;
 import priv.home.paymentservice.data.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
@@ -38,6 +39,8 @@ class PaymentServiceTest {
     private ObjectMapper objectMapper;
     @Mock
     private PaymentStorageJdbc paymentStorageJdbc;
+    @Mock
+    private OutboxStorageJdbc outboxStorageJdbc;
     @Mock
     private PaymentEventPublisher paymentEventPublisher;
     @InjectMocks

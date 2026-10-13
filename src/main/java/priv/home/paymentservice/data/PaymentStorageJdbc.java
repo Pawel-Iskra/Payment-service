@@ -3,15 +3,14 @@ package priv.home.paymentservice.data;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Component
+@Repository
 @AllArgsConstructor
 public class PaymentStorageJdbc {
 
@@ -27,12 +26,6 @@ public class PaymentStorageJdbc {
             SELECT payment_id, amount, currency, payment_status
             FROM payment
             WHERE  idempotency_key = ?""";
-    private static final String INSERT_INTO_OUTBOX_EVENT_SQL = """
-            INSERT INTO outbox_event (event_id, aggregate_id, event_type, payload)
-            VALUES (?, ?, ?, CAST(? AS JSONB))""";
-    private static final String SELECT_EVENTS_TO_PUBLISH_FROM_OUTBOX_EVENT_SQL = """
-            SELECT payload FROM outbox_event
-            WHERE published_at is NULL""";
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -78,20 +71,5 @@ public class PaymentStorageJdbc {
             resultFromDb = Optional.empty();
         }
         return resultFromDb;
-    }
-
-    public void addPaymentEventToOutbox(UUID eventId, UUID aggregate_id, String eventType, String payload) {
-        jdbcTemplate.update(
-                INSERT_INTO_OUTBOX_EVENT_SQL,
-                eventId,
-                aggregate_id,
-                eventType,
-                payload
-        );
-    }
-
-    public List<String> retrieveEventsForPublish() {
-        return jdbcTemplate.query(SELECT_EVENTS_TO_PUBLISH_FROM_OUTBOX_EVENT_SQL,
-                (rs, rowNum) -> rs.getString("payload"));
     }
 }
