@@ -29,42 +29,42 @@ The project is developed incrementally, with an emphasis on clean code, automate
 
 ## Completed Tasks
 
-### Task 01 — Basic Payment REST API
+#### Task 01 — Basic Payment REST API
 **Goal:** Build the initial payment creation endpoint and establish a layered application structure.
 
 - REST endpoint for payment creation (`POST /api/payments`) with request and response DTOs.
 - Separation of Controller, Service, and Storage layers.
 - Payment domain model, payment status, and unit tests.
 
-### Task 02 — Payment Retrieval and Error Handling
+#### Task 02 — Payment Retrieval and Error Handling
 **Goal:** Retrieve payments by ID and handle missing resources consistently.
 
 - Payment retrieval with `GET /api/payments/{paymentId}` and `Optional`.
 - Custom exception handling for missing payments (`404 Not Found`).
 - Centralized exception handling with `@ControllerAdvice`.
 
-### Task 03 — REST API Integration Testing
+#### Task 03 — REST API Integration Testing
 **Goal:** Verify HTTP endpoints and request validation at the web layer.
 
 - MVC tests using `@WebMvcTest` and `MockMvc`.
 - Tests for successful payment creation and retrieval.
 - Tests for invalid requests and missing payments.
 
-### Task 04 — PostgreSQL Persistence
+#### Task 04 — PostgreSQL Persistence
 **Goal:** Replace in-memory storage with persistent database storage.
 
 - PostgreSQL integration using Spring JDBC and `JdbcTemplate`.
 - Database schema management with Liquibase changesets.
 - PostgreSQL integration tests using Testcontainers.
 
-### Task 05 — Idempotent Payment Creation
+#### Task 05 — Idempotent Payment Creation
 **Goal:** Prevent duplicate payments when clients retry requests.
 
-- `Idempotency-Key` handling and database-level uniqueness constraints.
+- Idempotency-Key handling and database-level uniqueness constraints.
 - Duplicate request handling and consistent HTTP responses.
 - Tests for repeated requests and concurrent inserts.
 
-### Task 06 — Kafka Event-Driven Communication
+#### Task 06 — Kafka Event-Driven Communication
 **Goal:** Publish payment creation events and consume them asynchronously.
 
 - Kafka producer and consumer using Spring Kafka.
@@ -73,7 +73,7 @@ The project is developed incrementally, with an emphasis on clean code, automate
 
 ## In Progress
 
-### Task 07 — Transactional Outbox Pattern
+#### Task 07 — Transactional Outbox Pattern
 **Goal:** Ensure payment persistence and event recording are atomic, with reliable asynchronous publication to Kafka.
 
 - Separate payment and outbox storage.
