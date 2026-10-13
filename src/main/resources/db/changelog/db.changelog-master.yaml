@@ -11,3 +11,5 @@ databaseChangeLog:
       file: db/changelog/changesets/005-modify-timestamp-in-outbox-event-table.xml
   - include:
       file: db/changelog/changesets/006-modify-column-name-in-outbox-event-table.xml
+  - include:
+      file: db/changelog/changesets/007-modify-column-default-value-in-outbox-event-table.xml

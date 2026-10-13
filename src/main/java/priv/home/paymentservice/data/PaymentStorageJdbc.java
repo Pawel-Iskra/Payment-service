@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,8 +28,8 @@ public class PaymentStorageJdbc {
             FROM payment
             WHERE  idempotency_key = ?""";
     private static final String INSERT_INTO_OUTBOX_EVENT_SQL = """
-            INSERT INTO outbox_event (event_id, aggregate_id, event_type, payload, created_at)
-            VALUES (?, ?, ?, CAST(? AS JSONB), ?)""";
+            INSERT INTO outbox_event (event_id, aggregate_id, event_type, payload)
+            VALUES (?, ?, ?, CAST(? AS JSONB))""";
     private static final String SELECT_EVENTS_TO_PUBLISH_FROM_OUTBOX_EVENT_SQL = """
             SELECT payload FROM outbox_event
             WHERE published_at is NULL""";
@@ -87,8 +86,7 @@ public class PaymentStorageJdbc {
                 eventId,
                 aggregate_id,
                 eventType,
-                payload,
-                LocalDateTime.now()
+                payload
         );
     }
 

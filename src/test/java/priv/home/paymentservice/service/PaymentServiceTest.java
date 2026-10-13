@@ -16,6 +16,7 @@ import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
+import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -33,6 +34,8 @@ class PaymentServiceTest {
     private static final String IDEMPOTENCY_KEY = "abc-123";
     private static final String DUPLICATE_IDEMPOTENCY_KEY = "Duplicate idempotency key";
 
+    @Mock
+    private ObjectMapper objectMapper;
     @Mock
     private PaymentStorageJdbc paymentStorageJdbc;
     @Mock

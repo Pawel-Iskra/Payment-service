@@ -1,7 +1,5 @@
 package priv.home.paymentservice.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -13,6 +11,7 @@ import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentEventType;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -22,6 +21,7 @@ import java.util.UUID;
 public class PaymentService {
 
     private final PaymentStorageJdbc paymentStorageJdbc;
+    private final ObjectMapper objectMapper;
 
 
     public PaymentCreationDto createPayment(String idempotencyKey, PaymentRequest paymentRequest) {
@@ -107,13 +107,7 @@ public class PaymentService {
     }
 
     private String generatePayload(PaymentCreatedEvent paymentCreatedEvent) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            return objectMapper.writeValueAsString(paymentCreatedEvent);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize object PaymentCreatedEvent to JSON, paymentId="
-                    + paymentCreatedEvent.getPaymentId(), e);
-        }
+        return objectMapper.writeValueAsString(paymentCreatedEvent);
     }
 
     private UUID generateUuid() {
