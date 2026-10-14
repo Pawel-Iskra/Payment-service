@@ -12,7 +12,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class OutboxStorageJdbc {
 
-    private static final String INSERT_INTO_SQL = """
+    private static final String INSERT_EVENT_SQL = """
             INSERT INTO outbox_event (event_id, aggregate_id, event_type, payload)
             VALUES (?, ?, ?, CAST(? AS JSONB))""";
     private static final String SELECT_EVENTS_TO_PUBLISH_SQL = """
@@ -24,7 +24,7 @@ public class OutboxStorageJdbc {
 
     public void addPaymentEventToOutbox(UUID eventId, UUID aggregate_id, String eventType, String payload) {
         jdbcTemplate.update(
-                INSERT_INTO_SQL,
+                INSERT_EVENT_SQL,
                 eventId,
                 aggregate_id,
                 eventType,

@@ -35,7 +35,7 @@ public class PaymentService {
         Payment paymentToInsert = buildPaymentFromDto(paymentRequest);
         Optional<Payment> insertedPaymentOptional = paymentStorageJdbc.insertPaymentIfAbsent(idempotencyKey, paymentToInsert);
         if (insertedPaymentOptional.isEmpty()) {
-            Payment paymentFromDb = paymentStorageJdbc.retrievePaymentByIdempotencyKey(idempotencyKey)
+            Payment paymentFromDb = retrieveSinglePaymentByIdempotencyKey(idempotencyKey)
                     .orElseThrow(() -> new IllegalStateException("Payment not found after idempotency conflict"));
             return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDb);
         }

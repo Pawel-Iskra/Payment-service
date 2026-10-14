@@ -16,16 +16,16 @@ import java.util.UUID;
 public class PaymentStorageJdbc {
 
 
-    private static final String INSERT_INTO_SQL = """
+    private static final String INSERT_PAYMENT_SQL = """
             INSERT INTO payment (payment_id, amount, currency, payment_status, idempotency_key)
             VALUES (?, ?, ?, ?, ?)
             ON CONFLICT (idempotency_key) DO NOTHING
             RETURNING payment_id, amount, currency, payment_status""";
-    private static final String SELECT_BY_ID_SQL = """
+    private static final String SELECT_PAYMENT_BY_ID_SQL = """
             SELECT payment_id, amount, currency, payment_status
             FROM payment
             WHERE  payment_id = ?""";
-    private static final String SELECT_BY_IDEMPOTENCY_KEY_SQL = """
+    private static final String SELECT_PAYMENT_BY_IDEMPOTENCY_KEY_SQL = """
             SELECT payment_id, amount, currency, payment_status
             FROM payment
             WHERE  idempotency_key = ?""";
@@ -42,7 +42,7 @@ public class PaymentStorageJdbc {
 
     public Optional<Payment> insertPaymentIfAbsent(String idempotencyKey, Payment payment) {
         return jdbcTemplate.query(
-                INSERT_INTO_SQL,
+                INSERT_PAYMENT_SQL,
                 resultSet -> resultSet.next() ?
                         Optional.of(PAYMENT_ROW_MAPPER.mapRow(resultSet, 0)) : Optional.empty(),
                 payment.getPaymentId(),
@@ -57,7 +57,7 @@ public class PaymentStorageJdbc {
         Optional<Payment> resultFromDb;
         try {
             resultFromDb = Optional.ofNullable(jdbcTemplate.queryForObject(
-                    SELECT_BY_ID_SQL,
+                    SELECT_PAYMENT_BY_ID_SQL,
                     PAYMENT_ROW_MAPPER,
                     paymentId));
         } catch (EmptyResultDataAccessException exception) {
@@ -70,12 +70,12 @@ public class PaymentStorageJdbc {
         Optional<Payment> resultFromDb;
         try {
             resultFromDb = Optional.ofNullable(jdbcTemplate.queryForObject(
-                    SELECT_BY_IDEMPOTENCY_KEY_SQL,
+                    SELECT_PAYMENT_BY_IDEMPOTENCY_KEY_SQL,
                     PAYMENT_ROW_MAPPER,
                     idempotencyKey));
         } catch (EmptyResultDataAccessException exception) {
             resultFromDb = Optional.empty();
-        }
+        } // try/catch: infrastructure layer explains infra exception into the contract required by the higher layer
         return resultFromDb;
     }
 }
