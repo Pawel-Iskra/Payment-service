@@ -16,7 +16,7 @@ import java.util.UUID;
 public class PaymentStorageJdbc {
 
 
-    private static final String INSERT_PAYMENT_SQL = """
+    private static final String INSERT_PAYMENT_ON_CONFLICT_DO_NOTHING_SQL = """
             INSERT INTO payment (payment_id, amount, currency, payment_status, idempotency_key)
             VALUES (?, ?, ?, ?, ?)
             ON CONFLICT (idempotency_key) DO NOTHING
@@ -42,7 +42,7 @@ public class PaymentStorageJdbc {
 
     public Optional<Payment> insertPaymentIfAbsent(String idempotencyKey, Payment payment) {
         return jdbcTemplate.query(
-                INSERT_PAYMENT_SQL,
+                INSERT_PAYMENT_ON_CONFLICT_DO_NOTHING_SQL,
                 resultSet -> resultSet.next() ?
                         Optional.of(PAYMENT_ROW_MAPPER.mapRow(resultSet, 0)) : Optional.empty(),
                 payment.getPaymentId(),
