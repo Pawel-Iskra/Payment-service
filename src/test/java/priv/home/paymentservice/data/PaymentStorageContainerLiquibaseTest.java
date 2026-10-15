@@ -150,15 +150,6 @@ class PaymentStorageContainerLiquibaseTest {
         assertThat(countRecords).isOne();
     }
 
-    @Test
-    public void shouldRollbackPaymentInsertIfOutboxInsertThrowsException(){
-        // given
-
-        // when
-
-        // then
-    }
-
 
     private Payment getValidPayment(UUID paymentId) {
         return Payment.builder()
