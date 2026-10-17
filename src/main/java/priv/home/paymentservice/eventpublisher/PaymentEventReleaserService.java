@@ -20,10 +20,10 @@ public class PaymentEventReleaserService {
 
     public void publishPaymentCreatedEvents() {
         List<OutboxEventToPublish> outboxEventsToPublish = outboxStorageJdbc.retrieveEventsForPublish();
-        log.info("START of event publishing. Amount of events = {}", outboxEventsToPublish.size());
+        log.info("Amount of events to publish = {}", outboxEventsToPublish.size());
 
         List<UUID> listOfAcknowledgedEventsId = paymentEventPublisher.publishPaymentEvents(outboxEventsToPublish);
-        log.info("END of event publishing. Amount of published events acknowledged by publisher = {}", listOfAcknowledgedEventsId.size());
-        int updatedRecordsInOutboxEventTAble = outboxStorageJdbc.markEventsAsPublished(listOfAcknowledgedEventsId);
+        log.info("Amount of published events acknowledged by publisher = {}", listOfAcknowledgedEventsId.size());
+        int amountOfUpdatedRecords = outboxStorageJdbc.markEventsAsPublished(listOfAcknowledgedEventsId);
     }
 }

@@ -34,8 +34,11 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
     @Override
     public List<UUID> publishPaymentEvents(Collection<OutboxEventToPublish> eventsToPublish) {
-        return eventsToPublish.stream()
+        List<CompletableFuture<UUID>> futuresAfterSendHandle = eventsToPublish.stream()
                 .map(event -> handle(event, send(event)))
+                .toList();
+
+        return futuresAfterSendHandle.stream()
                 .map(CompletableFuture::join)
                 .filter(Objects::nonNull)
                 .toList();
@@ -44,10 +47,15 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
     private CompletableFuture<SendResult<String, PaymentCreatedEvent>> send(OutboxEventToPublish outboxEvent) {
         PaymentCreatedEvent eventToSend = outboxEvent.paymentCreatedEvent();
-        return kafkaTemplate.send(
-                kafkaTopic,
-                eventToSend.getPaymentId().toString(),
-                eventToSend);
+        try {
+            return kafkaTemplate.send(
+                    kafkaTopic,
+                    eventToSend.getPaymentId().toString(),
+                    eventToSend);
+        } catch (Exception exception) {
+            log.error("Failed to initiate publishing, eventId={}", outboxEvent.eventId(), exception);
+            return CompletableFuture.completedFuture(null);
+        }
     }
 
     private CompletableFuture<UUID> handle(OutboxEventToPublish outboxEvent,
@@ -57,6 +65,9 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
             if (exception != null) {
                 log.error("Failed to publish eventId={}", eventId, exception);
                 return null;
+            }
+            if (result == null) {
+                return null; // synchronous failure already logged in send
             }
             log.info("Event acknowledged by Kafka, eventId={}", eventId);
             return eventId;
