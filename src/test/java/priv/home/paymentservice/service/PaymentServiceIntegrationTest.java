@@ -103,7 +103,7 @@ public class PaymentServiceIntegrationTest {
         assertThat(paymentFromDbOptional).isNotEmpty();
         Payment paymentFromDb = paymentFromDbOptional.get();
 
-        List<String> eventPayloadFromDbAsList = retrieveEventByPaymentId(resultPaymentCreationDto.getPaymentId());
+        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultPaymentCreationDto.getPaymentId());
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
         String eventPayload = eventPayloadFromDbAsList.getFirst();
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
@@ -138,7 +138,7 @@ public class PaymentServiceIntegrationTest {
         assertThat(paymentFromDbOptional).isNotEmpty();
         Payment paymentFromDb = paymentFromDbOptional.get();
 
-        List<String> eventPayloadFromDbAsList = retrieveEventByPaymentId(resultFirstInsert.getPaymentId());
+        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultFirstInsert.getPaymentId());
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
         String eventPayload = eventPayloadFromDbAsList.getFirst();
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
@@ -160,6 +160,7 @@ public class PaymentServiceIntegrationTest {
             return paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, paymentRequest);
         };
 
+        // when + then
         try {
             Future<PaymentCreationDto> first = executor.submit(insertPayment);
             Future<PaymentCreationDto> second = executor.submit(insertPayment);
@@ -184,7 +185,7 @@ public class PaymentServiceIntegrationTest {
         assertThat(paymentFromDbOptional).isNotEmpty();
         Payment paymentFromDb = paymentFromDbOptional.get();
 
-        List<String> eventPayloadFromDbAsList = retrieveEventByPaymentId(paymentId);
+        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(paymentId);
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
         String eventPayload = eventPayloadFromDbAsList.getFirst();
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
@@ -220,7 +221,7 @@ public class PaymentServiceIntegrationTest {
         assertThat(payment.getPaymentStatus()).isEqualTo(paymentCreatedEvent.getPaymentStatus());
     }
 
-    private List<String> retrieveEventByPaymentId(UUID paymentId) {
+    private List<String> retrieveEventPayloadByPaymentId(UUID paymentId) {
         return jdbcTemplate.query(
                 SELECT_EVENT_BY_PAYMENT_ID_SQL,
                 (rs, rowNum) -> rs.getString("payload"),
