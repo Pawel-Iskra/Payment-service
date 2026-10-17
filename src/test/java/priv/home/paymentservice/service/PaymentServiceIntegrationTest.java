@@ -4,7 +4,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -12,13 +14,15 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import priv.home.paymentservice.data.OutboxStorageJdbc;
-import priv.home.paymentservice.data.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
+import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
+import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -35,16 +39,22 @@ public class PaymentServiceIntegrationTest {
     private static final String SIMULATED_OUTBOX_FAILURE_MESSAGE = "Simulated outbox failure";
     private static final String POSTGRES_IMAGE = "postgres:18";
     private static final String IDEMPOTENCY_KEY_FIRST = "abc-123";
-    private static final String IDEMPOTENCY_KEY_SECOND = "abc-124";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String CURRENCY_PLN = "PLN";
-    private static final String SELECT_PAYMENT_BY_ID_SQL = """
+    private static final String SELECT_PAYMENT_BY_IDEMPOTENCY_KEY_SQL = """
             SELECT payment_id, amount, currency, payment_status
             FROM payment
-            WHERE  payment_id = ?""";
-    private static final String INSERT_PAYMENT_SQL = """
-            INSERT INTO payment (payment_id, amount, currency, payment_status)
-            VALUES (?, ?, ?, ?)""";
+            WHERE  idempotency_key = ?""";
+    private static final RowMapper<Payment> PAYMENT_ROW_MAPPER =
+            (resultSet, rowNum) -> Payment.builder()
+                    .paymentId(resultSet.getObject("payment_id", UUID.class))
+                    .amount(resultSet.getBigDecimal("amount"))
+                    .currency(resultSet.getString("currency"))
+                    .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
+                    .build();
+    private static final String SELECT_EVENT_BY_PAYMENT_ID_SQL = """
+            SELECT payload FROM outbox_event
+            WHERE aggregate_id = ?""";
 
 
     @Container
@@ -58,9 +68,9 @@ public class PaymentServiceIntegrationTest {
     }
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private ObjectMapper objectMapper;
     @Autowired
-    private PaymentStorageJdbc paymentStorageJdbc;
+    private JdbcTemplate jdbcTemplate;
     @MockitoSpyBean
     private OutboxStorageJdbc outboxStorageJdbc;
     @Autowired
@@ -74,23 +84,38 @@ public class PaymentServiceIntegrationTest {
 
 
     @Test
-    public void shouldInsertBothPaymentAndEventToDb() {
+    public void shouldInsertBothPaymentAndEventToDbAsNormalExpectedCase() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
 
         // when
-        PaymentCreationDto result = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, paymentRequest);
+        PaymentCreationDto resultPaymentCreationDto = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, paymentRequest);
 
         // then
         Integer countEventRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM outbox_event", Integer.class);
         Integer countPaymentRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment", Integer.class);
         assertThat(countEventRecords).isOne();
         assertThat(countPaymentRecords).isOne();
-        // TODO: Verify persisted payment and outbox event fields, including payment ID, event type and payload.
+
+        Optional<Payment> paymentFromDbOptional = retrievePaymentByIdempotencyKey(IDEMPOTENCY_KEY_FIRST);
+        assertThat(paymentFromDbOptional).isNotEmpty();
+        Payment paymentFromDb = paymentFromDbOptional.get();
+
+        List<String> eventPayloadFromDbAsList = retrieveEventByPaymentId(resultPaymentCreationDto.getPaymentId());
+        assertThat(eventPayloadFromDbAsList).isNotEmpty();
+        String eventPayload = eventPayloadFromDbAsList.getFirst();
+        PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
+
+        assertThat(paymentFromDb.getPaymentId()).isEqualTo(eventFromPayload.getPaymentId());
+        assertThat(paymentFromDb.getCurrency()).isEqualTo(eventFromPayload.getCurrency());
+        assertThat(paymentFromDb.getAmount()).isEqualTo(eventFromPayload.getAmount());
+        assertThat(paymentFromDb.getPaymentStatus()).isEqualTo(eventFromPayload.getPaymentStatus());
+        assertThat(eventFromPayload.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
+        // TODO: little cleaning/refactoring
     }
 
     @Test
-    public void shouldInsertOnePaymentToDb() {
+    public void shouldInsertOnePaymentToDbWhenTwoSameRequests() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
 
@@ -99,19 +124,37 @@ public class PaymentServiceIntegrationTest {
         PaymentCreationDto resultSecondInsert = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, paymentRequest);
 
         // then
+        assertThat(resultFirstInsert.getPaymentId()).isEqualTo(resultSecondInsert.getPaymentId());
+        assertThat(resultFirstInsert.getAmount()).isEqualTo(resultSecondInsert.getAmount());
+        assertThat(resultFirstInsert.getCurrency()).isEqualTo(resultSecondInsert.getCurrency());
+        assertThat(resultFirstInsert.getPaymentStatus()).isEqualTo(resultSecondInsert.getPaymentStatus());
+
         Integer countEventRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM outbox_event", Integer.class);
         Integer countPaymentRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment", Integer.class);
         assertThat(countEventRecords).isOne();
         assertThat(countPaymentRecords).isOne();
-        // TODO: select records and check values
-        // TODO: Verify both responses reference the same payment and the second response indicates an idempotent replay.
+
+        Optional<Payment> paymentFromDbOptional = retrievePaymentByIdempotencyKey(IDEMPOTENCY_KEY_FIRST);
+        assertThat(paymentFromDbOptional).isNotEmpty();
+        Payment paymentFromDb = paymentFromDbOptional.get();
+
+        List<String> eventPayloadFromDbAsList = retrieveEventByPaymentId(resultFirstInsert.getPaymentId());
+        assertThat(eventPayloadFromDbAsList).isNotEmpty();
+        String eventPayload = eventPayloadFromDbAsList.getFirst();
+        PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
+
+        assertThat(paymentFromDb.getPaymentId()).isEqualTo(eventFromPayload.getPaymentId());
+        assertThat(paymentFromDb.getCurrency()).isEqualTo(eventFromPayload.getCurrency());
+        assertThat(paymentFromDb.getAmount()).isEqualTo(eventFromPayload.getAmount());
+        assertThat(paymentFromDb.getPaymentStatus()).isEqualTo(eventFromPayload.getPaymentStatus());
+        assertThat(eventFromPayload.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
+        // TODO: little cleaning/refactoring
     }
 
     @Test
     public void shouldInsertOnePaymentToDbWhenRaceCondition() throws ExecutionException, InterruptedException {
         // given
-        UUID paymentId = generateUuid();
-        Payment payment = getValidPayment(paymentId);
+        UUID paymentId;
         PaymentRequest paymentRequest = getValidPaymentRequest();
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch startThreadsForInsert = new CountDownLatch(1);
@@ -120,23 +163,42 @@ public class PaymentServiceIntegrationTest {
             startThreadsForInsert.await();
             return paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, paymentRequest);
         };
-        Future<PaymentCreationDto> first = executor.submit(insertPayment);
-        Future<PaymentCreationDto> second = executor.submit(insertPayment);
 
-        // when
-        startThreadsForInsert.countDown();
+        try {
+            Future<PaymentCreationDto> first = executor.submit(insertPayment);
+            Future<PaymentCreationDto> second = executor.submit(insertPayment);
+            startThreadsForInsert.countDown();
 
-        // then
-        PaymentCreationDto firstThreadResult = first.get();
-        PaymentCreationDto secondThreadResult = second.get();
-        executor.shutdown();
+            PaymentCreationDto firstThreadResult = first.get();
+            PaymentCreationDto secondThreadResult = second.get();
+
+            assertThat(firstThreadResult.getPaymentId()).isEqualTo(secondThreadResult.getPaymentId());
+            assertThat(firstThreadResult.isWasAlreadyInDb()).isNotEqualTo(secondThreadResult.isWasAlreadyInDb());
+            paymentId = firstThreadResult.getPaymentId();
+        } finally {
+            executor.shutdown();
+        }
 
         Integer countEventRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM outbox_event", Integer.class);
         Integer countPaymentRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment", Integer.class);
         assertThat(countEventRecords).isOne();
         assertThat(countPaymentRecords).isOne();
-        // TODO: Assert both concurrent requests return the same payment ID and if one is marked as newly created.
-        // TODO: Verify the persisted payment and outbox event correspond to that payment.
+
+        Optional<Payment> paymentFromDbOptional = retrievePaymentByIdempotencyKey(IDEMPOTENCY_KEY_FIRST);
+        assertThat(paymentFromDbOptional).isNotEmpty();
+        Payment paymentFromDb = paymentFromDbOptional.get();
+
+        List<String> eventPayloadFromDbAsList = retrieveEventByPaymentId(paymentId);
+        assertThat(eventPayloadFromDbAsList).isNotEmpty();
+        String eventPayload = eventPayloadFromDbAsList.getFirst();
+        PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
+
+        assertThat(paymentFromDb.getPaymentId()).isEqualTo(eventFromPayload.getPaymentId());
+        assertThat(paymentFromDb.getCurrency()).isEqualTo(eventFromPayload.getCurrency());
+        assertThat(paymentFromDb.getAmount()).isEqualTo(eventFromPayload.getAmount());
+        assertThat(paymentFromDb.getPaymentStatus()).isEqualTo(eventFromPayload.getPaymentStatus());
+        assertThat(eventFromPayload.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
+        // TODO: little cleaning/refactoring
     }
 
     @Test
@@ -152,35 +214,40 @@ public class PaymentServiceIntegrationTest {
 
         // then
         assertThat(thrown.getMessage()).contains(SIMULATED_OUTBOX_FAILURE_MESSAGE);
-        Integer countEventRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment", Integer.class);
+        Integer countPaymentRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment", Integer.class);
+        Integer countEventRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM outbox_event", Integer.class);
+        assertThat(countPaymentRecords).isZero();
         assertThat(countEventRecords).isZero();
     }
 
 
-    private Payment getValidPayment(UUID paymentId) {
-        return Payment.builder()
-                .paymentId(paymentId)
-                .amount(VALID_AMOUNT)
-                .currency(CURRENCY_PLN)
-                .paymentStatus(PaymentStatus.CREATED)
-                .build();
+    private List<String> retrieveEventByPaymentId(UUID paymentId) {
+        return jdbcTemplate.query(
+                SELECT_EVENT_BY_PAYMENT_ID_SQL,
+                (rs, rowNum) -> rs.getString("payload"),
+                paymentId);
     }
+
+    private Optional<Payment> retrievePaymentByIdempotencyKey(String idempotencyKey) {
+        Optional<Payment> resultFromDb;
+        try {
+            resultFromDb = Optional.ofNullable(jdbcTemplate.queryForObject(
+                    SELECT_PAYMENT_BY_IDEMPOTENCY_KEY_SQL,
+                    PAYMENT_ROW_MAPPER,
+                    idempotencyKey));
+        } catch (EmptyResultDataAccessException exception) {
+            resultFromDb = Optional.empty();
+        }
+        return resultFromDb;
+    }
+
+    private PaymentCreatedEvent generatePaymentCreatedEventFromPayloadString(String payload) {
+        return objectMapper.readValue(payload, PaymentCreatedEvent.class);
+    }
+
 
     private PaymentRequest getValidPaymentRequest() {
         return new PaymentRequest(VALID_AMOUNT, CURRENCY_PLN);
-    }
-
-    private Payment getValidPaymentFromRequest(UUID paymentId, PaymentRequest validPaymentRequest) {
-        return Payment.builder()
-                .paymentId(paymentId)
-                .amount(validPaymentRequest.amount())
-                .currency(validPaymentRequest.currency())
-                .paymentStatus(PaymentStatus.CREATED)
-                .build();
-    }
-
-    private UUID generateUuid() {
-        return UUID.randomUUID();
     }
 
 }
