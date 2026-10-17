@@ -4,7 +4,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -31,7 +30,7 @@ class PaymentStorageContainerLiquibaseTest {
     private static final String IDEMPOTENCY_KEY_SECOND = "abc-124";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String CURRENCY_PLN = "PLN";
-    private static final String SELECT_BY_ID_SQL = """
+    private static final String SELECT_PAYMENT_BY_ID_SQL = """
             SELECT payment_id, amount, currency, payment_status
             FROM payment
             WHERE  payment_id = ?""";
@@ -92,11 +91,11 @@ class PaymentStorageContainerLiquibaseTest {
         Payment payment = getValidPayment(paymentId);
 
         // when
-        paymentStorageJdbc.addPaymentToStorage(IDEMPOTENCY_KEY_FIRST, payment);
+        paymentStorageJdbc.insertPaymentIfAbsent(IDEMPOTENCY_KEY_FIRST, payment);
 
         // then
         Payment paymentFromDb = jdbcTemplate.queryForObject(
-                SELECT_BY_ID_SQL,
+                SELECT_PAYMENT_BY_ID_SQL,
                 (resultSet, row) -> Payment.builder()
                         .paymentId(resultSet.getObject("payment_id", UUID.class))
                         .amount(resultSet.getBigDecimal("amount"))
@@ -131,26 +130,21 @@ class PaymentStorageContainerLiquibaseTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch startThreadsForInsert = new CountDownLatch(1);
 
-        Callable<Boolean> insertPayment = () -> {
+        Callable<Optional<Payment>> insertPayment = () -> {
             startThreadsForInsert.await();
-            try {
-                paymentStorageJdbc.addPaymentToStorage(IDEMPOTENCY_KEY_SECOND, payment);
-                return true;
-            } catch (DuplicateKeyException exception) {
-                return false;
-            }
+            return paymentStorageJdbc.insertPaymentIfAbsent(IDEMPOTENCY_KEY_SECOND, payment);
         };
-        Future<Boolean> first = executor.submit(insertPayment);
-        Future<Boolean> second = executor.submit(insertPayment);
+        Future<Optional<Payment>> first = executor.submit(insertPayment);
+        Future<Optional<Payment>> second = executor.submit(insertPayment);
 
         // when
         startThreadsForInsert.countDown();
 
         // then
-        boolean isFirstPaymentAddedToDb = first.get();
-        boolean isSecondPaymentAddedToDb = second.get();
+        Optional<Payment> firstThreadResult = first.get();
+        Optional<Payment> secondThreadResult = second.get();
         executor.shutdown();
-        assertThat(isFirstPaymentAddedToDb).isNotEqualTo(isSecondPaymentAddedToDb);
+        assertThat(firstThreadResult.isPresent()).isNotEqualTo(secondThreadResult.isPresent());
 
         Integer countRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment", Integer.class);
         assertThat(countRecords).isOne();

@@ -3,36 +3,48 @@ package priv.home.paymentservice.data;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 
 import java.util.Optional;
 import java.util.UUID;
 
-@Component
+@Repository
 @AllArgsConstructor
 public class PaymentStorageJdbc {
 
 
-    private static final String INSERT_SQL = """
+    private static final String INSERT_PAYMENT_ON_CONFLICT_DO_NOTHING_SQL = """
             INSERT INTO payment (payment_id, amount, currency, payment_status, idempotency_key)
-            VALUES (?, ?, ?, ?, ?)""";
-    private static final String SELECT_BY_ID_SQL = """
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT (idempotency_key) DO NOTHING
+            RETURNING payment_id, amount, currency, payment_status""";
+    private static final String SELECT_PAYMENT_BY_ID_SQL = """
             SELECT payment_id, amount, currency, payment_status
             FROM payment
             WHERE  payment_id = ?""";
-    private static final String SELECT_BY_IDEMPOTENCY_KEY_SQL = """
+    private static final String SELECT_PAYMENT_BY_IDEMPOTENCY_KEY_SQL = """
             SELECT payment_id, amount, currency, payment_status
             FROM payment
             WHERE  idempotency_key = ?""";
+    private static final RowMapper<Payment> PAYMENT_ROW_MAPPER =
+            (resultSet, rowNum) -> Payment.builder()
+                    .paymentId(resultSet.getObject("payment_id", UUID.class))
+                    .amount(resultSet.getBigDecimal("amount"))
+                    .currency(resultSet.getString("currency"))
+                    .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
+                    .build();
 
     private final JdbcTemplate jdbcTemplate;
 
 
-    public void addPaymentToStorage(String idempotencyKey, Payment payment) {
-        jdbcTemplate.update(
-                INSERT_SQL,
+    public Optional<Payment> insertPaymentIfAbsent(String idempotencyKey, Payment payment) {
+        return jdbcTemplate.query(
+                INSERT_PAYMENT_ON_CONFLICT_DO_NOTHING_SQL,
+                resultSet -> resultSet.next() ?
+                        Optional.of(PAYMENT_ROW_MAPPER.mapRow(resultSet, 0)) : Optional.empty(),
                 payment.getPaymentId(),
                 payment.getAmount(),
                 payment.getCurrency(),
@@ -44,13 +56,10 @@ public class PaymentStorageJdbc {
     public Optional<Payment> retrievePaymentByPaymentId(UUID paymentId) {
         Optional<Payment> resultFromDb;
         try {
-            resultFromDb = Optional.ofNullable(jdbcTemplate.queryForObject(SELECT_BY_ID_SQL,
-                    (resultSet, row) -> Payment.builder()
-                            .paymentId(resultSet.getObject("payment_id", UUID.class))
-                            .amount(resultSet.getBigDecimal("amount"))
-                            .currency(resultSet.getString("currency"))
-                            .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
-                            .build(), paymentId));
+            resultFromDb = Optional.ofNullable(jdbcTemplate.queryForObject(
+                    SELECT_PAYMENT_BY_ID_SQL,
+                    PAYMENT_ROW_MAPPER,
+                    paymentId));
         } catch (EmptyResultDataAccessException exception) {
             resultFromDb = Optional.empty();
         } // try/catch: infrastructure layer explains infra exception into the contract required by the higher layer
@@ -60,16 +69,13 @@ public class PaymentStorageJdbc {
     public Optional<Payment> retrievePaymentByIdempotencyKey(String idempotencyKey) {
         Optional<Payment> resultFromDb;
         try {
-            resultFromDb = Optional.ofNullable(jdbcTemplate.queryForObject(SELECT_BY_IDEMPOTENCY_KEY_SQL,
-                    (resultSet, row) -> Payment.builder()
-                            .paymentId(resultSet.getObject("payment_id", UUID.class))
-                            .amount(resultSet.getBigDecimal("amount"))
-                            .currency(resultSet.getString("currency"))
-                            .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
-                            .build(), idempotencyKey));
+            resultFromDb = Optional.ofNullable(jdbcTemplate.queryForObject(
+                    SELECT_PAYMENT_BY_IDEMPOTENCY_KEY_SQL,
+                    PAYMENT_ROW_MAPPER,
+                    idempotencyKey));
         } catch (EmptyResultDataAccessException exception) {
             resultFromDb = Optional.empty();
-        }
+        } // try/catch: infrastructure layer explains infra exception into the contract required by the higher layer
         return resultFromDb;
     }
 }

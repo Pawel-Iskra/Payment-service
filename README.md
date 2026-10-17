@@ -27,6 +27,7 @@ The project is developed incrementally, with an emphasis on clean code, automate
 - Build tool: Maven
 - Infrastructure: Docker
 
+=======
 ## Completed Tasks
 
 #### Task 01 — Basic Payment REST API
@@ -70,8 +71,6 @@ The project is developed incrementally, with an emphasis on clean code, automate
 - Kafka producer and consumer using Spring Kafka.
 - Asynchronous message publishing with acknowledgement and error handling.
 - Tests for publishing outcomes and prevention of duplicate events on idempotent replays.
-
-## In Progress
 
 #### Task 07 — Transactional Outbox Pattern
 **Goal:** Ensure payment persistence and event recording are atomic, with reliable asynchronous publication to Kafka.

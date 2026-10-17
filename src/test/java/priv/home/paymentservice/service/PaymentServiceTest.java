@@ -5,16 +5,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DuplicateKeyException;
+import priv.home.paymentservice.data.OutboxStorageJdbc;
 import priv.home.paymentservice.data.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
+import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
 import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
-import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
+import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -30,12 +30,14 @@ import static org.mockito.Mockito.*;
 class PaymentServiceTest {
 
     private static final String IDEMPOTENCY_KEY = "abc-123";
-    private static final String DUPLICATE_IDEMPOTENCY_KEY = "Duplicate idempotency key";
+    private static final String PAYMENT_NOT_FOUND_AFTER_CONFLICT = "Payment not found after idempotency conflict";
 
+    @Mock
+    private ObjectMapper objectMapper;
     @Mock
     private PaymentStorageJdbc paymentStorageJdbc;
     @Mock
-    private PaymentEventPublisher paymentEventPublisher;
+    private OutboxStorageJdbc outboxStorageJdbc;
     @InjectMocks
     private PaymentService underTest;
 
@@ -44,12 +46,17 @@ class PaymentServiceTest {
     public void shouldAddPaymentToStorage() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
+        when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any(String.class)))
+                .thenReturn(Optional.empty());
+        when(paymentStorageJdbc.insertPaymentIfAbsent(any(String.class), any(Payment.class)))
+                .thenAnswer(invocation -> Optional.of(invocation.getArgument(1)));
+        // thenAnswer -> zwraca obiekt Payment, który serwis przekazał do storage
 
         // when
         underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
-        verify(paymentStorageJdbc).addPaymentToStorage(any(String.class), any(Payment.class));
+        verify(paymentStorageJdbc).insertPaymentIfAbsent(any(String.class), any(Payment.class));
     }
 
     @Test
@@ -57,10 +64,15 @@ class PaymentServiceTest {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
         ArgumentCaptor<Payment> paymentArgumentCaptor = ArgumentCaptor.forClass(Payment.class);
+        when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any(String.class)))
+                .thenReturn(Optional.empty());
+        when(paymentStorageJdbc.insertPaymentIfAbsent(any(String.class), any(Payment.class)))
+                .thenAnswer(invocation -> Optional.of(invocation.getArgument(1)));
+        // thenAnswer -> zwraca obiekt Payment, który serwis przekazał do storage
 
         // when + then
         underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
-        verify(paymentStorageJdbc).addPaymentToStorage(any(String.class), paymentArgumentCaptor.capture());
+        verify(paymentStorageJdbc).insertPaymentIfAbsent(any(String.class), paymentArgumentCaptor.capture());
         Payment savedPayment = paymentArgumentCaptor.getValue();
 
         assertThat(savedPayment.getAmount()).isEqualTo(paymentRequest.amount());
@@ -73,6 +85,10 @@ class PaymentServiceTest {
     public void shouldCreatePaymentWithRequestedAmountAndCurrency() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
+        when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any(String.class)))
+                .thenReturn(Optional.empty());
+        when(paymentStorageJdbc.insertPaymentIfAbsent(any(String.class), any(Payment.class)))
+                .thenAnswer(invocation -> Optional.of(invocation.getArgument(1)));
 
         // when
         PaymentCreationDto paymentCreationDto = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
@@ -86,6 +102,10 @@ class PaymentServiceTest {
     public void shouldGenerateIdForNewPayment() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
+        when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any(String.class)))
+                .thenReturn(Optional.empty());
+        when(paymentStorageJdbc.insertPaymentIfAbsent(any(String.class), any(Payment.class)))
+                .thenAnswer(invocation -> Optional.of(invocation.getArgument(1)));
 
         // when
         PaymentCreationDto paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
@@ -98,6 +118,10 @@ class PaymentServiceTest {
     public void shouldCreatePaymentWithCreatedStatus() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
+        when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any(String.class)))
+                .thenReturn(Optional.empty());
+        when(paymentStorageJdbc.insertPaymentIfAbsent(any(String.class), any(Payment.class)))
+                .thenAnswer(invocation -> Optional.of(invocation.getArgument(1)));
 
         // when
         PaymentCreationDto paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
@@ -111,7 +135,7 @@ class PaymentServiceTest {
         // given
         PaymentRequest validPaymentRequest = getValidPaymentRequest();
         Payment validPayment = getValidPaymentFromRequest(validPaymentRequest);
-        Mockito.when(paymentStorageJdbc.retrievePaymentByPaymentId(any())).thenReturn(Optional.of(validPayment));
+        when(paymentStorageJdbc.retrievePaymentByPaymentId(any())).thenReturn(Optional.of(validPayment));
 
         // when
         Optional<PaymentResponse> paymentResponseOptional = underTest.retrieveSinglePaymentByPaymentId(validPayment.getPaymentId());
@@ -126,7 +150,7 @@ class PaymentServiceTest {
     @Test
     public void shouldReturnEmptyOptionalForNotExistingPayment() {
         // given
-        Mockito.when(paymentStorageJdbc.retrievePaymentByPaymentId(any())).thenReturn(Optional.empty());
+        when(paymentStorageJdbc.retrievePaymentByPaymentId(any())).thenReturn(Optional.empty());
 
         // when
         Optional<PaymentResponse> result = underTest.retrieveSinglePaymentByPaymentId(generateUuid());
@@ -135,91 +159,88 @@ class PaymentServiceTest {
         assertThat(result).isEmpty();
     }
 
-    @Test
-    public void shouldHandleDuplicateKeyExceptionForPaymentCreate() {
-        // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
-        Payment payment = getValidPaymentFromRequest(paymentRequest);
-        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
-                .thenReturn(Optional.empty())
-                .thenReturn(Optional.of(payment));
-        Mockito.doThrow(new DuplicateKeyException(DUPLICATE_IDEMPOTENCY_KEY))
-                .when(paymentStorageJdbc).addPaymentToStorage(any(), any());
-
-        // when
-        PaymentCreationDto paymentCreationDto = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
-
-        // then
-        assertThat(paymentCreationDto.getAmount()).isEqualTo(payment.getAmount());
-        assertThat(paymentCreationDto.getCurrency()).isEqualTo(payment.getCurrency());
-        assertThat(paymentCreationDto.getPaymentId()).isEqualTo(payment.getPaymentId());
-        assertThat(paymentCreationDto.getPaymentStatus()).isEqualTo(payment.getPaymentStatus());
-        assertThat(paymentCreationDto.isWasAlreadyInDb()).isTrue();
-    }
 
     @Test
-    public void shouldThrowDuplicateKeyExceptionForPaymentCreate() {
+    public void shouldThrowIllegalStateExceptionInPaymentCreate() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
-        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
+        when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.empty());
-        Mockito.doThrow(new DuplicateKeyException(DUPLICATE_IDEMPOTENCY_KEY))
-                .when(paymentStorageJdbc).addPaymentToStorage(any(), any());
+        when(paymentStorageJdbc.insertPaymentIfAbsent(any(String.class), any(Payment.class)))
+                .thenReturn(Optional.empty());
 
         // when + then
-        DuplicateKeyException thrown = assertThrows(DuplicateKeyException.class, () ->
-                underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest));
-        assertThat(thrown.getMessage()).isEqualTo(DUPLICATE_IDEMPOTENCY_KEY);
+        IllegalStateException thrown = assertThrows(IllegalStateException.class,
+                () -> underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest));
+        assertThat(thrown.getMessage()).isEqualTo(PAYMENT_NOT_FOUND_AFTER_CONFLICT);
     }
 
     @Test
-    public void shouldCallPublishPaymentEventForPaymentCreate() {
-        // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
-        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
-                .thenReturn(Optional.empty());
-
-        // when
-        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
-
-        // then
-        verify(paymentEventPublisher, times(1)).publish(eq(IDEMPOTENCY_KEY), any(Payment.class));
-    }
-
-    @Test
-    public void shouldNotCallPublishPaymentEventForPaymentCreateWhenPaymentAlreadyExistInDb() {
+    public void shouldNotInsertPaymentOrCreateOutboxEventWhenPaymentAlreadyExists() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
         Payment payment = getValidPaymentFromRequest(paymentRequest);
-        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
+        when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
                 .thenReturn(Optional.of(payment));
 
         // when
         underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
-        verifyNoInteractions(paymentEventPublisher);
+        verify(paymentStorageJdbc, never()).insertPaymentIfAbsent(any(String.class), any(Payment.class));
+        verifyNoInteractions(outboxStorageJdbc);
     }
 
     @Test
-    public void shouldNotPublishEventWhenDuplicateKeyExceptionAndPaymentExists() {
+    public void shouldNotCreateOutboxEventWhenInsertOnConflict() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
-        Payment existingPayment = getValidPaymentFromRequest(paymentRequest);
-        Mockito.when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
+        Payment payment = getValidPaymentFromRequest(paymentRequest);
+        when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any()))
                 .thenReturn(Optional.empty())
-                .thenReturn(Optional.of(existingPayment));
-        Mockito.doThrow(new DuplicateKeyException(DUPLICATE_IDEMPOTENCY_KEY))
-                .when(paymentStorageJdbc).addPaymentToStorage(any(), any());
+                .thenReturn(Optional.of(payment));
+        when(paymentStorageJdbc.insertPaymentIfAbsent(any(String.class), any(Payment.class)))
+                .thenReturn(Optional.empty());
 
         // when
-        PaymentCreationDto paymentCreationDto = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+        PaymentCreationDto paymentCreationDtoResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
 
         // then
-        assertThat(paymentCreationDto.isWasAlreadyInDb()).isTrue();
-        assertThat(paymentCreationDto.getPaymentId()).isEqualTo(existingPayment.getPaymentId());
-        verify(paymentEventPublisher, never()).publish(any(String.class), any(Payment.class));
+        verifyNoInteractions(outboxStorageJdbc);
+        assertThat(paymentCreationDtoResult.getPaymentId()).isEqualTo(payment.getPaymentId());
+        assertThat(paymentCreationDtoResult.isWasAlreadyInDb()).isTrue();
+    }
+
+
+    @Test
+    public void shouldCallOutboxStorageForPositivePaymentCreation() {
+        // given
+        PaymentRequest paymentRequest = getValidPaymentRequest();
+        Payment payment = getValidPaymentFromRequest(paymentRequest);
+        ArgumentCaptor<PaymentCreatedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentCreatedEvent.class);
+        String payload = """
+                {"paymentId":"%s","amount":123.45,"currency":"PLN","paymentStatus":"CREATED","idempotencyKey":"%s"}
+                """.formatted(payment.getPaymentId(), IDEMPOTENCY_KEY).trim();
+        when(paymentStorageJdbc.retrievePaymentByIdempotencyKey(any(String.class)))
+                .thenReturn(Optional.empty());
+        when(paymentStorageJdbc.insertPaymentIfAbsent(any(String.class), any(Payment.class)))
+                .thenReturn(Optional.of(payment));
+        when(objectMapper.writeValueAsString(any(PaymentCreatedEvent.class)))
+                .thenReturn(payload);
+
+        // when
+        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+        verify(objectMapper).writeValueAsString(eventCaptor.capture());
+
+        // then
+        PaymentCreatedEvent capturedEvent = eventCaptor.getValue();
+        verify(outboxStorageJdbc, times(1))
+                .addPaymentEventToOutbox(any(UUID.class), any(UUID.class), any(String.class), any(String.class));
+        assertThat(capturedEvent.getPaymentId()).isEqualTo(payment.getPaymentId());
+        assertThat(capturedEvent.getAmount()).isEqualByComparingTo(payment.getAmount());
+        assertThat(capturedEvent.getCurrency()).isEqualTo(payment.getCurrency());
+        assertThat(capturedEvent.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY);
     }
 
 
@@ -229,6 +250,16 @@ class PaymentServiceTest {
                 .amount(validPaymentRequest.amount())
                 .currency(validPaymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
+                .build();
+    }
+
+    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(String idempotencyKey, Payment paymentToPublish) {
+        return PaymentCreatedEvent.builder()
+                .paymentId(paymentToPublish.getPaymentId())
+                .amount(paymentToPublish.getAmount())
+                .currency(paymentToPublish.getCurrency())
+                .paymentStatus(paymentToPublish.getPaymentStatus())
+                .idempotencyKey(idempotencyKey)
                 .build();
     }
 

@@ -3,3 +3,13 @@ databaseChangeLog:
       file: db/changelog/changesets/001-create-payment-table.xml
   - include:
       file: db/changelog/changesets/002-add-column-in-payment-table.xml
+  - include:
+      file: db/changelog/changesets/003-create-outbox-event-table.xml
+  - include:
+      file: db/changelog/changesets/004-modify-timestamp-in-outbox-event-table.xml
+  - include:
+      file: db/changelog/changesets/005-modify-timestamp-in-outbox-event-table.xml
+  - include:
+      file: db/changelog/changesets/006-modify-column-name-in-outbox-event-table.xml
+  - include:
+      file: db/changelog/changesets/007-modify-column-default-value-in-outbox-event-table.xml

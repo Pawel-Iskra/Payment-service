@@ -3,10 +3,17 @@ package priv.home.paymentservice.eventpublisher.kafka;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
+import priv.home.paymentservice.data.OutboxEventToPublish;
 import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
 import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
-import priv.home.paymentservice.model.Payment;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -26,35 +33,44 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
 
     @Override
-    public void publish(String idempotencyKey, Payment paymentToPublish) {
-        PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, paymentToPublish);
+    public List<UUID> publishPaymentEvents(Collection<OutboxEventToPublish> eventsToPublish) {
+        List<CompletableFuture<UUID>> futuresAfterSendHandle = eventsToPublish.stream()
+                .map(event -> handle(event, send(event)))
+                .toList();
+
+        return futuresAfterSendHandle.stream()
+                .map(CompletableFuture::join)
+                .filter(Objects::nonNull)
+                .toList();
+    } // here - handle() is asynchronous but join() is synchronous
+
+
+    private CompletableFuture<SendResult<String, PaymentCreatedEvent>> send(OutboxEventToPublish outboxEvent) {
+        PaymentCreatedEvent eventToSend = outboxEvent.paymentCreatedEvent();
         try {
-            kafkaTemplate.send(kafkaTopic, paymentCreatedEvent.getPaymentId().toString(), paymentCreatedEvent)
-                    .whenComplete((result, exception) -> { // handle asynchronous completion of the send operation
-                        if (exception != null) {
-                            log.error("Error while publishing PaymentCreatedEvent, paymentId={}",
-                                    paymentCreatedEvent.getPaymentId(),
-                                    exception);
-                            return;
-                        }
-                        log.info("PaymentCreatedEvent successfully acknowledged by Kafka, paymentId={}",
-                                paymentCreatedEvent.getPaymentId());
-                    });
-        } catch (Exception exception) { // handle synchronous exceptions during send() invocation
-            log.error("Failed to initiate publishing of PaymentCreatedEvent, paymentId={}",
-                    paymentCreatedEvent.getPaymentId(),
-                    exception);
+            return kafkaTemplate.send(
+                    kafkaTopic,
+                    eventToSend.getPaymentId().toString(),
+                    eventToSend);
+        } catch (Exception exception) {
+            log.error("Failed to initiate publishing, eventId={}", outboxEvent.eventId(), exception);
+            return CompletableFuture.completedFuture(null);
         }
     }
 
-
-    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(String idempotencyKey, Payment paymentToPublish) {
-        return PaymentCreatedEvent.builder()
-                .paymentId(paymentToPublish.getPaymentId())
-                .amount(paymentToPublish.getAmount())
-                .currency(paymentToPublish.getCurrency())
-                .paymentStatus(paymentToPublish.getPaymentStatus())
-                .idempotencyKey(idempotencyKey)
-                .build();
+    private CompletableFuture<UUID> handle(OutboxEventToPublish outboxEvent,
+                                           CompletableFuture<SendResult<String, PaymentCreatedEvent>> sendResultFuture) {
+        UUID eventId = outboxEvent.eventId();
+        return sendResultFuture.handle((result, exception) -> {
+            if (exception != null) {
+                log.error("Failed to publish eventId={}", eventId, exception);
+                return null;
+            }
+            if (result == null) {
+                return null; // synchronous failure already logged in send
+            }
+            log.info("Event acknowledged by Kafka, eventId={}", eventId);
+            return eventId;
+        });
     }
 }
