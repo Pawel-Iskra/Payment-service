@@ -1,20 +1,16 @@
 # Payment Service
 
-A hands-on Java and Spring Boot project focused on building a payment processing service and exploring real-world backend engineering challenges.
+A hands-on Java and Spring Boot project focused on building a payment processing service.
 
-The project is part of my ongoing effort to refresh, strengthen, and expand my backend development skills, with a particular focus on reliable data processing, distributed systems, and production-oriented design patterns.
+The project is part of my ongoing effort to refresh, strengthen, and expand my backend development skills, with a particular focus on reliable data processing, and production-oriented design patterns.
 
 **Current scope:**
 - REST API for creating and retrieving payments
 - PostgreSQL persistence using Spring JDBC and Liquibase
 - Idempotent payment creation
 - Apache Kafka integration for event-driven communication
+- Transactional outbox pattern
 - Unit and integration testing with JUnit, Mockito, and Testcontainers
-
-**Work in progress:** 
-Currently implementing the Transactional Outbox pattern to improve the reliability of event publishing.
-
-The project is developed incrementally, with an emphasis on clean code, automated testing, and understanding architectural trade-offs.
 
 **Current Tech Stack**
 - Language: Java 25
@@ -27,7 +23,25 @@ The project is developed incrementally, with an emphasis on clean code, automate
 - Build tool: Maven
 - Infrastructure: Docker
 
-=======
+## Project Roadmap
+| Task | Description |
+|:---|---|
+| **✅ Task 01 — Basic Payment REST API** | Implemented a REST API for creating payments with DTOs, service logic, and unit tests. |
+| **✅ Task 02 — Payment Retrieval** | Added payment retrieval by ID and handling of missing payments. |
+| **✅ Task 03 — MVC Tests** | Added controller tests covering successful requests, validation, and error responses. |
+| **✅ Task 04 — PostgreSQL Persistence** | Integrated PostgreSQL, JDBC, Liquibase, and Testcontainers. |
+| **✅ Task 05 — Idempotent Payment Creation** | Implemented idempotent payment creation using `Idempotency-Key` and database constraints. |
+| **✅ Task 06 — Kafka Integration** | Added asynchronous Kafka event publishing and consumption. |
+| **✅ Task 07 — Transactional Outbox Pattern** | Ensured payment data and outbox events are saved atomically and events are marked as published after Kafka acknowledgement. |
+| **Task 08 — JPA & Hibernate Migration** | Migrate payment persistence to Spring Data JPA and learn ORM fundamentals. |
+| **Task 09 — Outbox Reliability & Retry Policy** | Improve event publishing reliability with configurable retries, backoff, and failure tracking. |
+| **Task 10 — Idempotent Kafka Consumer** | Prevent duplicate event processing through event identification and deduplication. |
+| **Task 11 — OpenAPI & Swagger UI** | Document the REST API and provide an interactive interface for exploring its endpoints. |
+| **Task 12 — ISO 20022 Payment Messages** | Add support for processing selected ISO 20022 payment initiation and status messages. |
+| **Task 13 — OpenAPI Generator** | Generate API interfaces, DTOs, or clients from the OpenAPI specification. |
+| **Task 14 — Observability & Test Coverage** | Improve code coverage, HTTP logging, sensitive-data masking, and service health monitoring. |
+
+
 ## Completed Tasks
 
 #### Task 01 — Basic Payment REST API
@@ -73,8 +87,10 @@ The project is developed incrementally, with an emphasis on clean code, automate
 - Tests for publishing outcomes and prevention of duplicate events on idempotent replays.
 
 #### Task 07 — Transactional Outbox Pattern
-**Goal:** Ensure payment persistence and event recording are atomic, with reliable asynchronous publication to Kafka.
+**Goal:** Ensure atomic persistence of payments and outbox events, with reliable asynchronous publication to Kafka.
 
 - Separate payment and outbox storage.
 - Single database transaction for payment and outbox event persistence.
-- Outbox polling, Kafka acknowledgement handling, retries, and integration tests.  
+- Publish events asynchronously to Kafka and collect IDs of successfully acknowledged events.
+- Handle synchronous and asynchronous publishing failures without interrupting the processing of other events.
+
