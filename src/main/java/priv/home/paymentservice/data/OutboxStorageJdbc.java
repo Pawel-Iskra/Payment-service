@@ -20,6 +20,10 @@ public class OutboxStorageJdbc {
     private static final String SELECT_EVENTS_TO_PUBLISH_SQL = """
             SELECT event_id, payload FROM outbox_event
             WHERE published_at is NULL""";
+    private static final String MARK_AS_PUBLISHED_SQL = """
+            UPDATE outbox_event
+            SET published_at = CURRENT_TIMESTAMP
+            WHERE event_id IN (%s)""";
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
@@ -43,4 +47,14 @@ public class OutboxStorageJdbc {
         );
     }
 
+    public int markEventsAsPublished(List<UUID> eventIds) {
+        if (eventIds.isEmpty()) return 0;
+        StringBuilder placeholders = new StringBuilder();
+        for (int i = 0; i < eventIds.size(); i++) {
+            placeholders.append("?");
+            if (i < eventIds.size() - 1) placeholders.append(",");
+        }
+        String sql = String.format(MARK_AS_PUBLISHED_SQL, placeholders);
+        return jdbcTemplate.update(sql, eventIds.toArray());
+    }
 }

@@ -5,8 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import priv.home.paymentservice.data.OutboxEventToPublish;
 import priv.home.paymentservice.data.OutboxStorageJdbc;
-import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,16 +20,10 @@ public class PaymentEventReleaserService {
 
     public void publishPaymentCreatedEvents() {
         List<OutboxEventToPublish> outboxEventsToPublish = outboxStorageJdbc.retrieveEventsForPublish();
-        log.info("Amount of events = {}, paymentIds= {}",
-                outboxEventsToPublish.size(),
-                outboxEventsToPublish.stream()
-                        .map(OutboxEventToPublish::paymentCreatedEvent)
-                        .map(PaymentCreatedEvent::getPaymentId)
-                        .toList());
-        List<UUID> listOfAcknowledgedSendEvents = paymentEventPublisher.publishPaymentEvents(outboxEventsToPublish);
-        log.info("Send acknowledged from publisher = {}, eventIds= {}",
-                listOfAcknowledgedSendEvents.size(),
-                listOfAcknowledgedSendEvents);
-        // TODO: mark as published in outbox_event
+        log.info("START of event publishing. Amount of events = {}", outboxEventsToPublish.size());
+
+        List<UUID> listOfAcknowledgedEventsId = paymentEventPublisher.publishPaymentEvents(outboxEventsToPublish);
+        log.info("END of event publishing. Amount of published events acknowledged by publisher = {}", listOfAcknowledgedEventsId.size());
+        int updatedRecordsInOutboxEventTAble = outboxStorageJdbc.markEventsAsPublished(listOfAcknowledgedEventsId);
     }
 }

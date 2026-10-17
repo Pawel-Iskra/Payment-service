@@ -31,6 +31,7 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
         this.kafkaTemplate = kafkaTemplate;
     }
 
+
     @Override
     public List<UUID> publishPaymentEvents(Collection<OutboxEventToPublish> eventsToPublish) {
         return eventsToPublish.stream()
@@ -38,27 +39,27 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
                 .map(CompletableFuture::join)
                 .filter(Objects::nonNull)
                 .toList();
-    }
-    // TODO: analyze more
+    } // here - handle() is asynchronous but join() is synchronous
+
 
     private CompletableFuture<SendResult<String, PaymentCreatedEvent>> send(OutboxEventToPublish outboxEvent) {
-        PaymentCreatedEvent event = outboxEvent.paymentCreatedEvent();
+        PaymentCreatedEvent eventToSend = outboxEvent.paymentCreatedEvent();
         return kafkaTemplate.send(
                 kafkaTopic,
-                event.getPaymentId().toString(),
-                event);
+                eventToSend.getPaymentId().toString(),
+                eventToSend);
     }
 
     private CompletableFuture<UUID> handle(OutboxEventToPublish outboxEvent,
-            CompletableFuture<SendResult<String, PaymentCreatedEvent>> sendFuture) {
-
-        return sendFuture.handle((result, exception) -> {
+                                           CompletableFuture<SendResult<String, PaymentCreatedEvent>> sendResultFuture) {
+        UUID eventId = outboxEvent.eventId();
+        return sendResultFuture.handle((result, exception) -> {
             if (exception != null) {
-                log.error("Failed to publish eventId={}", outboxEvent.eventId(), exception);
+                log.error("Failed to publish eventId={}", eventId, exception);
                 return null;
             }
-            log.info("Event acknowledged by Kafka, eventId={}", outboxEvent.eventId());
-            return outboxEvent.eventId();
+            log.info("Event acknowledged by Kafka, eventId={}", eventId);
+            return eventId;
         });
     }
 }
