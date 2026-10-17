@@ -33,7 +33,7 @@ The project is part of my ongoing effort to refresh, strengthen, and expand my b
 | **✅ Task 05 — Idempotent Payment Creation** | Implemented idempotent payment creation using `Idempotency-Key` and database constraints. |
 | **✅ Task 06 — Kafka Integration** | Added asynchronous Kafka event publishing and consumption. |
 | **✅ Task 07 — Transactional Outbox Pattern** | Ensured payment data and outbox events are saved atomically and events are marked as published after Kafka acknowledgement. |
-| **Task 08 — JPA & Hibernate Migration** | Migrate payment persistence to Spring Data JPA and learn ORM fundamentals. |
+| **Task 08 — JPA & Hibernate Migration** | Migrate payment persistence to Spring Data JPA |
 | **Task 09 — Outbox Reliability & Retry Policy** | Improve event publishing reliability with configurable retries, backoff, and failure tracking. |
 | **Task 10 — Idempotent Kafka Consumer** | Prevent duplicate event processing through event identification and deduplication. |
 | **Task 11 — OpenAPI & Swagger UI** | Document the REST API and provide an interactive interface for exploring its endpoints. |
