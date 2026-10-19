@@ -10,8 +10,9 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.UUID;
 
-@Repository
+//@Repository
 @AllArgsConstructor
+// stays as JDBC option
 public class OutboxStorageJdbc {
 
     private static final String INSERT_EVENT_SQL = """

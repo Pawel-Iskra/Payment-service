@@ -9,6 +9,7 @@ import java.util.UUID;
 
 @Builder
 @Getter
+// used previously by PaymentStorageJdbc
 public class Payment {
 
     private final UUID paymentId;

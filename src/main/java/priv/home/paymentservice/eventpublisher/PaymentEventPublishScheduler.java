@@ -17,8 +17,7 @@ public class PaymentEventPublishScheduler {
 
     @Scheduled(cron = "${payment-service.payment-event-publisher.scheduler.publish}") // TODO:configs?
     public void schedulePaymentEventPublishing() {
-        log.info("START of Publishing of PaymentCreatedEvent");
+        log.info("START scheduled publishing of PaymentCreatedEvent");
         paymentEventReleaserService.publishPaymentCreatedEvents();
-        log.info("END of Publishing of PaymentCreatedEvent");
     }
 }

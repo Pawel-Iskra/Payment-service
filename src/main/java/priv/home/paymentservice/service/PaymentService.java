@@ -3,17 +3,15 @@ package priv.home.paymentservice.service;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import priv.home.paymentservice.data.OutboxStorageJdbc;
+import priv.home.paymentservice.data.OutboxStorageJpa;
 import priv.home.paymentservice.data.PaymentStorageJpa;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
-import priv.home.paymentservice.model.PaymentEntity;
-import priv.home.paymentservice.model.PaymentEventType;
-import priv.home.paymentservice.model.PaymentResponse;
-import priv.home.paymentservice.model.PaymentStatus;
+import priv.home.paymentservice.model.*;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,7 +20,7 @@ import java.util.UUID;
 public class PaymentService {
 
     private final PaymentStorageJpa paymentStorageJpa;
-    private final OutboxStorageJdbc outboxStorageJdbc;
+    private final OutboxStorageJpa outboxStorageJpa;
     private final ObjectMapper objectMapper;
 
 
@@ -41,11 +39,14 @@ public class PaymentService {
         }
         PaymentEntity paymentInserted = insertedPaymentOptional.get();
         PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, paymentInserted);
-        outboxStorageJdbc.addPaymentEventToOutbox(
-                generateUuid(),
-                paymentInserted.getPaymentId(),
-                PaymentEventType.PAYMENT_CREATED_EVENT.name(),
-                generatePayload(paymentCreatedEvent));
+        outboxStorageJpa.save(
+                OutboxEventEntity.builder()
+                        .eventId(generateUuid())
+                        .paymentId(paymentInserted.getPaymentId())
+                        .eventType(PaymentEventType.PAYMENT_CREATED_EVENT.name())
+                        .payload(generatePayload(paymentCreatedEvent))
+                        .createdAt(OffsetDateTime.now())
+                        .build());
         return buildPaymentSuccessfulPersistedPaymentCreationDto(paymentInserted);
     }
 

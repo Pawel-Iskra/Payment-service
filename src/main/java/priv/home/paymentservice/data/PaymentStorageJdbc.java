@@ -11,8 +11,9 @@ import priv.home.paymentservice.model.PaymentStatus;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository
+//@Repository
 @AllArgsConstructor
+// stays as JDBC option
 public class PaymentStorageJdbc {
 
 
