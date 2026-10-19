@@ -4,24 +4,18 @@ A hands-on Java and Spring Boot project focused on building a payment processing
 
 The project is part of my ongoing effort to refresh, strengthen, and expand my backend development skills, with a particular focus on reliable data processing, and production-oriented design patterns.
 
-**Current scope:**
-- REST API for creating and retrieving payments
-- PostgreSQL persistence using Spring JDBC and Liquibase
-- Idempotent payment creation
-- Apache Kafka integration for event-driven communication
-- Transactional outbox pattern
-- Unit and integration testing with JUnit, Mockito, and Testcontainers
-
-**Current Tech Stack**
-- Language: Java 25
-- Framework: Spring Boot 4.1.1
-- Database: PostgreSQL
-- Database migrations: Liquibase 5.0.4
-- Data access: Spring JDBC
-- Messaging: Apache Kafka, Spring for Apache Kafka
-- Testing: JUnit, Mockito, Spring Boot Test, Testcontainers
-- Build tool: Maven
-- Infrastructure: Docker
+| **Current Scope** | **Tech Stack** |
+|---|---|
+| 1. REST API for creating and retrieving payments | **Language:** Java 25 |
+| 2. Request validation and error handling | **Framework:** Spring Boot 4.1.1 |
+| 3. Idempotent payment creation using idempotency keys | **Database:** PostgreSQL |
+| 4. PostgreSQL persistence with Liquibase database migrations | **Database Migrations:** Liquibase 5.0.4 |
+| 5. Transactional Outbox Pattern for reliable event publishing | **Data Access:** Spring JDBC |
+| 6. Kafka publisher with synchronous and asynchronous failure handling | **Messaging:** Apache Kafka, Spring for Apache Kafka |
+| 7. Async event publishing with acknowledgement-based outbox updates | **Serialization:** Jackson 3 |
+| 8. Basic Kafka consumer | **Testing:** JUnit, Mockito, Spring Boot Test, Testcontainers |
+| 9. Unit and integration tests | **Build Tool:** Maven |
+|  | **Infrastructure:** Docker |
 
 ## Project Roadmap
 | Task | Description |
@@ -34,7 +28,7 @@ The project is part of my ongoing effort to refresh, strengthen, and expand my b
 | **✅ Task 06 — Kafka Integration** | Added asynchronous Kafka event publishing and consumption. |
 | **✅ Task 07 — Transactional Outbox Pattern** | Ensured payment data and outbox events are saved atomically and events are marked as published after Kafka acknowledgement. |
 | **Task 08 — JPA & Hibernate Migration** | Migrate payment persistence to Spring Data JPA |
-| **Task 09 — Outbox Reliability & Retry Policy** | Improve event publishing reliability with configurable retries, backoff, and failure tracking. |
+| **Task 09 — Outbox Reliability & Retry Policy** | Improve event publishing with configurable batch size, retries, backoff, and failure tracking. |
 | **Task 10 — Idempotent Kafka Consumer** | Prevent duplicate event processing through event identification and deduplication. |
 | **Task 11 — OpenAPI & Swagger UI** | Document the REST API and provide an interactive interface for exploring its endpoints. |
 | **Task 12 — ISO 20022 Payment Messages** | Add support for processing selected ISO 20022 payment initiation and status messages. |
