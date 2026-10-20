@@ -10,7 +10,7 @@ import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
 @Service
 @Slf4j
 @AllArgsConstructor
-public class PaymentEventConsumer {
+public class KafkaPaymentEventConsumer {
 
 
     @KafkaListener(

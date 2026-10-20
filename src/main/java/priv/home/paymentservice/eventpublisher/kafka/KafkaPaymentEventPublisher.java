@@ -5,9 +5,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
-import priv.home.paymentservice.data.OutboxEventToPublish;
 import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
-import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
+import priv.home.paymentservice.eventpublisher.model.OutboxEventToPublish;
 
 import java.util.Collection;
 import java.util.List;
@@ -21,12 +20,12 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
 
     private final String kafkaTopic;
-    private final KafkaTemplate<String, PaymentCreatedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
 
     public KafkaPaymentEventPublisher(
             @Value("${payment-service.kafka-topic}") String kafkaTopic, // TODO: @ConfigurationProperties
-            KafkaTemplate<String, PaymentCreatedEvent> kafkaTemplate) {
+            KafkaTemplate<String, String> kafkaTemplate) {
         this.kafkaTopic = kafkaTopic;
         this.kafkaTemplate = kafkaTemplate;
     }
@@ -45,13 +44,12 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
     } // here - handle() is asynchronous but join() is synchronous
 
 
-    private CompletableFuture<SendResult<String, PaymentCreatedEvent>> send(OutboxEventToPublish outboxEvent) {
-        PaymentCreatedEvent eventToSend = outboxEvent.paymentCreatedEvent();
+    private CompletableFuture<SendResult<String, String>> send(OutboxEventToPublish outboxEvent) {
         try {
             return kafkaTemplate.send(
                     kafkaTopic,
-                    eventToSend.getPaymentId().toString(),
-                    eventToSend);
+                    outboxEvent.paymentId().toString(),
+                    outboxEvent.payload());
         } catch (Exception exception) {
             log.error("Failed to initiate publishing, eventId={}", outboxEvent.eventId(), exception);
             return CompletableFuture.completedFuture(null);
@@ -59,7 +57,7 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
     }
 
     private CompletableFuture<UUID> handle(OutboxEventToPublish outboxEvent,
-                                           CompletableFuture<SendResult<String, PaymentCreatedEvent>> sendResultFuture) {
+                                           CompletableFuture<SendResult<String, String>> sendResultFuture) {
         UUID eventId = outboxEvent.eventId();
         return sendResultFuture.handle((result, exception) -> {
             if (exception != null) {
@@ -67,7 +65,7 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
                 return null;
             }
             if (result == null) {
-                return null; // synchronous failure already logged in send
+                return null; // synchronous failure already logged in send, TODO: return null?
             }
             log.info("Event acknowledged by Kafka, eventId={}", eventId);
             return eventId;

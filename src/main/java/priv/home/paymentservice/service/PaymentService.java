@@ -113,7 +113,7 @@ public class PaymentService {
     }
 
     private String generatePayload(PaymentCreatedEvent paymentCreatedEvent) {
-        return objectMapper.writeValueAsString(paymentCreatedEvent);
+        return objectMapper.writeValueAsString(paymentCreatedEvent); // TODO: possible error handling?
     }
 
     private UUID generateUuid() {
