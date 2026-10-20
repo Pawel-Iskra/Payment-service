@@ -6,7 +6,8 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import priv.home.paymentservice.model.Payment;
+import priv.home.paymentservice.data.jdbcoption.PaymentStorageJdbc;
+import priv.home.paymentservice.data.jdbcoption.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 
 import javax.sql.DataSource;

@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.exceptions.SinglePaymentNotFoundException;
 import priv.home.paymentservice.dto.PaymentCreationDto;
-import priv.home.paymentservice.model.PaymentResponse;
+import priv.home.paymentservice.dto.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 import priv.home.paymentservice.service.PaymentService;
 

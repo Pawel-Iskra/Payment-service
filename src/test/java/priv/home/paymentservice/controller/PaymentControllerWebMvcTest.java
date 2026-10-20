@@ -9,8 +9,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
-import priv.home.paymentservice.model.Payment;
-import priv.home.paymentservice.model.PaymentResponse;
+import priv.home.paymentservice.data.jdbcoption.Payment;
+import priv.home.paymentservice.dto.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 import priv.home.paymentservice.service.PaymentService;
 
