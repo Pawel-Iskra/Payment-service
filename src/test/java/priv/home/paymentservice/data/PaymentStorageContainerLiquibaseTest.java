@@ -10,7 +10,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import priv.home.paymentservice.model.Payment;
+import priv.home.paymentservice.data.jdbcoption.PaymentStorageJdbc;
+import priv.home.paymentservice.data.jdbcoption.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 
 import java.math.BigDecimal;

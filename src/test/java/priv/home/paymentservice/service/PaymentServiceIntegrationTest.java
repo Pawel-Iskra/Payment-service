@@ -13,11 +13,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import priv.home.paymentservice.data.OutboxStorageJdbc;
+import priv.home.paymentservice.data.jdbcoption.OutboxStorageJdbc;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
-import priv.home.paymentservice.model.Payment;
+import priv.home.paymentservice.data.jdbcoption.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 import tools.jackson.databind.ObjectMapper;
 

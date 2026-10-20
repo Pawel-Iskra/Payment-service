@@ -6,13 +6,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import priv.home.paymentservice.data.OutboxStorageJdbc;
-import priv.home.paymentservice.data.PaymentStorageJdbc;
+import priv.home.paymentservice.data.jdbcoption.OutboxStorageJdbc;
+import priv.home.paymentservice.data.jdbcoption.PaymentStorageJdbc;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
-import priv.home.paymentservice.model.Payment;
-import priv.home.paymentservice.model.PaymentResponse;
+import priv.home.paymentservice.data.jdbcoption.Payment;
+import priv.home.paymentservice.dto.PaymentResponse;
 import priv.home.paymentservice.model.PaymentStatus;
 import tools.jackson.databind.ObjectMapper;
 

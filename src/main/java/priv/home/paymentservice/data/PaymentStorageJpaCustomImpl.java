@@ -3,7 +3,6 @@ package priv.home.paymentservice.data;
 import lombok.AllArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import priv.home.paymentservice.model.PaymentEntity;
 import priv.home.paymentservice.model.PaymentStatus;
 
 import java.util.Optional;

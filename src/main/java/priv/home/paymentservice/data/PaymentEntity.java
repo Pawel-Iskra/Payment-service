@@ -1,7 +1,8 @@
-package priv.home.paymentservice.model;
+package priv.home.paymentservice.data;
 
 import jakarta.persistence.*;
 import lombok.*;
+import priv.home.paymentservice.model.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.util.UUID;

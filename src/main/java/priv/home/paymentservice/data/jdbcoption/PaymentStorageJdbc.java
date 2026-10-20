@@ -1,11 +1,9 @@
-package priv.home.paymentservice.data;
+package priv.home.paymentservice.data.jdbcoption;
 
 import lombok.AllArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Repository;
-import priv.home.paymentservice.model.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 
 import java.util.Optional;

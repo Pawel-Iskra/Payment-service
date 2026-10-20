@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import priv.home.paymentservice.data.OutboxEventToPublish;
 import priv.home.paymentservice.data.OutboxStorageJpa;
 import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
-import priv.home.paymentservice.model.OutboxEventEntity;
+import priv.home.paymentservice.data.OutboxEventEntity;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
@@ -42,6 +42,6 @@ public class PaymentEventReleaserService {
         return new OutboxEventToPublish(
                 outboxEventEntity.getEventId(),
                 objectMapper.readValue(outboxEventEntity.getPayload(), PaymentCreatedEvent.class)
-        ); // TODO: think of error handling if one failed
+        ); // TODO: error handling if one failed
     }
 }

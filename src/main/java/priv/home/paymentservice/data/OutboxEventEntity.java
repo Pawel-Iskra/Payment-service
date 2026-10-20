@@ -1,4 +1,4 @@
-package priv.home.paymentservice.model;
+package priv.home.paymentservice.data;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
