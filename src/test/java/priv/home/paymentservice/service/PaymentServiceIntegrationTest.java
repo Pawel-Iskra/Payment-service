@@ -13,11 +13,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import priv.home.paymentservice.data.jdbcoption.OutboxStorageJdbc;
+import priv.home.paymentservice.data.OutboxEventEntity;
+import priv.home.paymentservice.data.OutboxStorageJpa;
+import priv.home.paymentservice.data.PaymentEntity;
 import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
-import priv.home.paymentservice.data.jdbcoption.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 import tools.jackson.databind.ObjectMapper;
 
@@ -44,15 +45,16 @@ public class PaymentServiceIntegrationTest {
     private static final String SELECT_COUNT_ALL_PAYMENT_SQL = "SELECT COUNT(*) FROM payment";
     private static final String SELECT_COUNT_ALL_OUTBOX_EVENT_SQL = "SELECT COUNT(*) FROM outbox_event";
     private static final String SELECT_PAYMENT_BY_IDEMPOTENCY_KEY_SQL = """
-            SELECT payment_id, amount, currency, payment_status
+            SELECT payment_id, amount, currency, payment_status, idempotency_key
             FROM payment
             WHERE  idempotency_key = ?""";
-    private static final RowMapper<Payment> PAYMENT_ROW_MAPPER =
-            (resultSet, rowNum) -> Payment.builder()
+    private static final RowMapper<PaymentEntity> PAYMENT_ROW_MAPPER =
+            (resultSet, rowNum) -> PaymentEntity.builder()
                     .paymentId(resultSet.getObject("payment_id", UUID.class))
                     .amount(resultSet.getBigDecimal("amount"))
                     .currency(resultSet.getString("currency"))
                     .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
+                    .idempotencyKey(resultSet.getString("idempotency_key"))
                     .build();
     private static final String SELECT_EVENT_BY_PAYMENT_ID_SQL = """
             SELECT payload FROM outbox_event
@@ -74,7 +76,7 @@ public class PaymentServiceIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
     @MockitoSpyBean
-    private OutboxStorageJdbc outboxStorageJdbc;
+    private OutboxStorageJpa outboxStorageJpa;
     @Autowired
     private PaymentService paymentService;
 
@@ -99,9 +101,9 @@ public class PaymentServiceIntegrationTest {
         assertThat(countEventRecords).isOne();
         assertThat(countPaymentRecords).isOne();
 
-        Optional<Payment> paymentFromDbOptional = retrievePaymentByIdempotencyKey(IDEMPOTENCY_KEY_FIRST);
+        Optional<PaymentEntity> paymentFromDbOptional = retrievePaymentByIdempotencyKey(IDEMPOTENCY_KEY_FIRST);
         assertThat(paymentFromDbOptional).isNotEmpty();
-        Payment paymentFromDb = paymentFromDbOptional.get();
+        PaymentEntity paymentFromDb = paymentFromDbOptional.get();
 
         List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultPaymentCreationDto.getPaymentId());
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
@@ -134,9 +136,9 @@ public class PaymentServiceIntegrationTest {
         assertThat(countEventRecords).isOne();
         assertThat(countPaymentRecords).isOne();
 
-        Optional<Payment> paymentFromDbOptional = retrievePaymentByIdempotencyKey(IDEMPOTENCY_KEY_FIRST);
+        Optional<PaymentEntity> paymentFromDbOptional = retrievePaymentByIdempotencyKey(IDEMPOTENCY_KEY_FIRST);
         assertThat(paymentFromDbOptional).isNotEmpty();
-        Payment paymentFromDb = paymentFromDbOptional.get();
+        PaymentEntity paymentFromDb = paymentFromDbOptional.get();
 
         List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultFirstInsert.getPaymentId());
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
@@ -181,9 +183,9 @@ public class PaymentServiceIntegrationTest {
         assertThat(countEventRecords).isOne();
         assertThat(countPaymentRecords).isOne();
 
-        Optional<Payment> paymentFromDbOptional = retrievePaymentByIdempotencyKey(IDEMPOTENCY_KEY_FIRST);
+        Optional<PaymentEntity> paymentFromDbOptional = retrievePaymentByIdempotencyKey(IDEMPOTENCY_KEY_FIRST);
         assertThat(paymentFromDbOptional).isNotEmpty();
-        Payment paymentFromDb = paymentFromDbOptional.get();
+        PaymentEntity paymentFromDb = paymentFromDbOptional.get();
 
         List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(paymentId);
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
@@ -198,8 +200,8 @@ public class PaymentServiceIntegrationTest {
     public void shouldRollbackPaymentInsertIfOutboxInsertThrowsException() {
         // given
         PaymentRequest paymentRequest = getValidPaymentRequest();
-        doThrow(new RuntimeException(SIMULATED_OUTBOX_FAILURE_MESSAGE)).when(outboxStorageJdbc)
-                .addPaymentEventToOutbox(any(UUID.class), any(UUID.class), any(String.class), any(String.class));
+        doThrow(new RuntimeException(SIMULATED_OUTBOX_FAILURE_MESSAGE))
+                .when(outboxStorageJpa).save(any(OutboxEventEntity.class));
 
         // when
         RuntimeException thrown = assertThrows(RuntimeException.class, () ->
@@ -214,7 +216,7 @@ public class PaymentServiceIntegrationTest {
     }
 
 
-    private void compareValuesInPaymentAndInPaymentCreatedEvent(Payment payment, PaymentCreatedEvent paymentCreatedEvent) {
+    private void compareValuesInPaymentAndInPaymentCreatedEvent(PaymentEntity payment, PaymentCreatedEvent paymentCreatedEvent) {
         assertThat(payment.getPaymentId()).isEqualTo(paymentCreatedEvent.getPaymentId());
         assertThat(payment.getCurrency()).isEqualTo(paymentCreatedEvent.getCurrency());
         assertThat(payment.getAmount()).isEqualTo(paymentCreatedEvent.getAmount());
@@ -228,8 +230,8 @@ public class PaymentServiceIntegrationTest {
                 paymentId);
     }
 
-    private Optional<Payment> retrievePaymentByIdempotencyKey(String idempotencyKey) {
-        Optional<Payment> resultFromDb;
+    private Optional<PaymentEntity> retrievePaymentByIdempotencyKey(String idempotencyKey) {
+        Optional<PaymentEntity> resultFromDb;
         try {
             resultFromDb = Optional.ofNullable(jdbcTemplate.queryForObject(
                     SELECT_PAYMENT_BY_IDEMPOTENCY_KEY_SQL,

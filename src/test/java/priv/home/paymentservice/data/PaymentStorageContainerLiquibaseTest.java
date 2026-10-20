@@ -10,8 +10,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import priv.home.paymentservice.data.jdbcoption.PaymentStorageJdbc;
-import priv.home.paymentservice.data.jdbcoption.Payment;
 import priv.home.paymentservice.model.PaymentStatus;
 
 import java.math.BigDecimal;
@@ -32,12 +30,12 @@ class PaymentStorageContainerLiquibaseTest {
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String CURRENCY_PLN = "PLN";
     private static final String SELECT_PAYMENT_BY_ID_SQL = """
-            SELECT payment_id, amount, currency, payment_status
+            SELECT payment_id, amount, currency, payment_status, idempotency_key
             FROM payment
             WHERE  payment_id = ?""";
     private static final String INSERT_PAYMENT_SQL = """
-            INSERT INTO payment (payment_id, amount, currency, payment_status)
-            VALUES (?, ?, ?, ?)""";
+            INSERT INTO payment (payment_id, amount, currency, payment_status, idempotency_key)
+            VALUES (?, ?, ?, ?, ?)""";
 
 
     @Container
@@ -53,7 +51,7 @@ class PaymentStorageContainerLiquibaseTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
     @Autowired
-    private PaymentStorageJdbc paymentStorageJdbc;
+    private PaymentStorageJpa paymentStorageJpa;
 
     @BeforeEach
     public void cleanTablePayment() {
@@ -65,43 +63,46 @@ class PaymentStorageContainerLiquibaseTest {
     public void shouldRetrievePaymentFromDb() {
         // given
         UUID paymentId = generateUuid();
-        Payment payment = getValidPayment(paymentId);
+        PaymentEntity payment = getValidPaymentEntity(IDEMPOTENCY_KEY_FIRST, paymentId);
         jdbcTemplate.update(
                 INSERT_PAYMENT_SQL,
                 payment.getPaymentId(),
                 payment.getAmount(),
                 payment.getCurrency(),
-                payment.getPaymentStatus().name());
+                payment.getPaymentStatus().name(),
+                payment.getIdempotencyKey());
 
         // when
-        Optional<Payment> paymentFromDbOptional = paymentStorageJdbc.retrievePaymentByPaymentId(paymentId);
+        Optional<PaymentEntity> paymentFromDbOptional = paymentStorageJpa.findById(paymentId);
 
         // then
         assertTrue(paymentFromDbOptional.isPresent());
-        Payment paymentFromDb = paymentFromDbOptional.get();
+        PaymentEntity paymentFromDb = paymentFromDbOptional.get();
         assertEquals(paymentId, paymentFromDb.getPaymentId());
         assertEquals(VALID_AMOUNT, paymentFromDb.getAmount());
         assertEquals(CURRENCY_PLN, paymentFromDb.getCurrency());
         assertEquals(PaymentStatus.CREATED, paymentFromDb.getPaymentStatus());
+        assertEquals(IDEMPOTENCY_KEY_FIRST, paymentFromDb.getIdempotencyKey());
     }
 
     @Test
     public void shouldAddPaymentToDb() {
         // given
         UUID paymentId = generateUuid();
-        Payment payment = getValidPayment(paymentId);
+        PaymentEntity payment = getValidPaymentEntity(IDEMPOTENCY_KEY_FIRST, paymentId);
 
         // when
-        paymentStorageJdbc.insertPaymentIfAbsent(IDEMPOTENCY_KEY_FIRST, payment);
+        paymentStorageJpa.insertPaymentIfAbsent(payment);
 
         // then
-        Payment paymentFromDb = jdbcTemplate.queryForObject(
+        PaymentEntity paymentFromDb = jdbcTemplate.queryForObject(
                 SELECT_PAYMENT_BY_ID_SQL,
-                (resultSet, row) -> Payment.builder()
+                (resultSet, row) -> PaymentEntity.builder()
                         .paymentId(resultSet.getObject("payment_id", UUID.class))
                         .amount(resultSet.getBigDecimal("amount"))
                         .currency(resultSet.getString("currency"))
                         .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
+                        .idempotencyKey(resultSet.getString("idempotency_key"))
                         .build(), paymentId);
 
         assertNotNull(paymentFromDb);
@@ -109,6 +110,7 @@ class PaymentStorageContainerLiquibaseTest {
         assertEquals(VALID_AMOUNT, paymentFromDb.getAmount());
         assertEquals(CURRENCY_PLN, paymentFromDb.getCurrency());
         assertEquals(PaymentStatus.CREATED, paymentFromDb.getPaymentStatus());
+        assertEquals(IDEMPOTENCY_KEY_FIRST, paymentFromDb.getIdempotencyKey());
     }
 
     @Test
@@ -117,7 +119,7 @@ class PaymentStorageContainerLiquibaseTest {
         UUID paymentId = generateUuid();
 
         // when
-        Optional<Payment> paymentFromDbOptional = paymentStorageJdbc.retrievePaymentByPaymentId(paymentId);
+        Optional<PaymentEntity> paymentFromDbOptional = paymentStorageJpa.findById(paymentId);
 
         // then
         assertTrue(paymentFromDbOptional.isEmpty());
@@ -127,23 +129,23 @@ class PaymentStorageContainerLiquibaseTest {
     public void testRaceConditionForInsertOfTheSamePaymentRequest() throws ExecutionException, InterruptedException {
         // given
         UUID paymentId = generateUuid();
-        Payment payment = getValidPayment(paymentId);
+        PaymentEntity payment = getValidPaymentEntity(IDEMPOTENCY_KEY_SECOND, paymentId);
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch startThreadsForInsert = new CountDownLatch(1);
 
-        Callable<Optional<Payment>> insertPayment = () -> {
+        Callable<Optional<PaymentEntity>> insertPayment = () -> {
             startThreadsForInsert.await();
-            return paymentStorageJdbc.insertPaymentIfAbsent(IDEMPOTENCY_KEY_SECOND, payment);
+            return paymentStorageJpa.insertPaymentIfAbsent(payment);
         };
-        Future<Optional<Payment>> first = executor.submit(insertPayment);
-        Future<Optional<Payment>> second = executor.submit(insertPayment);
+        Future<Optional<PaymentEntity>> first = executor.submit(insertPayment);
+        Future<Optional<PaymentEntity>> second = executor.submit(insertPayment);
 
         // when
         startThreadsForInsert.countDown();
 
         // then
-        Optional<Payment> firstThreadResult = first.get();
-        Optional<Payment> secondThreadResult = second.get();
+        Optional<PaymentEntity> firstThreadResult = first.get();
+        Optional<PaymentEntity> secondThreadResult = second.get();
         executor.shutdown();
         assertThat(firstThreadResult.isPresent()).isNotEqualTo(secondThreadResult.isPresent());
 
@@ -152,12 +154,13 @@ class PaymentStorageContainerLiquibaseTest {
     }
 
 
-    private Payment getValidPayment(UUID paymentId) {
-        return Payment.builder()
+    private PaymentEntity getValidPaymentEntity(String idempotencyKey, UUID paymentId) {
+        return PaymentEntity.builder()
                 .paymentId(paymentId)
                 .amount(VALID_AMOUNT)
                 .currency(CURRENCY_PLN)
                 .paymentStatus(PaymentStatus.CREATED)
+                .idempotencyKey(idempotencyKey)
                 .build();
     }
 
