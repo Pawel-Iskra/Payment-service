@@ -11,7 +11,8 @@ import priv.home.paymentservice.dto.PaymentCreationDto;
 import priv.home.paymentservice.dto.PaymentRequest;
 import priv.home.paymentservice.dto.PaymentResponse;
 import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
-import priv.home.paymentservice.model.*;
+import priv.home.paymentservice.model.PaymentEventType;
+import priv.home.paymentservice.model.PaymentStatus;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.OffsetDateTime;
@@ -41,10 +42,12 @@ public class PaymentService {
             return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDb);
         }
         PaymentEntity paymentInserted = insertedPaymentOptional.get();
-        PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(idempotencyKey, paymentInserted);
+        UUID eventId = generateUuid();
+        PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(
+                eventId, idempotencyKey, paymentInserted);
         outboxStorageJpa.save(
                 OutboxEventEntity.builder()
-                        .eventId(generateUuid())
+                        .eventId(eventId)
                         .paymentId(paymentInserted.getPaymentId())
                         .eventType(PaymentEventType.PAYMENT_CREATED_EVENT.name())
                         .payload(generatePayload(paymentCreatedEvent))
@@ -102,9 +105,10 @@ public class PaymentService {
                 .build();
     }
 
-    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(String idempotencyKey, PaymentEntity paymentToPublish) {
+    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(UUID eventId, String idempotencyKey, PaymentEntity paymentToPublish) {
         return PaymentCreatedEvent.builder()
                 .paymentId(paymentToPublish.getPaymentId())
+                .eventId(eventId)
                 .amount(paymentToPublish.getAmount())
                 .currency(paymentToPublish.getCurrency())
                 .paymentStatus(paymentToPublish.getPaymentStatus())

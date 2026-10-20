@@ -8,11 +8,14 @@
 
     <!-- table for KafkaConsumer only-->
     <changeSet id="008" author="xyz">
-        <createTable tableName="processed_event">
-            <column name="eventId" type="uuid">
+        <createTable tableName="consumed_event">
+            <column name="event_id" type="uuid">
                 <constraints primaryKey="true"/>
             </column>
-            <column name="processed_at" type="timestamp(6) with time zone"/>
+            <column name="consumed_at" type="timestamp(6) with time zone"
+                    defaultValueComputed="current_timestamp">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
     </changeSet>
 

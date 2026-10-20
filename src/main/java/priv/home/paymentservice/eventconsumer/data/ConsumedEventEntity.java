@@ -10,19 +10,20 @@ import lombok.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@Setter
+@ToString
+@Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "processed_event")
-public class ProcessedEventEntity {
+@Table(name = "consumed_event")
+public class ConsumedEventEntity {
 
 
     @Id
     @Column(name = "event_id")
     private UUID eventId;
 
-    @Column(name = "processed_at")
+    @Column(name = "consumed_at")
     private OffsetDateTime processedAt;
 }
