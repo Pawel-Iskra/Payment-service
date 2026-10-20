@@ -17,7 +17,7 @@ import java.util.UUID;
 public class PaymentEntity {
 
     @Id
-    @Column(name = "payment_id", updatable = false)
+    @Column(name = "payment_id")
     private UUID paymentId;
 
     @Column(name = "amount", nullable = false, precision = 12, scale = 2)
