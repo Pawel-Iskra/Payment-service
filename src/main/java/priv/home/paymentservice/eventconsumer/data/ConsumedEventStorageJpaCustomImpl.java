@@ -27,7 +27,7 @@ public class ConsumedEventStorageJpaCustomImpl implements ConsumedEventStorageJp
                 resultSet -> resultSet.next() ?
                         Optional.of(ConsumedEventEntity.builder()
                                 .eventId(resultSet.getObject("event_id", UUID.class))
-                                .processedAt(resultSet.getObject("consumed_at", OffsetDateTime.class))
+                                .consumedAt(resultSet.getObject("consumed_at", OffsetDateTime.class))
                                 .build()) : Optional.empty(),
                 consumedEventId);
     }

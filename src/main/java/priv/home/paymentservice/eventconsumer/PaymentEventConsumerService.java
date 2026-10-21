@@ -28,10 +28,11 @@ public class PaymentEventConsumerService {
 
         Optional<ConsumedEventEntity> insertedEventOptional = consumedEventStorageJpa.insertConsumedEventIfAbsent(eventReceivedId);
         if (insertedEventOptional.isEmpty()) {
-            log.info("Duplicate event ignored, evenId={}", eventReceivedId);
+            log.info("Event already exist in db, eventId={}", eventReceivedId);
             return Optional.empty();
         }
         log.info("Event accepted for business processing, eventId={}", insertedEventOptional.get().getEventId());
+
         // Business logic to be executed here.
         return insertedEventOptional;
     }

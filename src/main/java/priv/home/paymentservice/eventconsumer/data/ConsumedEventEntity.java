@@ -25,5 +25,5 @@ public class ConsumedEventEntity {
     private UUID eventId;
 
     @Column(name = "consumed_at")
-    private OffsetDateTime processedAt;
+    private OffsetDateTime consumedAt;
 }
