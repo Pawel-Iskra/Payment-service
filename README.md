@@ -64,7 +64,8 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 </table>
 
 
-## Project Roadmap
+<h3 align="center"> Project Roadmap</h3>
+
 | Task | Description |
 |:---|---|
 | **✅ Task 01 — Basic Payment REST API** | Implemented a REST API for creating payments with DTOs, service logic, and unit tests. |
@@ -83,7 +84,7 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 | **Task 14 — Observability & Test Coverage** | Improve code coverage, HTTP logging, sensitive-data masking, and service health monitoring. |
 
 
-## Completed Tasks
+### Completed Tasks
 
 #### Task 01 — Basic Payment REST API
 **Goal:** Build the initial payment creation endpoint and establish a layered application structure.
