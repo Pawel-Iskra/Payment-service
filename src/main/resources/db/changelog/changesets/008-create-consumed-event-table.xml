@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+
+    <!-- table for KafkaConsumer only-->
+    <changeSet id="008" author="xyz">
+        <createTable tableName="consumed_event">
+            <column name="event_id" type="uuid">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="consumed_at" type="timestamp(6) with time zone"
+                    defaultValueComputed="current_timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

@@ -16,6 +16,7 @@ import java.util.UUID;
 public class PaymentCreatedEvent {
 
     private final UUID paymentId;
+    private final UUID eventId;
     private final BigDecimal amount;
     private final String currency;
     private final PaymentStatus paymentStatus;

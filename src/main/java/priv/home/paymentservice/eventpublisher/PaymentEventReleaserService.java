@@ -3,11 +3,9 @@ package priv.home.paymentservice.eventpublisher;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import priv.home.paymentservice.data.OutboxEventToPublish;
-import priv.home.paymentservice.data.OutboxStorageJpa;
-import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
 import priv.home.paymentservice.data.OutboxEventEntity;
-import tools.jackson.databind.ObjectMapper;
+import priv.home.paymentservice.data.OutboxStorageJpa;
+import priv.home.paymentservice.eventpublisher.model.OutboxEventToPublish;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,7 +17,6 @@ public class PaymentEventReleaserService {
 
     private final OutboxStorageJpa outboxStorageJpa;
     private final PaymentEventPublisher paymentEventPublisher;
-    private final ObjectMapper objectMapper;
 
 
     public void publishPaymentCreatedEvents() {
@@ -39,9 +36,11 @@ public class PaymentEventReleaserService {
     }
 
     private OutboxEventToPublish getOutboxEventToPublish(OutboxEventEntity outboxEventEntity) {
-        return new OutboxEventToPublish(
-                outboxEventEntity.getEventId(),
-                objectMapper.readValue(outboxEventEntity.getPayload(), PaymentCreatedEvent.class)
-        ); // TODO: error handling if one failed
+        return OutboxEventToPublish.builder()
+                .eventId(outboxEventEntity.getEventId())
+                .paymentId(outboxEventEntity.getPaymentId())
+                .eventType(outboxEventEntity.getEventType())
+                .payload(outboxEventEntity.getPayload())
+                .build();
     }
 }

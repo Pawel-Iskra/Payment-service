@@ -1,6 +1,6 @@
 package priv.home.paymentservice.eventpublisher;
 
-import priv.home.paymentservice.data.OutboxEventToPublish;
+import priv.home.paymentservice.eventpublisher.model.OutboxEventToPublish;
 
 import java.util.Collection;
 import java.util.List;

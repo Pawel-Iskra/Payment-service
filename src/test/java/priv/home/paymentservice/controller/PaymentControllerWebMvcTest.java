@@ -143,6 +143,7 @@ public class PaymentControllerWebMvcTest {
         return String.format(JSON_REQUEST, amount, currency);
     }
 
+    // TODO: replace/refactor
     private Payment getValidPaymentFromRequest(PaymentRequest validPaymentRequest, UUID paymentId) {
         return Payment.builder()
                 .paymentId(paymentId)

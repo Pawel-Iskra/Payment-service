@@ -3,7 +3,7 @@ package priv.home.paymentservice.data.jdbcoption;
 
 import lombok.AllArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
-import priv.home.paymentservice.data.OutboxEventToPublish;
+import priv.home.paymentservice.eventpublisher.model.OutboxEventToPublish;
 import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
 import tools.jackson.databind.ObjectMapper;
 
@@ -40,13 +40,13 @@ public class OutboxStorageJdbc {
         );
     }
 
-    public List<OutboxEventToPublish> retrieveEventsForPublish() {
-        return jdbcTemplate.query(SELECT_EVENTS_TO_PUBLISH_SQL,
-                (resultSet, rowNum) -> new OutboxEventToPublish(
-                        resultSet.getObject("event_id", UUID.class),
-                        objectMapper.readValue(resultSet.getString("payload"), PaymentCreatedEvent.class))
-        );
-    }
+//    public List<OutboxEventToPublish> retrieveEventsForPublish() {
+//        return jdbcTemplate.query(SELECT_EVENTS_TO_PUBLISH_SQL,
+//                (resultSet, rowNum) -> new OutboxEventToPublish(
+//                        resultSet.getObject("event_id", UUID.class),
+//                        objectMapper.readValue(resultSet.getString("payload"), PaymentCreatedEvent.class))
+//        );
+//    }
 
     public int markEventsAsPublished(List<UUID> eventIds) {
         if (eventIds.isEmpty()) return 0;

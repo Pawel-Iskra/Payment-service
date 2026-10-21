@@ -21,7 +21,7 @@ public class OutboxEventEntity {
 
 
     @Id
-    @Column(name = "event_id", updatable = false)
+    @Column(name = "event_id")
     private UUID eventId;
 
     @Column(name = "aggregate_id", nullable = false, updatable = false)
