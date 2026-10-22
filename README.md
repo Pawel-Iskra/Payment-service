@@ -2,13 +2,10 @@
 A Java 25 and Spring Boot project demonstrating reliable payment processing and event-driven communication.
 
 ### Overview
-The service exposes a REST API for creating and retrieving payments, with request validation and idempotent payment creation. Payment data and corresponding events are persisted atomically in PostgreSQL using the Transactional Outbox Pattern. Asynchronous events publishing to Apache Kafka. A lightweight Kafka consumer with idempotent event processing.
-
-### Payment Flow
-1. REST API — accepts payment creation requests, validates input, and handles idempotency keys.
-2. Persistence — stores payment data and an associated outbox event in PostgreSQL within a single transaction.
-3. Event Publishing — asynchronously publishes pending outbox events to Apache Kafka and marks them as published after broker acknowledgement.
-4. Idempotent Consumption — includes a lightweight Kafka consumer demonstrating duplicate event detection and safe handling of concurrent deliveries.
+1. The service exposes a REST API for creating and retrieving payments, with request validation and idempotent payment creation using idemtency-key request header.
+2. Payment data and corresponding events are persisted atomically within single PostgreSQL transaction using the Transactional Outbox Pattern.
+3. Pending outbox events are published asynchronously to Apache Kafka and marked as published after broker acknowlegment.
+4. A lightweight Kafka consumer with idempotent event processing.
 
 _**The project is part of my ongoing effort to strengthen and expand my backend development skills, with a particular focus on reliable data processing, transactional consistency, idempotency, and production-oriented design patterns.**_
 <br>
