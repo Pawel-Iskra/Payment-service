@@ -17,7 +17,7 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 | 2. Request validation and error handling | **Framework:** Spring Boot 4.1.1 |
 | 3. Idempotent payment creation using idempotency keys | **Database:** PostgreSQL |
 | 4. PostgreSQL persistence with Liquibase database migrations | **Database Migrations:** Liquibase 5.0.4 |
-| 5. Transactional Outbox Pattern for reliable event publishing | **Data Access:** Spring Data JPA |
+| 5. Transactional Outbox Pattern for reliable event publishing | **Data Access:** Spring Data JPA, Spring Jdbc |
 | 6. Kafka publisher with synchronous and asynchronous failure handling | **Messaging:** Apache Kafka, Spring for Apache Kafka |
 | 7. Async event publishing with acknowledgement-based outbox updates |**Testing:** JUnit, Mockito,  WebMvcTest, SpringBootTest, Testcontainers|
 | 8. Idempotent Kafka consumer  | **Build Tool:** Maven |
@@ -50,7 +50,7 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 - **Framework:** Spring Boot 4.1.1
 - **Database:** PostgreSQL
 - **Database Migrations:** Liquibase 5.0.4
-- **Data Access:** Spring Data JPA
+- **Data Access:** Spring Data JPA, Spring JDBC
 - **Messaging:** Apache Kafka, Spring for Apache Kafka
 - **Testing:** JUnit, Mockito, WebMvcTest, SpringBootTest, Testcontainers
 - **Build Tool:** Maven
