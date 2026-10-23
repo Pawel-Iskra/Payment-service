@@ -39,4 +39,16 @@ public class OutboxEventEntity {
 
     @Column(name = "published_at")
     private OffsetDateTime publishedAt;
+
+    @Setter
+    @Column(name = "attempt_count", nullable = false)
+    private Integer attempt_count;
+
+    @Setter
+    @Column(name = "last_error")
+    private String lastError;
+
+    @Setter
+    @Column(name = "failed_At")
+    private OffsetDateTime failedAt;
 }

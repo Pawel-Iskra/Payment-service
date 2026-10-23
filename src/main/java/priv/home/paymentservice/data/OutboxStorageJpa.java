@@ -1,5 +1,8 @@
 package priv.home.paymentservice.data;
 
+import org.springframework.data.domain.Limit;
+import org.springframework.data.domain.ScrollPosition;
+import org.springframework.data.domain.Window;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -10,8 +13,6 @@ import java.util.UUID;
 
 public interface OutboxStorageJpa extends JpaRepository<OutboxEventEntity, UUID> {
 
-    List<OutboxEventEntity> findAllByPublishedAtIsNull();
-
     @Transactional
     @Modifying
     @Query("""
@@ -20,4 +21,10 @@ public interface OutboxStorageJpa extends JpaRepository<OutboxEventEntity, UUID>
             WHERE e.eventId in :listOfIdsToUpdate
             """)
     int markEventsAsPublished(List<UUID> listOfIdsToUpdate);
+
+    List<OutboxEventEntity> findAllByPublishedAtIsNull();
+
+    Window<OutboxEventEntity> findByPublishedAtIsNullAndFailedAtIsNullOrderByCreatedAtAscEventIdAsc(
+            ScrollPosition position, Limit limit
+    );
 }

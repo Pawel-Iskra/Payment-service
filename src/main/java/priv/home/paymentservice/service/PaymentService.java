@@ -52,6 +52,7 @@ public class PaymentService {
                         .eventType(PaymentEventType.PAYMENT_CREATED_EVENT.name())
                         .payload(generatePayload(paymentCreatedEvent))
                         .createdAt(OffsetDateTime.now())
+                        .attempt_count(0)
                         .build());
         return buildPaymentSuccessfulPersistedPaymentCreationDto(paymentInserted);
     }
