@@ -7,10 +7,10 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import priv.home.paymentservice.eventpublisher.PaymentEventPublisher;
 import priv.home.paymentservice.eventpublisher.model.OutboxEventToPublish;
+import priv.home.paymentservice.eventpublisher.model.PublishResult;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -32,16 +32,15 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
 
     @Override
-    public List<UUID> publishPaymentEvents(Collection<OutboxEventToPublish> eventsToPublish) {
-        List<CompletableFuture<UUID>> futuresAfterSendHandle = eventsToPublish.stream()
+    public List<PublishResult> publishPaymentEvents(Collection<OutboxEventToPublish> eventsToPublish) {
+        List<CompletableFuture<PublishResult>> futuresAfterSendHandle = eventsToPublish.stream()
                 .map(event -> handle(event, send(event)))
                 .toList();
 
         return futuresAfterSendHandle.stream()
                 .map(CompletableFuture::join)
-                .filter(Objects::nonNull)
                 .toList();
-    } // here - handle() is asynchronous but join() is synchronous
+    } // here - handle is asynchronous but join is synchronous
 
 
     private CompletableFuture<SendResult<String, String>> send(OutboxEventToPublish outboxEvent) {
@@ -50,25 +49,28 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
                     kafkaTopic,
                     outboxEvent.paymentId().toString(),
                     outboxEvent.payload());
-        } catch (Exception exception) {
-            log.error("Failed to initiate publishing, eventId={}", outboxEvent.eventId(), exception);
-            return CompletableFuture.completedFuture(null);
+        } catch (Exception exception) { // synchronous exception thrown by send (before future returned)
+            return CompletableFuture.failedFuture(exception);
         }
     }
 
-    private CompletableFuture<UUID> handle(OutboxEventToPublish outboxEvent,
-                                           CompletableFuture<SendResult<String, String>> sendResultFuture) {
+    private CompletableFuture<PublishResult> handle(OutboxEventToPublish outboxEvent,
+                                                    CompletableFuture<SendResult<String, String>> sendResultFuture) {
         UUID eventId = outboxEvent.eventId();
-        return sendResultFuture.handle((result, exception) -> {
+        return sendResultFuture.handle((sendResult, exception) -> {
             if (exception != null) {
-                log.error("Failed to publish eventId={}", eventId, exception);
-                return null;
+                log.error("Failed to publish the event, eventId={}", eventId, exception);
+                return PublishResult.buildNotPublished(eventId, exception);
             }
-            if (result == null) {
-                return null; // synchronous failure already logged in send, TODO: return null?
+            // Defensive check for unlikely case when the future completes successfully but sendResult is null
+            // since delivery status is uncertain, the publisher will retry to preserve at-least-once delivery
+            // the broker may have received the event, so a retry could result in a duplicate which idempotent consumer can handle
+            if (sendResult == null) {
+                return PublishResult.buildNotPublished(
+                        eventId, new IllegalStateException("Kafka send completed without a result"));
             }
             log.info("Event acknowledged by Kafka, eventId={}", eventId);
-            return eventId;
+            return PublishResult.buildPublished(eventId);
         });
     }
 }

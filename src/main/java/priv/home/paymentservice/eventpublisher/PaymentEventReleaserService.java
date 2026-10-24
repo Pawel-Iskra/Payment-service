@@ -9,9 +9,11 @@ import org.springframework.stereotype.Service;
 import priv.home.paymentservice.data.OutboxEventEntity;
 import priv.home.paymentservice.data.OutboxStorageJpa;
 import priv.home.paymentservice.eventpublisher.model.OutboxEventToPublish;
+import priv.home.paymentservice.eventpublisher.model.PublishResult;
 
-import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -29,56 +31,55 @@ public class PaymentEventReleaserService {
 
 
     public void publishPaymentCreatedEvents() {
-        int currentBatchSize;
         ScrollPosition position = ScrollPosition.keyset();
+        boolean hasNext;
+
         do {
             Window<OutboxEventEntity> eventBatchToPublishWindow = outboxStorageJpa
                     .findByPublishedAtIsNullAndFailedAtIsNullOrderByCreatedAtAscEventIdAsc(position, Limit.of(BATCH_SIZE));
-            currentBatchSize = eventBatchToPublishWindow.size();
+            hasNext = eventBatchToPublishWindow.hasNext();
             if (!eventBatchToPublishWindow.isEmpty() && eventBatchToPublishWindow.hasNext()) {
-                position = eventBatchToPublishWindow.positionAt(currentBatchSize - 1);
+                position = eventBatchToPublishWindow.positionAt(eventBatchToPublishWindow.size() - 1);
+            }
+            if (eventBatchToPublishWindow.isEmpty()) {
+                log.info("No unpublished events found");
+                return;
             }
 
-            List<OutboxEventEntity> outboxEventsEntityToPublish = eventBatchToPublishWindow.stream().toList();
+            List<OutboxEventEntity> outboxEventsEntityToPublish = eventBatchToPublishWindow.getContent();
+            Map<UUID, OutboxEventEntity> outboxEventEntityMap = getOutboxEventEntityMap(outboxEventsEntityToPublish);
+            log.info("Amount of events to publish = {}", outboxEventsEntityToPublish.size());
             List<OutboxEventToPublish> eventsToPublish = outboxEventsEntityToPublish
                     .stream()
                     .map(this::getOutboxEventToPublish)
                     .toList();
-            log.info("Amount of events to publish = {}", eventsToPublish.size());
 
-            List<UUID> eventIdsToPublish = eventsToPublish.stream().map(OutboxEventToPublish::eventId).toList();
-            if (eventsToPublish.isEmpty()) {
-                log.info("No unpublished events found");
-                return;
-            }
-            List<UUID> acknowledgedEventIds = paymentEventPublisher.publishPaymentEvents(eventsToPublish);
-            log.info("Amount of published events acknowledged by publisher = {}", acknowledgedEventIds.size());
-            // TODO: update all attempt_count
-            int eventsUpdatedAsPublished = outboxStorageJpa.markEventsAsPublished(acknowledgedEventIds);
-            log.info("Events updated as published = {}", eventsUpdatedAsPublished);
-
-            List<OutboxEventEntity> eventsEntityNotPublished = outboxEventsEntityToPublish.stream()
-                    .filter(event -> !acknowledgedEventIds.contains(event.getEventId()))
-                    .toList();
-            updateNotPublishedOutboxEventEntity(eventsEntityNotPublished);
-            List<OutboxEventEntity> updatedNotPublished = outboxStorageJpa.saveAll(eventsEntityNotPublished);
-            log.info("Events updated as not published = {}",
-                    updatedNotPublished.stream().map(OutboxEventEntity::getEventId).toList());
-
-        } while (currentBatchSize == BATCH_SIZE);
+            List<PublishResult> publishResultList = paymentEventPublisher.publishPaymentEvents(eventsToPublish);
+            log.info("Amount of published events acknowledged by publisher = {}",
+                    publishResultList.stream().filter(PublishResult::isPublished).toList().size());
+            updateOutboxEventEntitiesAfterPublish(outboxEventEntityMap, publishResultList);
+            outboxStorageJpa.saveAll(outboxEventEntityMap.values());
+        } while (hasNext);
     }
 
-    private void updateNotPublishedOutboxEventEntity(List<OutboxEventEntity> eventsEntityNotPublished) {
-        for (OutboxEventEntity currentEvent : eventsEntityNotPublished) {
-            currentEvent.setAttempt_count(currentEvent.getAttempt_count() + 1);
-            int attempts = currentEvent.getAttempt_count();
-            if (attempts == MAX_ATTEMPT) {
-                currentEvent.setFailedAt(OffsetDateTime.now());
-                currentEvent.setLastError("ERROR TO BE PASSED"); // TODO: need to have error here
+
+    private Map<UUID, OutboxEventEntity> getOutboxEventEntityMap(List<OutboxEventEntity> outboxEventsEntityToPublish) {
+        Map<UUID, OutboxEventEntity> resultMap = new HashMap<>();
+        outboxEventsEntityToPublish.forEach(event -> resultMap.put(event.getEventId(), event));
+        return resultMap;
+    }
+
+    private void updateOutboxEventEntitiesAfterPublish(Map<UUID, OutboxEventEntity> outboxEventEntityMap, List<PublishResult> publishResultList) {
+        for (PublishResult currentPublishResult : publishResultList) {
+            UUID eventId = currentPublishResult.getEventId();
+            OutboxEventEntity currentOutboxEventEntity = outboxEventEntityMap.get(eventId);
+            if (currentPublishResult.isPublished()) {
+                currentOutboxEventEntity.markAsPublished();
+            } else {
+                currentOutboxEventEntity.markAsNotPublished(currentPublishResult.getErrorInfo(), MAX_ATTEMPT);
             }
         }
     }
-
 
     private OutboxEventToPublish getOutboxEventToPublish(OutboxEventEntity outboxEventEntity) {
         return OutboxEventToPublish.builder()
