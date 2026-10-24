@@ -50,15 +50,20 @@ public class OutboxEventEntity {
     @Column(name = "failed_at")
     private OffsetDateTime failedAt;
 
+    @Builder.Default
+    @Column(name = "next_attempt_at", nullable = false)
+    private OffsetDateTime nextAttemptAt = OffsetDateTime.now();
+
 
     public void markAsPublished() {
         this.attemptCount++;
         this.publishedAt = OffsetDateTime.now();
     }
 
-    public void markAsNotPublished(String errorInfo, int maxAttempts) {
-        this.attemptCount++;
+    public void markAsNotPublished(String errorInfo, int maxAttempts, OffsetDateTime nextAttemptAt) {
         this.lastError = errorInfo;
+        this.nextAttemptAt = nextAttemptAt;
+        this.attemptCount++;
         if (this.attemptCount >= maxAttempts) {
             this.failedAt = OffsetDateTime.now();
         }

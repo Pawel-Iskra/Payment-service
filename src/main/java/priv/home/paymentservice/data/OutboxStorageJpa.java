@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,7 +25,7 @@ public interface OutboxStorageJpa extends JpaRepository<OutboxEventEntity, UUID>
 
     List<OutboxEventEntity> findAllByPublishedAtIsNull();
 
-    Window<OutboxEventEntity> findByPublishedAtIsNullAndFailedAtIsNullOrderByCreatedAtAscEventIdAsc(
-            ScrollPosition position, Limit limit
-    );
+    Window<OutboxEventEntity>
+    findByPublishedAtIsNullAndFailedAtIsNullAndNextAttemptAtIsLessThanEqualOrderByCreatedAtAscEventIdAsc(
+            OffsetDateTime now, ScrollPosition position, Limit limit);
 }
