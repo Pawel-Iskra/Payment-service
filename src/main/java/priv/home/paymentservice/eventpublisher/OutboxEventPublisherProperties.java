@@ -10,8 +10,8 @@ import java.time.Duration;
 @Validated
 @ConfigurationProperties(prefix = "payment-service.outbox.publisher")
 public record OutboxEventPublisherProperties(
-        @Min(1) int batchSize,
         Duration schedulerInterval,
+        @Min(1) int batchSize,
         @Valid Retry retry) {
 
     public record Retry(
