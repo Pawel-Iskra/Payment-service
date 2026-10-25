@@ -17,6 +17,7 @@ import priv.home.paymentservice.eventpublisher.model.PublishResult;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,7 +51,8 @@ class PaymentEventReleaserServiceTest {
     @Test
     public void shouldPublishAllEventsAndUpdateEntities(CapturedOutput output) {
         // given
-        List<OutboxEventEntity> outboxEventEntitiesPack = getOutboxEventEntityList(2);
+        int amountOfEventEntities = 3;
+        List<OutboxEventEntity> outboxEventEntitiesPack = getOutboxEventEntityList(amountOfEventEntities);
         List<UUID> eventIds = outboxEventEntitiesPack.stream().map(OutboxEventEntity::getEventId).toList();
         List<PublishResult> publishResultList = getPublishResultAsPublished(outboxEventEntitiesPack);
         when(publisherProperties.batchSize()).thenReturn(BATCH_SIZE);
@@ -61,50 +63,46 @@ class PaymentEventReleaserServiceTest {
         when(paymentEventPublisher.publishPaymentEvents(any()))
                 .thenReturn(publishResultList);
         ArgumentCaptor<Collection<OutboxEventEntity>> captor = ArgumentCaptor.captor();
+        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now().minusNanos(1000);
 
         // when
         releaserService.publishPaymentCreatedEvents();
         verify(outboxStorageJpa).saveAll(captor.capture());
 
         // then
+        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now().plusNanos(1000);
         List<OutboxEventEntity> capturedEntities = captor.getValue().stream().toList();
         assertThat(capturedEntities).isNotEmpty();
-        assertThat(capturedEntities.getFirst()).satisfies(outboxEntity -> {
-            assertThat(eventIds).contains(outboxEntity.getEventId());
-            assertThat(outboxEntity.getPublishedAt()).isNotNull();
-            assertThat(outboxEntity.getNextAttemptAt()).isNotNull();
-            assertThat(outboxEntity.getAttemptCount()).isOne();
-            assertThat(outboxEntity.getFailedAt()).isNull();
-            assertThat(outboxEntity.getLastError()).isNull();
+        assertThat(capturedEntities).allSatisfy(oneOfEvent -> {
+            assertThat(eventIds).contains(oneOfEvent.getEventId());
+            assertThat(oneOfEvent.getPublishedAt())
+                    .isAfter(timeBeforePublishStart)
+                    .isBefore(timeAfterPublishEnd);
+            assertThat(oneOfEvent.getNextAttemptAt()).isNotNull();
+            assertThat(oneOfEvent.getAttemptCount()).isOne();
+            assertThat(oneOfEvent.getFailedAt()).isNull();
+            assertThat(oneOfEvent.getLastError()).isNull();
         });
-        assertThat(capturedEntities.getLast()).satisfies(outboxEntity -> {
-            assertThat(eventIds).contains(outboxEntity.getEventId());
-            assertThat(outboxEntity.getPublishedAt()).isNotNull();
-            assertThat(outboxEntity.getNextAttemptAt()).isNotNull();
-            assertThat(outboxEntity.getAttemptCount()).isOne();
-            assertThat(outboxEntity.getFailedAt()).isNull();
-            assertThat(outboxEntity.getLastError()).isNull();
-        });
-        assertThat(output.getOut()).contains(AMOUNT_EVENTS_TO_PUBLISH.formatted(outboxEventEntitiesPack.size()));
-        assertThat(output.getOut()).contains(AMOUNT_EVENTS_PUBLISHED_AND_ACKNOWLEDGED.formatted(outboxEventEntitiesPack.size()));
+        assertThat(output.getOut()).contains(AMOUNT_EVENTS_TO_PUBLISH.formatted(amountOfEventEntities));
+        assertThat(output.getOut()).contains(AMOUNT_EVENTS_PUBLISHED_AND_ACKNOWLEDGED.formatted(amountOfEventEntities));
     }
-
 
     @Test
     public void shouldUpdateEntitiesWhenPublishResultContainsNotPublishedAndPublished(CapturedOutput output) {
         // given
+        int firstAttemptCount = 0;
+        int secondAttemptCount = 2;
+        int thirdAttemptCount = VALID_PUBLISHER_RETRY_PROPERTIES.maxAttempt() - 1;
+        OffsetDateTime secondNextAttemptAt = OffsetDateTime.now().minusMinutes(1);
         String lastError = IllegalStateException.class.getName() + ", " + PUBLISH_EXCEPTION_MESSAGE;
-        OutboxEventEntity outboxEntityFirst = getOutboxEventEntity(0);
-        OutboxEventEntity outboxEntitySecond = getOutboxEventEntity(2, lastError, OffsetDateTime.now());
-        OutboxEventEntity outboxEntityThird = getOutboxEventEntity(VALID_PUBLISHER_RETRY_PROPERTIES.maxAttempt() - 1);
+        OutboxEventEntity outboxEntityFirst = getOutboxEventEntity(firstAttemptCount);
+        OutboxEventEntity outboxEntitySecond = getOutboxEventEntity(secondAttemptCount, lastError, secondNextAttemptAt);
+        OutboxEventEntity outboxEntityThird = getOutboxEventEntity(thirdAttemptCount, lastError, OffsetDateTime.now());
         List<OutboxEventEntity> outboxEventEntitiesPack = List.of(outboxEntityFirst, outboxEntitySecond, outboxEntityThird);
-        List<UUID> eventIds = outboxEventEntitiesPack.stream()
-                .map(OutboxEventEntity::getEventId)
-                .toList();
-        List<PublishResult> publishResultNotPublishedList = getPublishResultAsNotPublished(List.of(outboxEntityFirst, outboxEntityThird));
         List<PublishResult> publishResultPublishedList = getPublishResultAsPublished(List.of(outboxEntitySecond));
-        List<PublishResult> publishResultList = new ArrayList<>(publishResultPublishedList);
-        publishResultList.addAll(publishResultNotPublishedList);
+        List<PublishResult> publishResultNotPublishedList = getPublishResultAsNotPublished(List.of(outboxEntityFirst, outboxEntityThird));
+        List<PublishResult> allPublishResultList = new ArrayList<>(publishResultPublishedList);
+        allPublishResultList.addAll(publishResultNotPublishedList);
         when(publisherProperties.batchSize()).thenReturn(BATCH_SIZE);
         when(publisherProperties.retry()).thenReturn(VALID_PUBLISHER_RETRY_PROPERTIES);
         when(outboxStorageJpa
@@ -112,75 +110,78 @@ class PaymentEventReleaserServiceTest {
                         any(), any(), any()))
                 .thenReturn(getWindowReturn(outboxEventEntitiesPack, false));
         when(paymentEventPublisher.publishPaymentEvents(any()))
-                .thenReturn(publishResultList);
+                .thenReturn(allPublishResultList);
         ArgumentCaptor<Collection<OutboxEventEntity>> captor = ArgumentCaptor.captor();
-        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now();
+        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now().minusNanos(1000);
 
         // when
         releaserService.publishPaymentCreatedEvents();
         verify(outboxStorageJpa).saveAll(captor.capture());
 
         // then
-        List<OutboxEventEntity> capturedEntities = captor.getValue().stream()
-                .sorted(Comparator.comparing(OutboxEventEntity::getAttemptCount))
-                .toList();
-        // TODO: filter by eventId
-        /*
+        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now().plusNanos(1000);
+        List<OutboxEventEntity> capturedEntities = captor.getValue().stream().toList();
+        assertThat(capturedEntities).hasSize(outboxEventEntitiesPack.size());
         assertThat(capturedEntities)
-        .filteredOn(entity -> entity.getEventId().equals(outboxEntityFirst.getEventId()))
-        .singleElement()
-        .satisfies(entity -> {
-            assertThat(entity.getAttemptCount()).isEqualTo((short) 1);
-            assertThat(entity.getPublishedAt()).isNull();
-            assertThat(entity.getFailedAt()).isNull();
-            assertThat(entity.getLastError()).contains(PUBLISH_EXCEPTION_MESSAGE);
-        });
-         */
-        assertThat(capturedEntities).isNotEmpty();
-        assertThat(capturedEntities.getFirst()).satisfies(outboxEntity -> {
-            assertThat(eventIds).contains(outboxEntity.getEventId());
-            assertThat(outboxEntity.getPublishedAt()).isNull();
-            assertThat(outboxEntity.getNextAttemptAt()).isNotNull(); // TODO: check backoff calc
-            assertThat(outboxEntity.getAttemptCount()).isOne();
-            assertThat(outboxEntity.getLastError())
-                    .isNotNull()
-                    .contains(IllegalStateException.class.getName())
-                    .contains(PUBLISH_EXCEPTION_MESSAGE);
-            assertThat(outboxEntity.getFailedAt()).isNull();
-        });
-        assertThat(capturedEntities.get(1)).satisfies(outboxEntity -> {
-            assertThat(eventIds).contains(outboxEntity.getEventId());
-            assertThat(outboxEntity.getPublishedAt()).isNotNull();
-            assertThat(outboxEntity.getNextAttemptAt()).isNotNull();
-            assertThat(outboxEntity.getAttemptCount()).isEqualTo((short) 3);
-            assertThat(outboxEntity.getLastError())
-                    .isNotNull()
-                    .contains(IllegalStateException.class.getName())
-                    .contains(PUBLISH_EXCEPTION_MESSAGE);
-            assertThat(outboxEntity.getFailedAt()).isNull();
-        });
-        assertThat(capturedEntities.getLast()).satisfies(outboxEntity -> {
-            assertThat(eventIds).contains(outboxEntity.getEventId());
-            assertThat(outboxEntity.getPublishedAt()).isNull();
-            assertThat(outboxEntity.getNextAttemptAt()).isNotNull(); // TODO: check backoff calc
-            assertThat(outboxEntity.getAttemptCount()).isEqualTo((short) VALID_PUBLISHER_RETRY_PROPERTIES.maxAttempt());
-            assertThat(outboxEntity.getLastError())
-                    .isNotNull()
-                    .contains(IllegalStateException.class.getName())
-                    .contains(PUBLISH_EXCEPTION_MESSAGE);
-            assertThat(outboxEntity.getFailedAt()).isNotNull();
-        });
+                .filteredOn(entity -> entity.getEventId().equals(outboxEntityFirst.getEventId()))
+                .singleElement()
+                .satisfies(eventEntity -> {
+                    assertThat(eventEntity.getPublishedAt()).isNull();
+                    assertThat(eventEntity.getNextAttemptAt())
+                            .isAfter(timeBeforePublishStart.plus(calculateBackoff(firstAttemptCount)))
+                            .isBefore(timeAfterPublishEnd.plus(calculateBackoff(firstAttemptCount)));
+                    assertThat(eventEntity.getAttemptCount()).isEqualTo((short) (firstAttemptCount + 1));
+                    assertThat(eventEntity.getLastError())
+                            .isNotNull()
+                            .contains(IllegalStateException.class.getName())
+                            .contains(PUBLISH_EXCEPTION_MESSAGE);
+                    assertThat(eventEntity.getFailedAt()).isNull();
+                });
+        assertThat(capturedEntities)
+                .filteredOn(eventEntity -> eventEntity.getEventId().equals(outboxEntitySecond.getEventId()))
+                .singleElement()
+                .satisfies(eventEntity -> {
+                    assertThat(eventEntity.getPublishedAt())
+                            .isAfter(timeBeforePublishStart)
+                            .isBefore(timeAfterPublishEnd);
+                    assertThat(eventEntity.getNextAttemptAt()).isEqualTo(secondNextAttemptAt);
+                    assertThat(eventEntity.getAttemptCount()).isEqualTo((short) (secondAttemptCount + 1));
+                    assertThat(eventEntity.getLastError())
+                            .isNotNull()
+                            .contains(IllegalStateException.class.getName())
+                            .contains(PUBLISH_EXCEPTION_MESSAGE);
+                    assertThat(eventEntity.getFailedAt()).isNull();
+                });
+        assertThat(capturedEntities)
+                .filteredOn(entity -> entity.getEventId().equals(outboxEntityThird.getEventId()))
+                .singleElement()
+                .satisfies(outboxEntity -> {
+                    assertThat(outboxEntity.getPublishedAt()).isNull();
+                    assertThat(outboxEntity.getNextAttemptAt())
+                            .isAfter(timeBeforePublishStart.plus(calculateBackoff(thirdAttemptCount)))
+                            .isBefore(timeAfterPublishEnd.plus(calculateBackoff(thirdAttemptCount)));
+                    assertThat(outboxEntity.getAttemptCount()).isEqualTo((short) VALID_PUBLISHER_RETRY_PROPERTIES.maxAttempt());
+                    assertThat(outboxEntity.getLastError())
+                            .isNotNull()
+                            .contains(IllegalStateException.class.getName())
+                            .contains(PUBLISH_EXCEPTION_MESSAGE);
+                    assertThat(outboxEntity.getFailedAt())
+                            .isAfter(timeBeforePublishStart)
+                            .isBefore(timeAfterPublishEnd);
+                });
         assertThat(output.getOut()).contains(AMOUNT_EVENTS_TO_PUBLISH.formatted(outboxEventEntitiesPack.size()));
         assertThat(output.getOut()).contains(AMOUNT_EVENTS_PUBLISHED_AND_ACKNOWLEDGED.formatted(1));
     }
 
     @Test
-    public void shouldPublishAllEventsAndUpdateEntitiesWhenEventsMoreThanOnePackage(CapturedOutput output) {
+    public void shouldPublishAllEventsAndUpdateEntitiesWhenMoreThanOnePackageOfEvents(CapturedOutput output) {
         // given
-        int amountOfAllEvents = 8; // less than 2*batchSize
+        int amountOfAllEvents = 2 * BATCH_SIZE - 1;
         int eventsInSecondGroup = amountOfAllEvents - BATCH_SIZE;
         List<OutboxEventEntity> outboxEventEntitiesPackFirst = getOutboxEventEntityList(BATCH_SIZE);
         List<OutboxEventEntity> outboxEventEntitiesPackSecond = getOutboxEventEntityList(eventsInSecondGroup);
+        List<UUID> eventIds = outboxEventEntitiesPackFirst.stream().map(OutboxEventEntity::getEventId).collect(Collectors.toList());
+        eventIds.addAll(outboxEventEntitiesPackSecond.stream().map(OutboxEventEntity::getEventId).toList());
         List<PublishResult> publishResultListFirst = getPublishResultAsPublished(outboxEventEntitiesPackFirst);
         List<PublishResult> publishResultListSecond = getPublishResultAsPublished(outboxEventEntitiesPackSecond);
         when(publisherProperties.batchSize()).thenReturn(BATCH_SIZE);
@@ -196,18 +197,24 @@ class PaymentEventReleaserServiceTest {
 
         // when
         releaserService.publishPaymentCreatedEvents();
-        verify(outboxStorageJpa, times(2)).saveAll(captor.capture());
+        verify(outboxStorageJpa, times((int) Math.ceil((double) amountOfAllEvents / BATCH_SIZE))).saveAll(captor.capture());
 
         // then
-        List<OutboxEventEntity> capturedEntitiesFirst = captor.getAllValues().stream().flatMap(Collection::stream).toList();
-        assertThat(capturedEntitiesFirst).hasSize(8);
-
+        List<OutboxEventEntity> capturedEntities = captor.getAllValues().stream().flatMap(Collection::stream).toList();
+        assertThat(capturedEntities).hasSize(amountOfAllEvents);
+        assertThat(capturedEntities).allSatisfy(oneOfEvent -> {
+            assertThat(eventIds).contains(oneOfEvent.getEventId());
+            assertThat(oneOfEvent.getPublishedAt()).isNotNull();
+            assertThat(oneOfEvent.getNextAttemptAt()).isNotNull();
+            assertThat(oneOfEvent.getAttemptCount()).isOne();
+            assertThat(oneOfEvent.getFailedAt()).isNull();
+            assertThat(oneOfEvent.getLastError()).isNull();
+        });
         assertThat(output.getOut()).contains(AMOUNT_EVENTS_TO_PUBLISH.formatted(BATCH_SIZE));
         assertThat(output.getOut()).contains(AMOUNT_EVENTS_TO_PUBLISH.formatted(eventsInSecondGroup));
         assertThat(output.getOut()).contains(AMOUNT_EVENTS_PUBLISHED_AND_ACKNOWLEDGED.formatted(BATCH_SIZE));
         assertThat(output.getOut()).contains(AMOUNT_EVENTS_PUBLISHED_AND_ACKNOWLEDGED.formatted(eventsInSecondGroup));
     }
-
 
     @Test
     public void shouldNotPublishWhenNoEligibleEvents(CapturedOutput output) {
