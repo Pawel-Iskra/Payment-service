@@ -84,7 +84,7 @@ public class PaymentEventReleaserService {
                 int attemptsDone = currentOutboxEventEntity.getAttemptCount();
                 OffsetDateTime nextAttemptAt = OffsetDateTime.now().plus(calculateBackoff(attemptsDone));
                 currentOutboxEventEntity.markAsNotPublished(
-                        currentPublishResult.getErrorInfo(), publisherProperties.maxAttempt(), nextAttemptAt);
+                        currentPublishResult.getErrorInfo(), publisherProperties.retry().maxAttempt(), nextAttemptAt);
             }
         }
     }

@@ -24,7 +24,7 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
 
     public KafkaPaymentEventPublisher(
-            @Value("${payment-service.kafka-topic}") String kafkaTopic, // TODO: @ConfigurationProperties
+            @Value("${payment-service.kafka-topic}") String kafkaTopic,
             KafkaTemplate<String, String> kafkaTemplate) {
         this.kafkaTopic = kafkaTopic;
         this.kafkaTemplate = kafkaTemplate;

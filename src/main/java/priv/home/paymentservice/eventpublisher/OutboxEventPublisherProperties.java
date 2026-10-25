@@ -11,13 +11,13 @@ import java.time.Duration;
 @ConfigurationProperties(prefix = "payment-service.outbox.publisher")
 public record OutboxEventPublisherProperties(
         @Min(1) int batchSize,
-        @Min(1) int maxAttempt,
         Duration schedulerInterval,
         @Valid Retry retry) {
 
     public record Retry(
-            Duration initialBackoff,
+            @Min(1) int maxAttempt,
             @Min(1) int multiplier,
+            Duration initialBackoff,
             Duration maxBackoff) {
 
         public Retry {
