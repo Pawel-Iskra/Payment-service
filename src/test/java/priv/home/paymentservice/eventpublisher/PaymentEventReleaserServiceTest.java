@@ -52,6 +52,7 @@ class PaymentEventReleaserServiceTest {
     public void shouldPublishAllEventsAndUpdateEntities(CapturedOutput output) {
         // given
         int amountOfEventEntities = 3;
+        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now();
         List<OutboxEventEntity> outboxEventEntitiesPack = getOutboxEventEntityList(amountOfEventEntities);
         List<UUID> eventIds = outboxEventEntitiesPack.stream().map(OutboxEventEntity::getEventId).toList();
         List<PublishResult> publishResultList = getPublishResultAsPublished(outboxEventEntitiesPack);
@@ -63,16 +64,15 @@ class PaymentEventReleaserServiceTest {
         when(paymentEventPublisher.publishPaymentEvents(any()))
                 .thenReturn(publishResultList);
         ArgumentCaptor<Collection<OutboxEventEntity>> captor = ArgumentCaptor.captor();
-        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now().minusNanos(1000);
 
         // when
         releaserService.publishPaymentCreatedEvents();
         verify(outboxStorageJpa).saveAll(captor.capture());
 
         // then
-        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now().plusNanos(1000);
         List<OutboxEventEntity> capturedEntities = captor.getValue().stream().toList();
-        assertThat(capturedEntities).isNotEmpty();
+        assertThat(capturedEntities).hasSize(amountOfEventEntities);
+        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now();
         assertThat(capturedEntities).allSatisfy(oneOfEvent -> {
             assertThat(eventIds).contains(oneOfEvent.getEventId());
             assertThat(oneOfEvent.getPublishedAt())
@@ -93,6 +93,7 @@ class PaymentEventReleaserServiceTest {
         int firstAttemptCount = 0;
         int secondAttemptCount = 2;
         int thirdAttemptCount = VALID_PUBLISHER_RETRY_PROPERTIES.maxAttempt() - 1;
+        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now();
         OffsetDateTime secondNextAttemptAt = OffsetDateTime.now().minusMinutes(1);
         String lastError = IllegalStateException.class.getName() + ", " + PUBLISH_EXCEPTION_MESSAGE;
         OutboxEventEntity outboxEntityFirst = getOutboxEventEntity(firstAttemptCount);
@@ -112,16 +113,15 @@ class PaymentEventReleaserServiceTest {
         when(paymentEventPublisher.publishPaymentEvents(any()))
                 .thenReturn(allPublishResultList);
         ArgumentCaptor<Collection<OutboxEventEntity>> captor = ArgumentCaptor.captor();
-        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now().minusNanos(1000);
 
         // when
         releaserService.publishPaymentCreatedEvents();
         verify(outboxStorageJpa).saveAll(captor.capture());
 
         // then
-        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now().plusNanos(1000);
         List<OutboxEventEntity> capturedEntities = captor.getValue().stream().toList();
         assertThat(capturedEntities).hasSize(outboxEventEntitiesPack.size());
+        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now();
         assertThat(capturedEntities)
                 .filteredOn(entity -> entity.getEventId().equals(outboxEntityFirst.getEventId()))
                 .singleElement()
