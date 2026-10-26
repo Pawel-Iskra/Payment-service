@@ -14,10 +14,13 @@ import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import priv.home.paymentservice.data.OutboxEventEntity;
-import priv.home.paymentservice.data.OutboxStorageJpa;
-import priv.home.paymentservice.eventpublisher.model.OutboxEventToPublish;
-import priv.home.paymentservice.eventpublisher.model.PublishResult;
+import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
+import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
+import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
+import priv.home.paymentservice.outbox.model.PublishResult;
+import priv.home.paymentservice.outbox.application.PaymentEventPublisher;
+import priv.home.paymentservice.outbox.application.PaymentEventReleaserService;
+import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;

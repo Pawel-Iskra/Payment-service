@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import priv.home.paymentservice.model.PaymentStatus;
+import priv.home.paymentservice.payment.model.PaymentStatus;
 
 import java.util.Optional;
 import java.util.UUID;

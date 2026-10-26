@@ -8,7 +8,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import priv.home.paymentservice.data.jdbcoption.PaymentStorageJdbc;
 import priv.home.paymentservice.data.jdbcoption.Payment;
-import priv.home.paymentservice.model.PaymentStatus;
+import priv.home.paymentservice.payment.model.PaymentStatus;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;

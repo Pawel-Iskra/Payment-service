@@ -3,8 +3,6 @@ package priv.home.paymentservice.data.jdbcoption;
 
 import lombok.AllArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
-import priv.home.paymentservice.eventpublisher.model.OutboxEventToPublish;
-import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;

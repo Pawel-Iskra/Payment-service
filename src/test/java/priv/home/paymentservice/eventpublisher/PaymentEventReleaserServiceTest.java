@@ -10,9 +10,12 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.data.domain.ScrollPosition;
 import org.springframework.data.domain.Window;
-import priv.home.paymentservice.data.OutboxEventEntity;
-import priv.home.paymentservice.data.OutboxStorageJpa;
-import priv.home.paymentservice.eventpublisher.model.PublishResult;
+import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
+import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
+import priv.home.paymentservice.outbox.model.PublishResult;
+import priv.home.paymentservice.outbox.application.PaymentEventPublisher;
+import priv.home.paymentservice.outbox.application.PaymentEventReleaserService;
+import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;

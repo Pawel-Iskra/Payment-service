@@ -10,6 +10,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import priv.home.paymentservice.eventconsumer.persistence.ConsumedEventEntity;
+import priv.home.paymentservice.eventconsumer.persistence.ConsumedEventStorageJpa;
 
 import java.time.OffsetDateTime;
 import java.util.List;

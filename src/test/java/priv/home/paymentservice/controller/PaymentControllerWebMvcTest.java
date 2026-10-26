@@ -7,12 +7,13 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import priv.home.paymentservice.dto.PaymentCreationDto;
-import priv.home.paymentservice.dto.PaymentRequest;
+import priv.home.paymentservice.payment.application.PaymentCreationDto;
+import priv.home.paymentservice.payment.api.dto.PaymentRequest;
 import priv.home.paymentservice.data.jdbcoption.Payment;
-import priv.home.paymentservice.dto.PaymentResponse;
-import priv.home.paymentservice.model.PaymentStatus;
-import priv.home.paymentservice.service.PaymentService;
+import priv.home.paymentservice.payment.api.dto.PaymentResponse;
+import priv.home.paymentservice.payment.model.PaymentStatus;
+import priv.home.paymentservice.payment.api.PaymentController;
+import priv.home.paymentservice.payment.application.PaymentService;
 
 import java.math.BigDecimal;
 import java.util.Optional;

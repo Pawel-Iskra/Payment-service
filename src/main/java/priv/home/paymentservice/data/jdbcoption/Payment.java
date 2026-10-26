@@ -2,7 +2,7 @@ package priv.home.paymentservice.data.jdbcoption;
 
 import lombok.Builder;
 import lombok.Getter;
-import priv.home.paymentservice.model.PaymentStatus;
+import priv.home.paymentservice.payment.model.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.util.UUID;

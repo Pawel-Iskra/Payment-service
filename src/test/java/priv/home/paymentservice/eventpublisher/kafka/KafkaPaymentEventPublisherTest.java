@@ -10,11 +10,12 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
-import priv.home.paymentservice.eventpublisher.model.OutboxEventToPublish;
-import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
-import priv.home.paymentservice.eventpublisher.model.PublishResult;
-import priv.home.paymentservice.model.PaymentEventType;
-import priv.home.paymentservice.model.PaymentStatus;
+import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
+import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
+import priv.home.paymentservice.outbox.model.PublishResult;
+import priv.home.paymentservice.messaging.event.PaymentEventType;
+import priv.home.paymentservice.outbox.kafka.KafkaPaymentEventPublisher;
+import priv.home.paymentservice.payment.model.PaymentStatus;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
