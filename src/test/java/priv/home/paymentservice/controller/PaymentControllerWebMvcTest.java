@@ -7,9 +7,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import priv.home.paymentservice.payment.application.PaymentCreationDto;
-import priv.home.paymentservice.payment.api.dto.PaymentRequest;
-import priv.home.paymentservice.data.jdbcoption.Payment;
+import priv.home.paymentservice.payment.application.CreatePaymentResult;
+import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 import priv.home.paymentservice.payment.api.PaymentController;
@@ -56,9 +55,9 @@ public class PaymentControllerWebMvcTest {
         // given
         UUID paymentId = generateUuid();
         String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT.toString(), CURRENCY_PLN);
-        PaymentCreationDto paymentCreationDto = getSuccessfulPaymentCreationResponse(
+        CreatePaymentResult createPaymentResult = getSuccessfulPaymentCreationResponse(
                 getValidPaymentFromRequest(gePaymentRequest(VALID_AMOUNT, CURRENCY_PLN), paymentId));
-        when(paymentService.createPayment(any(String.class), any(PaymentRequest.class))).thenReturn(paymentCreationDto);
+        when(paymentService.createPayment(any(String.class), any(CreatePaymentRequest.class))).thenReturn(createPaymentResult);
 
         // then
         mockMvc.perform(post(POST_PATH)
@@ -77,9 +76,9 @@ public class PaymentControllerWebMvcTest {
         // given
         UUID paymentId = generateUuid();
         String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT.toString(), CURRENCY_PLN);
-        PaymentCreationDto paymentCreationDto = getPaymentAlreadyExistPaymentCreationResponse(
+        CreatePaymentResult createPaymentResult = getPaymentAlreadyExistPaymentCreationResponse(
                 getValidPaymentFromRequest(gePaymentRequest(VALID_AMOUNT, CURRENCY_PLN), paymentId));
-        when(paymentService.createPayment(any(String.class), any(PaymentRequest.class))).thenReturn(paymentCreationDto);
+        when(paymentService.createPayment(any(String.class), any(CreatePaymentRequest.class))).thenReturn(createPaymentResult);
 
         // then
         mockMvc.perform(post(POST_PATH)
@@ -145,11 +144,11 @@ public class PaymentControllerWebMvcTest {
     }
 
     // TODO: replace/refactor
-    private Payment getValidPaymentFromRequest(PaymentRequest validPaymentRequest, UUID paymentId) {
+    private Payment getValidPaymentFromRequest(CreatePaymentRequest validCreatePaymentRequest, UUID paymentId) {
         return Payment.builder()
                 .paymentId(paymentId)
-                .amount(validPaymentRequest.amount())
-                .currency(validPaymentRequest.currency())
+                .amount(validCreatePaymentRequest.amount())
+                .currency(validCreatePaymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
                 .build();
     }
@@ -164,8 +163,8 @@ public class PaymentControllerWebMvcTest {
     }
 
 
-    private PaymentCreationDto getPaymentAlreadyExistPaymentCreationResponse(Payment payment) {
-        return PaymentCreationDto.builder()
+    private CreatePaymentResult getPaymentAlreadyExistPaymentCreationResponse(Payment payment) {
+        return CreatePaymentResult.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
@@ -174,8 +173,8 @@ public class PaymentControllerWebMvcTest {
                 .build();
     }
 
-    private PaymentCreationDto getSuccessfulPaymentCreationResponse(Payment payment) {
-        return PaymentCreationDto.builder()
+    private CreatePaymentResult getSuccessfulPaymentCreationResponse(Payment payment) {
+        return CreatePaymentResult.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
@@ -184,7 +183,7 @@ public class PaymentControllerWebMvcTest {
                 .build();
     }
 
-    private PaymentRequest gePaymentRequest(BigDecimal amount, String currency) {
-        return new PaymentRequest(amount, currency);
+    private CreatePaymentRequest gePaymentRequest(BigDecimal amount, String currency) {
+        return new CreatePaymentRequest(amount, currency);
     }
 }

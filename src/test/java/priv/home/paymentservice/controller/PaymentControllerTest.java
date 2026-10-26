@@ -9,9 +9,9 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import priv.home.paymentservice.payment.api.dto.PaymentRequest;
+import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException;
-import priv.home.paymentservice.payment.application.PaymentCreationDto;
+import priv.home.paymentservice.payment.application.CreatePaymentResult;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 import priv.home.paymentservice.payment.api.PaymentController;
@@ -39,12 +39,12 @@ class PaymentControllerTest {
     @Test
     public void whenPaymentAddedSuccessfullyThenShouldBeProperResponse() {
         // given
-        PaymentRequest properPaymentRequest = getProperPaymentRequest();
-        PaymentCreationDto paymentCreationDto = getSuccessfulPaymentCreationResponse(properPaymentRequest);
-        Mockito.when(paymentService.createPayment(any(), any())).thenReturn(paymentCreationDto);
+        CreatePaymentRequest properCreatePaymentRequest = getProperPaymentRequest();
+        CreatePaymentResult createPaymentResult = getSuccessfulPaymentCreationResponse(properCreatePaymentRequest);
+        Mockito.when(paymentService.createPayment(any(), any())).thenReturn(createPaymentResult);
 
         // when
-        ResponseEntity<PaymentResponse> result = underTest.createPayment(IDEMPOTENCY_KEY, properPaymentRequest);
+        ResponseEntity<PaymentResponse> result = underTest.createPayment(IDEMPOTENCY_KEY, properCreatePaymentRequest);
 
         // then
         Assertions.assertThat(result.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -54,8 +54,8 @@ class PaymentControllerTest {
     @Test
     public void shouldReturnHttpOKForExistingPayment() {
         // given
-        PaymentRequest properPaymentRequest = getProperPaymentRequest();
-        PaymentResponse paymentResponse = getSuccessfullPaymentResponse(properPaymentRequest);
+        CreatePaymentRequest properCreatePaymentRequest = getProperPaymentRequest();
+        PaymentResponse paymentResponse = getSuccessfullPaymentResponse(properCreatePaymentRequest);
         Mockito.when(paymentService.retrieveSinglePaymentByPaymentId(any())).thenReturn(Optional.of(paymentResponse));
 
         // when
@@ -78,26 +78,26 @@ class PaymentControllerTest {
     }
 
 
-    private PaymentRequest getProperPaymentRequest() {
-        return new PaymentRequest(new BigDecimal("123.45"), "PLN");
+    private CreatePaymentRequest getProperPaymentRequest() {
+        return new CreatePaymentRequest(new BigDecimal("123.45"), "PLN");
     }
 
 
-    private PaymentCreationDto getSuccessfulPaymentCreationResponse(PaymentRequest paymentRequest) {
-        return PaymentCreationDto.builder()
+    private CreatePaymentResult getSuccessfulPaymentCreationResponse(CreatePaymentRequest createPaymentRequest) {
+        return CreatePaymentResult.builder()
                 .paymentId(generateUuid())
-                .amount(paymentRequest.amount())
-                .currency(paymentRequest.currency())
+                .amount(createPaymentRequest.amount())
+                .currency(createPaymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
                 .wasAlreadyInDb(Boolean.FALSE)
                 .build();
     }
 
-    private PaymentResponse getSuccessfullPaymentResponse(PaymentRequest paymentRequest) {
+    private PaymentResponse getSuccessfullPaymentResponse(CreatePaymentRequest createPaymentRequest) {
         return PaymentResponse.builder()
                 .paymentId(generateUuid())
-                .amount(paymentRequest.amount())
-                .currency(paymentRequest.currency())
+                .amount(createPaymentRequest.amount())
+                .currency(createPaymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
                 .build();
     }

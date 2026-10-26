@@ -16,8 +16,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 import priv.home.paymentservice.payment.persistence.PaymentEntity;
-import priv.home.paymentservice.payment.application.PaymentCreationDto;
-import priv.home.paymentservice.payment.api.dto.PaymentRequest;
+import priv.home.paymentservice.payment.application.CreatePaymentResult;
+import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 import priv.home.paymentservice.payment.application.PaymentService;
@@ -91,10 +91,10 @@ public class PaymentServiceIntegrationTest {
     @Test
     public void shouldInsertBothPaymentAndEventToDbAsNormalExpectedCase() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
 
         // when
-        PaymentCreationDto resultPaymentCreationDto = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, paymentRequest);
+        CreatePaymentResult resultCreatePaymentResult = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
 
         // then
         Integer countEventRecords = jdbcTemplate.queryForObject(SELECT_COUNT_ALL_OUTBOX_EVENT_SQL, Integer.class);
@@ -106,7 +106,7 @@ public class PaymentServiceIntegrationTest {
         assertThat(paymentFromDbOptional).isNotEmpty();
         PaymentEntity paymentFromDb = paymentFromDbOptional.get();
 
-        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultPaymentCreationDto.getPaymentId());
+        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultCreatePaymentResult.getPaymentId());
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
         String eventPayload = eventPayloadFromDbAsList.getFirst();
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
@@ -118,11 +118,11 @@ public class PaymentServiceIntegrationTest {
     @Test
     public void shouldInsertOnePaymentToDbWhenTwoSameRequests() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
 
         // when
-        PaymentCreationDto resultFirstInsert = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, paymentRequest);
-        PaymentCreationDto resultSecondInsert = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, paymentRequest);
+        CreatePaymentResult resultFirstInsert = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
+        CreatePaymentResult resultSecondInsert = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
 
         // then
         assertThat(resultFirstInsert.getPaymentId()).isEqualTo(resultSecondInsert.getPaymentId());
@@ -154,23 +154,23 @@ public class PaymentServiceIntegrationTest {
     public void shouldInsertOnePaymentToDbWhenRaceCondition() throws ExecutionException, InterruptedException {
         // given
         UUID paymentId;
-        PaymentRequest paymentRequest = getValidPaymentRequest();
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch startThreadsForInsert = new CountDownLatch(1);
 
-        Callable<PaymentCreationDto> insertPayment = () -> {
+        Callable<CreatePaymentResult> insertPayment = () -> {
             startThreadsForInsert.await();
-            return paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, paymentRequest);
+            return paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
         };
 
         // when + then
         try {
-            Future<PaymentCreationDto> first = executor.submit(insertPayment);
-            Future<PaymentCreationDto> second = executor.submit(insertPayment);
+            Future<CreatePaymentResult> first = executor.submit(insertPayment);
+            Future<CreatePaymentResult> second = executor.submit(insertPayment);
             startThreadsForInsert.countDown();
 
-            PaymentCreationDto firstThreadResult = first.get();
-            PaymentCreationDto secondThreadResult = second.get();
+            CreatePaymentResult firstThreadResult = first.get();
+            CreatePaymentResult secondThreadResult = second.get();
 
             assertThat(firstThreadResult.getPaymentId()).isEqualTo(secondThreadResult.getPaymentId());
             assertThat(firstThreadResult.isWasAlreadyInDb()).isNotEqualTo(secondThreadResult.isWasAlreadyInDb());
@@ -200,13 +200,13 @@ public class PaymentServiceIntegrationTest {
     @Test
     public void shouldRollbackPaymentInsertIfOutboxInsertThrowsException() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
         doThrow(new RuntimeException(SIMULATED_OUTBOX_FAILURE_MESSAGE))
                 .when(outboxStorageJpa).save(any(OutboxEventEntity.class));
 
         // when
         RuntimeException thrown = assertThrows(RuntimeException.class, () ->
-                paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, paymentRequest));
+                paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest));
 
         // then
         assertThat(thrown.getMessage()).contains(SIMULATED_OUTBOX_FAILURE_MESSAGE);
@@ -249,8 +249,8 @@ public class PaymentServiceIntegrationTest {
     }
 
 
-    private PaymentRequest getValidPaymentRequest() {
-        return new PaymentRequest(VALID_AMOUNT, CURRENCY_PLN);
+    private CreatePaymentRequest getValidPaymentRequest() {
+        return new CreatePaymentRequest(VALID_AMOUNT, CURRENCY_PLN);
     }
 
 }

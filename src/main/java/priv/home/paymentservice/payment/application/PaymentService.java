@@ -7,7 +7,7 @@ import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 import priv.home.paymentservice.payment.persistence.PaymentEntity;
 import priv.home.paymentservice.payment.persistence.PaymentStorageJpa;
-import priv.home.paymentservice.payment.api.dto.PaymentRequest;
+import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.messaging.event.PaymentEventType;
@@ -28,12 +28,12 @@ public class PaymentService {
 
 
     @Transactional
-    public PaymentCreationDto createPayment(String idempotencyKey, PaymentRequest paymentRequest) {
+    public CreatePaymentResult createPayment(String idempotencyKey, CreatePaymentRequest createPaymentRequest) {
         Optional<PaymentEntity> paymentFromDbOptional = retrieveSinglePaymentByIdempotencyKey(idempotencyKey);
         if (paymentFromDbOptional.isPresent()) {
             return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDbOptional.get());
         }
-        PaymentEntity paymentToInsert = buildPaymentFromDto(idempotencyKey, paymentRequest);
+        PaymentEntity paymentToInsert = buildPaymentFromDto(idempotencyKey, createPaymentRequest);
         Optional<PaymentEntity> insertedPaymentOptional = paymentStorageJpa.insertPaymentIfAbsent(paymentToInsert);
         if (insertedPaymentOptional.isEmpty()) {
             PaymentEntity paymentFromDb = retrieveSinglePaymentByIdempotencyKey(idempotencyKey)
@@ -65,8 +65,8 @@ public class PaymentService {
     }
 
 
-    private PaymentCreationDto buildPaymentAlreadyExistPaymentCreationDto(PaymentEntity payment) {
-        return PaymentCreationDto.builder()
+    private CreatePaymentResult buildPaymentAlreadyExistPaymentCreationDto(PaymentEntity payment) {
+        return CreatePaymentResult.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
@@ -75,8 +75,8 @@ public class PaymentService {
                 .build();
     }
 
-    private PaymentCreationDto buildPaymentSuccessfulPersistedPaymentCreationDto(PaymentEntity payment) {
-        return PaymentCreationDto.builder()
+    private CreatePaymentResult buildPaymentSuccessfulPersistedPaymentCreationDto(PaymentEntity payment) {
+        return CreatePaymentResult.builder()
                 .paymentId(payment.getPaymentId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
@@ -94,11 +94,11 @@ public class PaymentService {
                 .build();
     }
 
-    private PaymentEntity buildPaymentFromDto(String idempotencyKey, PaymentRequest paymentRequest) {
+    private PaymentEntity buildPaymentFromDto(String idempotencyKey, CreatePaymentRequest createPaymentRequest) {
         return PaymentEntity.builder()
                 .paymentId(generateUuid())
-                .amount(paymentRequest.amount())
-                .currency(paymentRequest.currency())
+                .amount(createPaymentRequest.amount())
+                .currency(createPaymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
                 .idempotencyKey(idempotencyKey)
                 .build();

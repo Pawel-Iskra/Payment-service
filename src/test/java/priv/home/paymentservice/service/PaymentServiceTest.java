@@ -10,8 +10,8 @@ import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 import priv.home.paymentservice.payment.persistence.PaymentEntity;
 import priv.home.paymentservice.payment.persistence.PaymentStorageJpa;
-import priv.home.paymentservice.payment.application.PaymentCreationDto;
-import priv.home.paymentservice.payment.api.dto.PaymentRequest;
+import priv.home.paymentservice.payment.application.CreatePaymentResult;
+import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.payment.model.PaymentStatus;
@@ -47,7 +47,7 @@ class PaymentServiceTest {
     @Test
     public void shouldAddPaymentToStorage() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
         when(paymentStorageJpa.findByIdempotencyKey(any(String.class)))
                 .thenReturn(Optional.empty());
         when(paymentStorageJpa.insertPaymentIfAbsent(any(PaymentEntity.class)))
@@ -55,7 +55,7 @@ class PaymentServiceTest {
         // thenAnswer -> returns Payment object passed by Service to Storage
 
         // when
-        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+        underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
         verify(paymentStorageJpa).insertPaymentIfAbsent(any(PaymentEntity.class));
@@ -64,7 +64,7 @@ class PaymentServiceTest {
     @Test
     public void shouldAddPaymentToStorageWithCorrectValues() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
         ArgumentCaptor<PaymentEntity> paymentArgumentCaptor = ArgumentCaptor.forClass(PaymentEntity.class);
         when(paymentStorageJpa.findByIdempotencyKey(any(String.class)))
                 .thenReturn(Optional.empty());
@@ -72,12 +72,12 @@ class PaymentServiceTest {
                 .thenAnswer(invocation -> Optional.of(invocation.getArgument(0)));
 
         // when + then
-        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+        underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
         verify(paymentStorageJpa).insertPaymentIfAbsent(paymentArgumentCaptor.capture());
         PaymentEntity savedPayment = paymentArgumentCaptor.getValue();
 
-        assertThat(savedPayment.getAmount()).isEqualTo(paymentRequest.amount());
-        assertThat(savedPayment.getCurrency()).isEqualTo(paymentRequest.currency());
+        assertThat(savedPayment.getAmount()).isEqualTo(createPaymentRequest.amount());
+        assertThat(savedPayment.getCurrency()).isEqualTo(createPaymentRequest.currency());
         assertThat(savedPayment.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
         assertThat(savedPayment.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY);
         assertThat(savedPayment.getPaymentId()).isNotNull();
@@ -86,31 +86,31 @@ class PaymentServiceTest {
     @Test
     public void shouldCreatePaymentWithRequestedAmountAndCurrency() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
         when(paymentStorageJpa.findByIdempotencyKey(any(String.class)))
                 .thenReturn(Optional.empty());
         when(paymentStorageJpa.insertPaymentIfAbsent(any(PaymentEntity.class)))
                 .thenAnswer(invocation -> Optional.of(invocation.getArgument(0)));
 
         // when
-        PaymentCreationDto paymentCreationDto = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+        CreatePaymentResult createPaymentResult = underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
-        assertThat(paymentCreationDto.getAmount()).isEqualTo(paymentRequest.amount());
-        assertThat(paymentCreationDto.getCurrency()).isEqualTo(paymentRequest.currency());
+        assertThat(createPaymentResult.getAmount()).isEqualTo(createPaymentRequest.amount());
+        assertThat(createPaymentResult.getCurrency()).isEqualTo(createPaymentRequest.currency());
     }
 
     @Test
     public void shouldGenerateIdForNewPayment() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
         when(paymentStorageJpa.findByIdempotencyKey(any(String.class)))
                 .thenReturn(Optional.empty());
         when(paymentStorageJpa.insertPaymentIfAbsent(any(PaymentEntity.class)))
                 .thenAnswer(invocation -> Optional.of(invocation.getArgument(0)));
 
         // when
-        PaymentCreationDto paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+        CreatePaymentResult paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
         assertThat(paymentResponseResult.getPaymentId()).isNotNull();
@@ -119,14 +119,14 @@ class PaymentServiceTest {
     @Test
     public void shouldCreatePaymentWithCreatedStatus() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
         when(paymentStorageJpa.findByIdempotencyKey(any(String.class)))
                 .thenReturn(Optional.empty());
         when(paymentStorageJpa.insertPaymentIfAbsent(any(PaymentEntity.class)))
                 .thenAnswer(invocation -> Optional.of(invocation.getArgument(0)));
 
         // when
-        PaymentCreationDto paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+        CreatePaymentResult paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
         assertThat(paymentResponseResult.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
@@ -135,8 +135,8 @@ class PaymentServiceTest {
     @Test
     public void shouldReturnExistingPaymentFromStorage() {
         // given
-        PaymentRequest validPaymentRequest = getValidPaymentRequest();
-        PaymentEntity validPayment = getValidPaymentFromRequest(validPaymentRequest);
+        CreatePaymentRequest validCreatePaymentRequest = getValidPaymentRequest();
+        PaymentEntity validPayment = getValidPaymentFromRequest(validCreatePaymentRequest);
         when(paymentStorageJpa.findById(any(UUID.class))).thenReturn(Optional.of(validPayment));
 
         // when
@@ -165,7 +165,7 @@ class PaymentServiceTest {
     @Test
     public void shouldThrowIllegalStateExceptionInPaymentCreate() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
         when(paymentStorageJpa.findByIdempotencyKey(any(String.class)))
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.empty());
@@ -174,20 +174,20 @@ class PaymentServiceTest {
 
         // when + then
         IllegalStateException thrown = assertThrows(IllegalStateException.class,
-                () -> underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest));
+                () -> underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest));
         assertThat(thrown.getMessage()).isEqualTo(PAYMENT_NOT_FOUND_AFTER_CONFLICT);
     }
 
     @Test
     public void shouldNotInsertPaymentOrCreateOutboxEventWhenPaymentAlreadyExists() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
-        PaymentEntity payment = getValidPaymentFromRequest(paymentRequest);
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
+        PaymentEntity payment = getValidPaymentFromRequest(createPaymentRequest);
         when(paymentStorageJpa.findByIdempotencyKey(any(String.class)))
                 .thenReturn(Optional.of(payment));
 
         // when
-        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+        underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
         verify(paymentStorageJpa, never()).insertPaymentIfAbsent(any(PaymentEntity.class));
@@ -197,8 +197,8 @@ class PaymentServiceTest {
     @Test
     public void shouldNotCreateOutboxEventWhenInsertOnConflict() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
-        PaymentEntity payment = getValidPaymentFromRequest(paymentRequest);
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
+        PaymentEntity payment = getValidPaymentFromRequest(createPaymentRequest);
         when(paymentStorageJpa.findByIdempotencyKey(any(String.class)))
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(payment));
@@ -206,20 +206,20 @@ class PaymentServiceTest {
                 .thenReturn(Optional.empty());
 
         // when
-        PaymentCreationDto paymentCreationDtoResult = underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+        CreatePaymentResult createPaymentResultResult = underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
         verifyNoInteractions(outboxStorageJpa);
-        assertThat(paymentCreationDtoResult.getPaymentId()).isEqualTo(payment.getPaymentId());
-        assertThat(paymentCreationDtoResult.isWasAlreadyInDb()).isTrue();
+        assertThat(createPaymentResultResult.getPaymentId()).isEqualTo(payment.getPaymentId());
+        assertThat(createPaymentResultResult.isWasAlreadyInDb()).isTrue();
     }
 
 
     @Test
     public void shouldCallOutboxStorageForPositivePaymentCreation() {
         // given
-        PaymentRequest paymentRequest = getValidPaymentRequest();
-        PaymentEntity payment = getValidPaymentFromRequest(paymentRequest);
+        CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
+        PaymentEntity payment = getValidPaymentFromRequest(createPaymentRequest);
         ArgumentCaptor<PaymentCreatedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentCreatedEvent.class);
         String payload = """
                 {"paymentId":"%s","amount":123.45,"currency":"PLN","paymentStatus":"CREATED","idempotencyKey":"%s"}
@@ -232,7 +232,7 @@ class PaymentServiceTest {
                 .thenReturn(payload);
 
         // when
-        underTest.createPayment(IDEMPOTENCY_KEY, paymentRequest);
+        underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
         verify(objectMapper).writeValueAsString(eventCaptor.capture());
 
         // then
@@ -245,18 +245,18 @@ class PaymentServiceTest {
     }
 
 
-    private PaymentEntity getValidPaymentFromRequest(PaymentRequest validPaymentRequest) {
+    private PaymentEntity getValidPaymentFromRequest(CreatePaymentRequest validCreatePaymentRequest) {
         return PaymentEntity.builder()
                 .paymentId(generateUuid())
-                .amount(validPaymentRequest.amount())
-                .currency(validPaymentRequest.currency())
+                .amount(validCreatePaymentRequest.amount())
+                .currency(validCreatePaymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
                 .idempotencyKey(IDEMPOTENCY_KEY)
                 .build();
     }
 
-    private PaymentRequest getValidPaymentRequest() {
-        return new PaymentRequest(new BigDecimal("123.45"), "PLN");
+    private CreatePaymentRequest getValidPaymentRequest() {
+        return new CreatePaymentRequest(new BigDecimal("123.45"), "PLN");
     }
 
     private UUID generateUuid() {
