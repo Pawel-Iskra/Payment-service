@@ -72,7 +72,7 @@ class PaymentEventReleaserServiceTest {
         // then
         List<OutboxEventEntity> capturedEntities = captor.getValue().stream().toList();
         assertThat(capturedEntities).hasSize(amountOfEventEntities);
-        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now();
+        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now().plusSeconds(1);
         assertThat(capturedEntities).allSatisfy(oneOfEvent -> {
             assertThat(eventIds).contains(oneOfEvent.getEventId());
             assertThat(oneOfEvent.getPublishedAt())
@@ -121,7 +121,7 @@ class PaymentEventReleaserServiceTest {
         // then
         List<OutboxEventEntity> capturedEntities = captor.getValue().stream().toList();
         assertThat(capturedEntities).hasSize(outboxEventEntitiesPack.size());
-        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now();
+        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now().plusSeconds(1);
         assertThat(capturedEntities)
                 .filteredOn(entity -> entity.getEventId().equals(outboxEntityFirst.getEventId()))
                 .singleElement()
