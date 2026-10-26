@@ -39,4 +39,33 @@ public class OutboxEventEntity {
 
     @Column(name = "published_at")
     private OffsetDateTime publishedAt;
+
+    @Builder.Default
+    @Column(name = "attempt_count", nullable = false)
+    private Short attemptCount = 0;
+
+    @Column(name = "last_error")
+    private String lastError;
+
+    @Column(name = "failed_at")
+    private OffsetDateTime failedAt;
+
+    @Builder.Default
+    @Column(name = "next_attempt_at", nullable = false)
+    private OffsetDateTime nextAttemptAt = OffsetDateTime.now();
+
+
+    public void markAsPublished() {
+        this.attemptCount++;
+        this.publishedAt = OffsetDateTime.now();
+    }
+
+    public void markAsNotPublished(String errorInfo, int maxAttempts, OffsetDateTime nextAttemptAt) {
+        this.lastError = errorInfo;
+        this.nextAttemptAt = nextAttemptAt;
+        this.attemptCount++;
+        if (this.attemptCount >= maxAttempts) {
+            this.failedAt = OffsetDateTime.now();
+        }
+    }
 }

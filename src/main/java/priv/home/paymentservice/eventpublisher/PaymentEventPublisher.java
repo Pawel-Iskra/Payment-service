@@ -1,12 +1,12 @@
 package priv.home.paymentservice.eventpublisher;
 
 import priv.home.paymentservice.eventpublisher.model.OutboxEventToPublish;
+import priv.home.paymentservice.eventpublisher.model.PublishResult;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
 public interface PaymentEventPublisher {
 
-    List<UUID> publishPaymentEvents(Collection<OutboxEventToPublish> eventsToPublish);
+    List<PublishResult> publishPaymentEvents(Collection<OutboxEventToPublish> eventsToPublish);
 }
