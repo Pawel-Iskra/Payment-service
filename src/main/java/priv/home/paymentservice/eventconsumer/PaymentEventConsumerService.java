@@ -4,9 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import priv.home.paymentservice.eventconsumer.data.ConsumedEventEntity;
-import priv.home.paymentservice.eventconsumer.data.ConsumedEventStorageJpa;
-import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
+import priv.home.paymentservice.eventconsumer.persistence.ConsumedEventEntity;
+import priv.home.paymentservice.eventconsumer.persistence.ConsumedEventStorageJpa;
+import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Optional;

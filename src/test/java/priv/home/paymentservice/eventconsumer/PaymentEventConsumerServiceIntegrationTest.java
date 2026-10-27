@@ -13,9 +13,9 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import priv.home.paymentservice.eventconsumer.data.ConsumedEventEntity;
-import priv.home.paymentservice.eventpublisher.model.PaymentCreatedEvent;
-import priv.home.paymentservice.model.PaymentStatus;
+import priv.home.paymentservice.eventconsumer.persistence.ConsumedEventEntity;
+import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
+import priv.home.paymentservice.payment.model.PaymentStatus;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
