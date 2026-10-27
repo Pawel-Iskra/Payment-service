@@ -7,12 +7,12 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import priv.home.paymentservice.payment.application.CreatePaymentResult;
+import priv.home.paymentservice.payment.api.PaymentController;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
-import priv.home.paymentservice.payment.model.PaymentStatus;
-import priv.home.paymentservice.payment.api.PaymentController;
+import priv.home.paymentservice.payment.application.CreatePaymentResult;
 import priv.home.paymentservice.payment.application.PaymentService;
+import priv.home.paymentservice.payment.model.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -43,7 +43,6 @@ public class PaymentControllerWebMvcTest {
             }
             """;
 
-
     @Autowired
     protected MockMvc mockMvc;
     @MockitoBean
@@ -54,10 +53,10 @@ public class PaymentControllerWebMvcTest {
     public void shouldReturnHttpCreatedForProperRequest() throws Exception {
         // given
         UUID paymentId = generateUuid();
-        String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT.toString(), CURRENCY_PLN);
-        CreatePaymentResult createPaymentResult = getSuccessfulPaymentCreationResponse(
-                getValidPaymentFromRequest(gePaymentRequest(VALID_AMOUNT, CURRENCY_PLN), paymentId));
-        when(paymentService.createPayment(any(String.class), any(CreatePaymentRequest.class))).thenReturn(createPaymentResult);
+        String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT);
+        CreatePaymentResult createPaymentResult = getSuccessfulPaymentCreationResponse(paymentId);
+        when(paymentService.createPayment(any(String.class), any(CreatePaymentRequest.class)))
+                .thenReturn(createPaymentResult);
 
         // then
         mockMvc.perform(post(POST_PATH)
@@ -75,10 +74,10 @@ public class PaymentControllerWebMvcTest {
     public void shouldReturnHttpOkForCreateAlreadyExistingInDbPayment() throws Exception {
         // given
         UUID paymentId = generateUuid();
-        String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT.toString(), CURRENCY_PLN);
-        CreatePaymentResult createPaymentResult = getPaymentAlreadyExistPaymentCreationResponse(
-                getValidPaymentFromRequest(gePaymentRequest(VALID_AMOUNT, CURRENCY_PLN), paymentId));
-        when(paymentService.createPayment(any(String.class), any(CreatePaymentRequest.class))).thenReturn(createPaymentResult);
+        String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT);
+        CreatePaymentResult createPaymentResult = getPaymentAlreadyExistPaymentCreationResponse(paymentId);
+        when(paymentService.createPayment(any(String.class), any(CreatePaymentRequest.class)))
+                .thenReturn(createPaymentResult);
 
         // then
         mockMvc.perform(post(POST_PATH)
@@ -95,7 +94,7 @@ public class PaymentControllerWebMvcTest {
     @Test
     public void shouldReturnHttpBadRequestForInvalidRequest() throws Exception {
         // given
-        String invalidJsonRequest = getRequestJsonWithValues("0", CURRENCY_PLN);
+        String invalidJsonRequest = getRequestJsonWithValues(BigDecimal.ZERO);
 
         // then
         mockMvc.perform(post(POST_PATH)
@@ -121,9 +120,9 @@ public class PaymentControllerWebMvcTest {
     public void shouldReturnHttpOkForExistingPayment() throws Exception {
         // given
         UUID paymentId = generateUuid();
-        PaymentResponse paymentResponse = getPaymentResponse(
-                getValidPaymentFromRequest(gePaymentRequest(VALID_AMOUNT, CURRENCY_PLN), paymentId));
-        when(paymentService.retrieveSinglePaymentByPaymentId(any())).thenReturn(Optional.of(paymentResponse));
+        PaymentResponse paymentResponse = getPaymentResponse(paymentId);
+        when(paymentService.retrieveSinglePaymentByPaymentId(any()))
+                .thenReturn(Optional.of(paymentResponse));
 
         // then
         mockMvc.perform(get(GET_PATH, paymentId))
@@ -135,55 +134,40 @@ public class PaymentControllerWebMvcTest {
     }
 
 
-    private UUID generateUuid() {
-        return UUID.randomUUID();
+    private String getRequestJsonWithValues(BigDecimal amount) {
+        return String.format(JSON_REQUEST, amount.toString(), CURRENCY_PLN);
     }
 
-    private String getRequestJsonWithValues(String amount, String currency) {
-        return String.format(JSON_REQUEST, amount, currency);
-    }
-
-    // TODO: replace/refactor
-    private Payment getValidPaymentFromRequest(CreatePaymentRequest validCreatePaymentRequest, UUID paymentId) {
-        return Payment.builder()
+    private PaymentResponse getPaymentResponse(UUID paymentId) {
+        return PaymentResponse.builder()
                 .paymentId(paymentId)
-                .amount(validCreatePaymentRequest.amount())
-                .currency(validCreatePaymentRequest.currency())
+                .amount(VALID_AMOUNT)
+                .currency(CURRENCY_PLN)
                 .paymentStatus(PaymentStatus.CREATED)
                 .build();
     }
 
-    private PaymentResponse getPaymentResponse(Payment payment) {
-        return PaymentResponse.builder()
-                .paymentId(payment.getPaymentId())
-                .amount(payment.getAmount())
-                .currency(payment.getCurrency())
-                .paymentStatus(payment.getPaymentStatus())
-                .build();
-    }
-
-
-    private CreatePaymentResult getPaymentAlreadyExistPaymentCreationResponse(Payment payment) {
+    private CreatePaymentResult getPaymentAlreadyExistPaymentCreationResponse(UUID paymentId) {
         return CreatePaymentResult.builder()
-                .paymentId(payment.getPaymentId())
-                .amount(payment.getAmount())
-                .currency(payment.getCurrency())
-                .paymentStatus(payment.getPaymentStatus())
+                .paymentId(paymentId)
+                .amount(VALID_AMOUNT)
+                .currency(CURRENCY_PLN)
+                .paymentStatus(PaymentStatus.CREATED)
                 .wasAlreadyInDb(Boolean.TRUE)
                 .build();
     }
 
-    private CreatePaymentResult getSuccessfulPaymentCreationResponse(Payment payment) {
+    private CreatePaymentResult getSuccessfulPaymentCreationResponse(UUID paymentId) {
         return CreatePaymentResult.builder()
-                .paymentId(payment.getPaymentId())
-                .amount(payment.getAmount())
-                .currency(payment.getCurrency())
+                .paymentId(paymentId)
+                .amount(VALID_AMOUNT)
+                .currency(CURRENCY_PLN)
                 .paymentStatus(PaymentStatus.CREATED)
                 .wasAlreadyInDb(Boolean.FALSE)
                 .build();
     }
 
-    private CreatePaymentRequest gePaymentRequest(BigDecimal amount, String currency) {
-        return new CreatePaymentRequest(amount, currency);
+    private UUID generateUuid() {
+        return UUID.randomUUID();
     }
 }
