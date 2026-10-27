@@ -1,11 +1,10 @@
-package priv.home.paymentservice.eventpublisher;
+package priv.home.paymentservice.outbox.config;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.BindResult;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
-import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 
 import java.time.Duration;
 import java.util.Map;

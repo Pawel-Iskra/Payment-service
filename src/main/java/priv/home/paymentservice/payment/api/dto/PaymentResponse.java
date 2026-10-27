@@ -10,6 +10,7 @@ import java.util.UUID;
 
 @Builder
 @Getter
+// TODO: separate PaymentCreateResponse and PaymentRetrieveResponse
 public class PaymentResponse {
 
     private final UUID paymentId;

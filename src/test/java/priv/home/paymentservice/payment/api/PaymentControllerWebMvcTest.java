@@ -1,4 +1,4 @@
-package priv.home.paymentservice.controller;
+package priv.home.paymentservice.payment.api;
 
 
 import org.junit.jupiter.api.Test;
@@ -7,7 +7,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import priv.home.paymentservice.payment.api.PaymentController;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
 import priv.home.paymentservice.payment.application.CreatePaymentResult;

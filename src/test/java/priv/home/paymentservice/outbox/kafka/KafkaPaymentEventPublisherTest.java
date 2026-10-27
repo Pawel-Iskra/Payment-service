@@ -1,4 +1,4 @@
-package priv.home.paymentservice.eventpublisher.kafka;
+package priv.home.paymentservice.outbox.kafka;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +14,6 @@ import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.outbox.model.PublishResult;
 import priv.home.paymentservice.messaging.event.PaymentEventType;
-import priv.home.paymentservice.outbox.kafka.KafkaPaymentEventPublisher;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 import tools.jackson.databind.ObjectMapper;
 

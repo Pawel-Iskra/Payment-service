@@ -1,4 +1,4 @@
-package priv.home.paymentservice.data;
+package priv.home.paymentservice.payment.persistance;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

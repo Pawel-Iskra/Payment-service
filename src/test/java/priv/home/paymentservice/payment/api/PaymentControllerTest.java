@@ -1,4 +1,4 @@
-package priv.home.paymentservice.controller;
+package priv.home.paymentservice.payment.api;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,6 @@ import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException
 import priv.home.paymentservice.payment.application.CreatePaymentResult;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
 import priv.home.paymentservice.payment.model.PaymentStatus;
-import priv.home.paymentservice.payment.api.PaymentController;
 import priv.home.paymentservice.payment.application.PaymentService;
 
 import java.math.BigDecimal;

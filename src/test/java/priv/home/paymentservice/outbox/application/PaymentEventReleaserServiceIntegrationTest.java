@@ -1,4 +1,4 @@
-package priv.home.paymentservice.eventpublisher;
+package priv.home.paymentservice.outbox.application;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,8 +18,6 @@ import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
 import priv.home.paymentservice.outbox.model.PublishResult;
-import priv.home.paymentservice.outbox.application.PaymentEventPublisher;
-import priv.home.paymentservice.outbox.application.PaymentEventReleaserService;
 import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 
 import java.time.Duration;

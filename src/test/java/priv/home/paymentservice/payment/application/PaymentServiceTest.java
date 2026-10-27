@@ -1,4 +1,4 @@
-package priv.home.paymentservice.service;
+package priv.home.paymentservice.payment.application;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,12 +10,10 @@ import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 import priv.home.paymentservice.payment.persistence.PaymentEntity;
 import priv.home.paymentservice.payment.persistence.PaymentStorageJpa;
-import priv.home.paymentservice.payment.application.CreatePaymentResult;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.payment.model.PaymentStatus;
-import priv.home.paymentservice.payment.application.PaymentService;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
