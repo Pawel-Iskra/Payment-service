@@ -100,6 +100,17 @@
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 
+	<!--Class generation with JAXB -->
+		<dependency>
+			<groupId>jakarta.xml.bind</groupId>
+			<artifactId>jakarta.xml.bind-api</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.glassfish.jaxb</groupId>
+			<artifactId>jaxb-runtime</artifactId>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -108,6 +119,36 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+
+			<plugin>
+				<groupId>org.jvnet.jaxb</groupId>
+				<artifactId>jaxb-maven-plugin</artifactId>
+				<version>4.0.16</version>
+				<executions>
+					<execution>
+						<id>generate-iso20022-classes</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<schemas>
+								<schema>
+									<fileset>
+										<directory>${project.basedir}/src/main/resources/iso20022/xsd</directory>
+										<includes>
+											<include>EPC132-08_2025_V1.0_pain.001.001.09.xsd</include>
+											<include>EPC132-08_2025_V1.0_pain.002.001.10.xsd</include>
+										</includes>
+									</fileset>
+								</schema>
+							</schemas>
+							<generateDirectory>${project.build.directory}/generated-sources/jaxb</generateDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
