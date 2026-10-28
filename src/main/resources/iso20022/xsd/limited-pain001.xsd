@@ -7,7 +7,7 @@
 
     <!--
       The input contract file for this Payment Service.
-      This is intentionally narrower than the official EPC XSD.
+      This is intentionally narrower than the official ISO XSD.
       It models one payment instruction with exactly one credit transfer.
       It does NOT claim full ISO 20022 or EPC business-rule conformance.
     -->

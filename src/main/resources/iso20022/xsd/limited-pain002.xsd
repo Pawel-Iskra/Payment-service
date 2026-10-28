@@ -58,7 +58,7 @@
 
     <xs:simpleType name="OriginalMessageNameType">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="pain.001.001.09"/>
+            <xs:enumeration value="pain.001.001.12"/>
         </xs:restriction>
     </xs:simpleType>
 

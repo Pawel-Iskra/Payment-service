@@ -9,6 +9,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
+import priv.home.paymentservice.payment.application.CreatePaymentFromPain001Service;
 import priv.home.paymentservice.payment.application.CreatePaymentResult;
 import priv.home.paymentservice.payment.application.PaymentService;
 import priv.home.paymentservice.payment.model.PaymentStatus;
@@ -46,6 +47,8 @@ public class PaymentControllerWebMvcTest {
     protected MockMvc mockMvc;
     @MockitoBean
     private PaymentService paymentService;
+    @MockitoBean
+    private  CreatePaymentFromPain001Service createPaymentFromPain001Service;
 
 
     @Test
