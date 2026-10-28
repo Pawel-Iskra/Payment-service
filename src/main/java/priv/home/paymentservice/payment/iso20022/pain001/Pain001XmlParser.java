@@ -55,9 +55,9 @@ public class Pain001XmlParser {
             JAXBElement<Document> unmarshallResult = unmarshaller.unmarshal(xmlStreamReader, Document.class);
             return unmarshallResult.getValue();
         } catch (XMLStreamException exception) {
-            throw new InvalidPain001XmlException("Malformed Pain001 XML", exception);
+            throw new InvalidPain001XmlException("Could not read Pain.001 XML", exception);
         } catch (JAXBException exception) {
-            throw new InvalidPain001XmlException("Pain001 XML does not match the supported profile", exception);
+            throw new InvalidPain001XmlException("Pain.001 XML is malformed or does not match the supported profile", exception);
         } finally {
             closeStreamReader(xmlStreamReader);
         }

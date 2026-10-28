@@ -14,7 +14,7 @@ import java.util.Optional;
 public class Pain001PaymentMapper {
 
 
-    public Pain001PaymentData mapFromRequest(Document pain001Document) {
+    public Pain001PaymentData mapFromRequestPain001Document(Document pain001Document) {
         if (pain001Document == null) throw new IllegalArgumentException("Pain.001 document must not be null");
 
         CustomerCreditTransferInitiationV12 ctrCrdtTrfInitiation = extractCustomerTransferInitiation(pain001Document);
@@ -67,23 +67,23 @@ public class Pain001PaymentMapper {
                 .orElseThrow(() -> new IllegalArgumentException("Credit transfer transaction is required"));
     }
 
-    private OffsetDateTime getOffsetDateTime(XMLGregorianCalendar creDtTm) {
-        if (creDtTm == null) {
+    private OffsetDateTime getOffsetDateTime(XMLGregorianCalendar creationDateTime) {
+        if (creationDateTime == null) {
             throw new IllegalArgumentException("Creation date time is required");
         }
-        if (creDtTm.getTimezone() == DatatypeConstants.FIELD_UNDEFINED) {
+        if (creationDateTime.getTimezone() == DatatypeConstants.FIELD_UNDEFINED) {
             throw new IllegalArgumentException("Creation date time must contain offset");
         }
-        return creDtTm.toGregorianCalendar()
+        return creationDateTime.toGregorianCalendar()
                 .toZonedDateTime()
                 .toOffsetDateTime();
     }
 
-    private String getBic(BranchAndFinancialInstitutionIdentification8 dbtrAgt) {
-        if (dbtrAgt == null || dbtrAgt.getFinInstnId() == null) {
+    private String getBic(BranchAndFinancialInstitutionIdentification8 debtorAgent) {
+        if (debtorAgent == null || debtorAgent.getFinInstnId() == null) {
             return null;
         }
-        return dbtrAgt.getFinInstnId().getBICFI();
+        return debtorAgent.getFinInstnId().getBICFI();
     }
 
 

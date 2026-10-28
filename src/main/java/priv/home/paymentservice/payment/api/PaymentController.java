@@ -49,7 +49,7 @@ public class PaymentController {
         CreatePain001Result createPain001Result = createPaymentPain001Service
                 .createPaymentFromPain001Xml(idempotencyKey, xmlPain001Bytes);
         JAXBElement<Document> responsePain002XmlDocument = new ObjectFactory()
-                .createDocument(createPain001Result.createPaymentStatusReportDocument());
+                .createDocument(createPain001Result.createPain001PaymentStatusReportDocument());
 
         if (createPain001Result.wasAlreadyInDb()) {
             return ResponseEntity.ok()
@@ -67,7 +67,8 @@ public class PaymentController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PaymentResponse> createPayment(
             @RequestHeader(value = IDEMPOTENCY_KEY) String idempotencyKey,
-            @Valid @RequestBody CreatePaymentRequest createPaymentRequest) {
+            @Valid @RequestBody CreatePaymentRequest createPaymentRequest)
+    {
         CreatePaymentResult createPaymentResult = paymentService.createPayment(idempotencyKey, createPaymentRequest);
         if (createPaymentResult.isWasAlreadyInDb()) {
             return new ResponseEntity<>(buildPaymentResponseFromCreatePaymentResult(createPaymentResult), HttpStatus.OK);
@@ -76,7 +77,8 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PaymentResponse> retrievePayment(@PathVariable("id") UUID paymentId) {
+    public ResponseEntity<PaymentResponse> retrievePayment(@PathVariable("id") UUID paymentId)
+    {
         Optional<PaymentResponse> paymentResponseOptional =
                 paymentService.retrieveSinglePaymentByPaymentId(paymentId);
         if (paymentResponseOptional.isPresent()) {

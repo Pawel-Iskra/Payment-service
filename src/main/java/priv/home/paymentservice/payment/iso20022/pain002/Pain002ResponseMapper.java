@@ -19,13 +19,12 @@ public class Pain002ResponseMapper {
     private static final String TRANSACTION_STATUS_REPORT = "ACTC";
 
 
-    // TODO: or public static and no component
     public Document buildCustomerPaymentStatusReport(Pain001PaymentData pain001PaymentData) {
         Document statusReportDocument = new Document();
-        CustomerPaymentStatusReportV14 customerPaymentStatusReportV14 = new CustomerPaymentStatusReportV14();
+        CustomerPaymentStatusReportV14 customerPaymentStatusReport = new CustomerPaymentStatusReportV14();
         GroupHeader128 groupHeader = new GroupHeader128();
         groupHeader.setMsgId(STATUS_PREFIX + generateUuid());
-        groupHeader.setCreDtTm(toXmlGeorgianCalendar(OffsetDateTime.now()));
+        groupHeader.setCreDtTm(toXmlGregorianCalendar(OffsetDateTime.now()));
 
         OriginalGroupHeader22 groupHeaderAndStatus = new OriginalGroupHeader22();
         groupHeaderAndStatus.setOrgnlMsgId(pain001PaymentData.messageId());
@@ -38,11 +37,10 @@ public class Pain002ResponseMapper {
         paymentTransaction.setTxSts(TRANSACTION_STATUS_REPORT);
         paymentInstructionAndStatus.getTxInfAndSts().add(paymentTransaction);
 
-        customerPaymentStatusReportV14.getOrgnlPmtInfAndSts().clear();
-        customerPaymentStatusReportV14.getOrgnlPmtInfAndSts().add(paymentInstructionAndStatus);
-        customerPaymentStatusReportV14.setOrgnlGrpInfAndSts(groupHeaderAndStatus);
-        customerPaymentStatusReportV14.setGrpHdr(groupHeader);
-        statusReportDocument.setCstmrPmtStsRpt(customerPaymentStatusReportV14);
+        customerPaymentStatusReport.getOrgnlPmtInfAndSts().add(paymentInstructionAndStatus);
+        customerPaymentStatusReport.setOrgnlGrpInfAndSts(groupHeaderAndStatus);
+        customerPaymentStatusReport.setGrpHdr(groupHeader);
+        statusReportDocument.setCstmrPmtStsRpt(customerPaymentStatusReport);
         return statusReportDocument;
     }
 
@@ -51,7 +49,7 @@ public class Pain002ResponseMapper {
         return UUID.randomUUID();
     }
 
-    private XMLGregorianCalendar toXmlGeorgianCalendar(OffsetDateTime offsetDateTime) {
+    private XMLGregorianCalendar toXmlGregorianCalendar(OffsetDateTime offsetDateTime) {
         try {
             return DatatypeFactory.newInstance().newXMLGregorianCalendar(
                     offsetDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));

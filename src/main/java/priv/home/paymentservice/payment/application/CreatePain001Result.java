@@ -9,5 +9,5 @@ import java.util.UUID;
 public record CreatePain001Result(
         UUID paymentId,
         boolean wasAlreadyInDb,
-        Document createPaymentStatusReportDocument) {
+        Document createPain001PaymentStatusReportDocument) {
 }

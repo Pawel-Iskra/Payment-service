@@ -27,14 +27,16 @@ class Pain001XmlParserTest {
     private static final String PAYMENT_CURRENCY = "EUR";
     private static final String CREDITOR_NAME = "Example Creditor GmbH";
     private static final String CREDITOR_ACCOUNT_ID = "DE44500105175407324931";
+    private static final String PAIN001_IS_MALFORMED_OR_DOES_NOT_MATCH =
+            "Pain.001 XML is malformed or does not match the supported profile";
 
 
     @Test
-    public void shouldParseCorrectXml() throws SAXException, JAXBException {
+    public void shouldParseCorrectPain001Xml() throws SAXException, JAXBException {
         // given
         Pain001XmlParser pain001XmlParser = new Pain001XmlParser();
         InputStream xmlInputStream = new ByteArrayInputStream(
-                Pain001TestData.getPain001SinglePaymentCorrectXml().getBytes());
+                Pain001TestData.getPain001SinglePaymentCorrectXmlString().getBytes());
         // when
         Document parseResult = pain001XmlParser.parse(xmlInputStream);
 
@@ -72,17 +74,43 @@ class Pain001XmlParserTest {
         assertThat(crdTrfTxInf.getCdtrAcct().getId().getIBAN()).isEqualTo(CREDITOR_ACCOUNT_ID);
     }
 
-
     @Test
-    public void shouldRejectNotCorrectXml() throws JAXBException, SAXException {
+    public void shouldRejectNotCorrectXmlStructure() throws JAXBException, SAXException {
         // given
         Pain001XmlParser pain001XmlParser = new Pain001XmlParser();
         InputStream xmlInputStream = new ByteArrayInputStream(
-                Pain001TestData.getPain001SinglePaymentNotCorrectXml().getBytes());
+                Pain001TestData.getPain001SinglePaymentNotCorrectStructureXmlString().getBytes());
 
         // when + then
         assertThatThrownBy(() -> pain001XmlParser.parse(xmlInputStream))
                 .isInstanceOf(InvalidPain001XmlException.class)
-                .hasStackTraceContaining("Pain001 XML does not match the supported profile");
+                .hasStackTraceContaining(PAIN001_IS_MALFORMED_OR_DOES_NOT_MATCH);
     }
+
+    @Test
+    public void shouldRejectWhenNotValidValuesPain001Xml() throws JAXBException, SAXException {
+        // given
+        Pain001XmlParser pain001XmlParser = new Pain001XmlParser();
+        InputStream xmlInputStream = new ByteArrayInputStream(
+                Pain001TestData.getPain001SinglePaymentWithTransactionCountAsTwoXmlString().getBytes());
+
+        // when + then
+        assertThatThrownBy(() -> pain001XmlParser.parse(xmlInputStream))
+                .isInstanceOf(InvalidPain001XmlException.class)
+                .hasStackTraceContaining(PAIN001_IS_MALFORMED_OR_DOES_NOT_MATCH);
+    }
+
+    @Test
+    public void shouldRejectWhenTwoTransactionBlocksInPain001Xml() throws JAXBException, SAXException {
+        // given
+        Pain001XmlParser pain001XmlParser = new Pain001XmlParser();
+        InputStream xmlInputStream = new ByteArrayInputStream(
+                Pain001TestData.getPain001SinglePaymentWithTwoTransactionBlocksXmlString().getBytes());
+
+        // when + then
+        assertThatThrownBy(() -> pain001XmlParser.parse(xmlInputStream))
+                .isInstanceOf(InvalidPain001XmlException.class)
+                .hasStackTraceContaining(PAIN001_IS_MALFORMED_OR_DOES_NOT_MATCH);
+    }
+
 }

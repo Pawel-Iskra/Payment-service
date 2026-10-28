@@ -17,17 +17,18 @@ import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.net.URL;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /*
- * The limited-pain001.xsd is the limited version of pain.001.001.12.xsd.
  * The limited-pain001.xsd is the api contract for POST/pain001.
+ * The limited-pain001.xsd is the limited version of pain.001.001.12.xsd.
  * The limited-pain001.xsd represents a single payment instruction and a single credit transfer transaction.
  *
- * The fixture retains the official EPC message structure and all schema-required elements
+ * The fixture retains the official ISO message structure and all schema-required elements
  * while populating only the fields selected for this project.
  *
  * This is an educational implementation of a limited subset and does
@@ -35,10 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 public class Pain001XmlTest {
 
-    // TODO: refactor
-    private static final String PAIN001_ISO_STANDARD_XSD_PATH = "/iso20022/xsd/pain.001.001.12.xsd";
+    private static final String ISO_STANDARD_PAIN001_XSD_PATH = "/iso20022/xsd/pain.001.001.12.xsd";
     private static final String LIMITED_PAIN001_XSD_PATH = "/iso20022/xsd/limited-pain001.xsd";
-    private static final String SINGLE_PAYMENT_PAIN001_XML_PATH = "/iso20022/pain001-single-payment.xml";
+    private static final String SINGLE_PAYMENT_PAIN001_SAMPLE_XML_PATH = "/iso20022/pain001-single-payment.xml";
     // expected values from pain001-single-payment.xml
     private static final String GROUP_HEADER_MESSAGE_ID = "MSG-20261027-001";
     private static final String GROUP_HEADER_NUMBER_OF_TRANSACTION = "1";
@@ -52,19 +52,44 @@ public class Pain001XmlTest {
 
 
     @Test
-    public void shouldValidatePain001SinglePaymentSchemaAndSelectedFields() throws SAXException, JAXBException, IOException {
+    public void shouldValidatePain001SinglePaymentAgainstAgainstBothSchemas() throws SAXException {
+        // testing if our pain001-single-payment.xml is a valid sample
         // given
-        URL isoEpcPain001XsdUrl = getClass().getResource(PAIN001_ISO_STANDARD_XSD_PATH);
-        URL singlePaymentPain001XmlUrl = getClass().getResource(SINGLE_PAYMENT_PAIN001_XML_PATH);
-        assertThat(isoEpcPain001XsdUrl).isNotNull();
+        URL singlePaymentPain001XmlUrl = getClass().getResource(SINGLE_PAYMENT_PAIN001_SAMPLE_XML_PATH);
+        URL xsdIsoPain001SchemaUrl = getClass().getResource(ISO_STANDARD_PAIN001_XSD_PATH);
+        URL xsdLimitedPain001SchemaUrl = getClass().getResource(LIMITED_PAIN001_XSD_PATH);
+
+        Schema schemaIsoPain001Xsd = SchemaFactory
+                .newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
+                .newSchema(xsdIsoPain001SchemaUrl);
+        Schema schemaLimitedPain001Xsd = SchemaFactory
+                .newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
+                .newSchema(xsdLimitedPain001SchemaUrl);
+
+        // when + then
+        assertNotNull(singlePaymentPain001XmlUrl);
+        assertDoesNotThrow(() -> schemaIsoPain001Xsd.newValidator()
+                .validate(new StreamSource(singlePaymentPain001XmlUrl.toExternalForm())));
+        assertDoesNotThrow(() -> schemaLimitedPain001Xsd.newValidator()
+                .validate(new StreamSource(singlePaymentPain001XmlUrl.toExternalForm())));
+    }
+
+
+    @Test
+    public void shouldValidatePain001SinglePaymentSchemaAndSelectedFields() throws SAXException, JAXBException, IOException {
+        // testing if our pain001-single-payment.xml is a valid sample
+        // given
+        URL isoPain001XsdUrl = getClass().getResource(ISO_STANDARD_PAIN001_XSD_PATH);
+        URL singlePaymentPain001XmlUrl = getClass().getResource(SINGLE_PAYMENT_PAIN001_SAMPLE_XML_PATH);
+        assertThat(isoPain001XsdUrl).isNotNull();
         assertThat(singlePaymentPain001XmlUrl).isNotNull();
 
-        Schema isoPain001EpcStandardSchema = SchemaFactory
+        Schema isoPain001OfficialStandardSchema = SchemaFactory
                 .newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
-                .newSchema(isoEpcPain001XsdUrl);
+                .newSchema(isoPain001XsdUrl);
         JAXBContext jaxbContext = JAXBContext.newInstance(Document.class);
         Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-        unmarshaller.setSchema(isoPain001EpcStandardSchema);  // Enable validation against the original EPC XSD.
+        unmarshaller.setSchema(isoPain001OfficialStandardSchema);  // validation against the original pain.001.001.12.xsd.
 
         // when
         Document document;
@@ -104,24 +129,35 @@ public class Pain001XmlTest {
     }
 
     @Test
-    public void shouldBeValidAgainstBothSchemas() throws SAXException, IOException {
-        assertValidAgainstSchema(PAIN001_ISO_STANDARD_XSD_PATH);
-        assertValidAgainstSchema(LIMITED_PAIN001_XSD_PATH);
+    public void shouldRejectWhenTransactionCountIsTwo() throws SAXException {
+        // given
+        String incorrectInputXmlAsString = Pain001TestData.getPain001SinglePaymentWithTransactionCountAsTwoXmlString();
+        URL xsdLimitedPain001SchemaUrl = getClass().getResource(LIMITED_PAIN001_XSD_PATH);
+        assertNotNull(xsdLimitedPain001SchemaUrl);
+        Schema schemaLimitedPain001Xsd = SchemaFactory
+                .newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
+                .newSchema(xsdLimitedPain001SchemaUrl);
+
+        // when + then
+        SAXException thrown = assertThrows(SAXException.class, () -> schemaLimitedPain001Xsd.newValidator()
+                .validate(new StreamSource(new StringReader(incorrectInputXmlAsString))));
+        assertThat(thrown.getMessage()).contains("Value '2' is not facet-valid with respect to enumeration '[1]'");
     }
 
-    private void assertValidAgainstSchema(String xsdToValidateAgainstPath) throws SAXException, IOException {
-        URL xsdSchemaToValidateAgainstUrl = getClass().getResource(xsdToValidateAgainstPath);
-        URL singlePaymentPain001XmlUrl = getClass().getResource(SINGLE_PAYMENT_PAIN001_XML_PATH);
-        assertNotNull(xsdToValidateAgainstPath);
-        assertNotNull(singlePaymentPain001XmlUrl);
-
-        Schema schemaXsdToValidateAgainst = SchemaFactory
+    @Test
+    public void shouldRejectWhenTwoTransactionBlocks() throws SAXException {
+        // given
+        String incorrectInputXmlAsString = Pain001TestData.getPain001SinglePaymentWithTwoTransactionBlocksXmlString();
+        URL xsdLimitedPain001SchemaUrl = getClass().getResource(LIMITED_PAIN001_XSD_PATH);
+        assertNotNull(xsdLimitedPain001SchemaUrl);
+        Schema schemaLimitedPain001Xsd = SchemaFactory
                 .newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
-                .newSchema(xsdSchemaToValidateAgainstUrl);
+                .newSchema(xsdLimitedPain001SchemaUrl);
 
-        schemaXsdToValidateAgainst
-                .newValidator()
-                .validate(new StreamSource(singlePaymentPain001XmlUrl.toExternalForm()));
+        // when + then
+        SAXException thrown = assertThrows(SAXException.class, () -> schemaLimitedPain001Xsd.newValidator()
+                .validate(new StreamSource(new StringReader(incorrectInputXmlAsString))));
+        assertThat(thrown.getMessage()).contains("CdtTrfTxInf");
     }
 
 }
