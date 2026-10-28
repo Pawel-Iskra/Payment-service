@@ -6,10 +6,10 @@
     elementFormDefault="qualified">
 
     <!--
-      The input contract file for this Payment Service.
-      This is intentionally narrower than the official ISO XSD.
-      It models one payment instruction with exactly one credit transfer.
-      It does NOT claim full ISO 20022 or EPC business-rule conformance.
+      Input contract for the Payment Service.
+      This profile is intentionally narrower than the official ISO 20022 pain.001.001.12 schema.
+      It supports exactly one payment instruction containing exactly one credit transfer transaction.
+      It does not implement the full set of ISO 20022 or SEPA business rules.
     -->
 
     <xs:element name="Document" type="DocumentType"/>

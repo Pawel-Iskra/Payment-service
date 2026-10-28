@@ -7,13 +7,13 @@ import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.iso20022.pain001.Pain001PaymentData;
 import priv.home.paymentservice.payment.iso20022.pain001.Pain001PaymentMapper;
 import priv.home.paymentservice.payment.iso20022.pain001.Pain001XmlParser;
-import priv.home.paymentservice.payment.iso20022.pain001.Pain002ResponseMapper;
+import priv.home.paymentservice.payment.iso20022.pain002.Pain002ResponseMapper;
 
 import java.io.ByteArrayInputStream;
 
 @Service
 @AllArgsConstructor
-public class CreatePaymentFromPain001Service {
+public class CreatePaymentPain001Service {
 
     private final Pain001XmlParser pain001XmlParser;
     private final Pain001PaymentMapper pain001PaymentMapper;

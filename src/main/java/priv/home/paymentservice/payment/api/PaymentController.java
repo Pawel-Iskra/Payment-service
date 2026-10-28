@@ -13,7 +13,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
 import priv.home.paymentservice.payment.application.CreatePain001Result;
-import priv.home.paymentservice.payment.application.CreatePaymentFromPain001Service;
+import priv.home.paymentservice.payment.application.CreatePaymentPain001Service;
 import priv.home.paymentservice.payment.application.CreatePaymentResult;
 import priv.home.paymentservice.payment.application.PaymentService;
 import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException;
@@ -23,11 +23,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /*
- * POST /payments/pain001 accepts limited pain.001.001.12 XML profile
- * defined by limited-pain001.xsd.
- *
- * The endpoint supports exactly one payment instruction containing
- * one credit transfer transaction.
+ * POST /payments/pain001 accepts limited pain.001.001.12 XML profile defined by limited-pain001.xsd.
+ * The endpoint supports exactly one payment instruction containing one credit transfer transaction.
  */
 
 @AllArgsConstructor
@@ -38,7 +35,7 @@ public class PaymentController {
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
 
     private final PaymentService paymentService;
-    private final CreatePaymentFromPain001Service createPaymentFromPain001Service;
+    private final CreatePaymentPain001Service createPaymentPain001Service;
 
 
     @PostMapping(
@@ -49,7 +46,7 @@ public class PaymentController {
             @RequestHeader(value = IDEMPOTENCY_KEY) String idempotencyKey,
             @RequestBody byte[] xmlPain001Bytes)
     {
-        CreatePain001Result createPain001Result = createPaymentFromPain001Service
+        CreatePain001Result createPain001Result = createPaymentPain001Service
                 .createPaymentFromPain001Xml(idempotencyKey, xmlPain001Bytes);
         JAXBElement<Document> responsePain002XmlDocument = new ObjectFactory()
                 .createDocument(createPain001Result.createPaymentStatusReportDocument());

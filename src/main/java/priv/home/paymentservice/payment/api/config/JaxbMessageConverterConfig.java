@@ -1,4 +1,4 @@
-package priv.home.paymentservice.config;
+package priv.home.paymentservice.payment.api.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;

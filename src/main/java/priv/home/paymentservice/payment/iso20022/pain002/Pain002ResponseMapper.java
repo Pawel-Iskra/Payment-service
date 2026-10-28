@@ -1,7 +1,8 @@
-package priv.home.paymentservice.payment.iso20022.pain001;
+package priv.home.paymentservice.payment.iso20022.pain002;
 
 import iso.std.iso._20022.tech.xsd.pain_002_001.*;
 import org.springframework.stereotype.Component;
+import priv.home.paymentservice.payment.iso20022.pain001.Pain001PaymentData;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
