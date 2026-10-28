@@ -6,7 +6,7 @@ public class Pain001TestData {
     private static final String PAIN001_SINGLE_PAYMENT_CORRECT_XML =
             """
                     <?xml version="1.0" encoding="UTF-8"?>
-                    <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.09">
+                    <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.12">
                         <CstmrCdtTrfInitn>
                             <GrpHdr>
                                 <MsgId>MSG-20261027-001</MsgId>

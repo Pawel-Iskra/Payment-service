@@ -1,9 +1,9 @@
 package priv.home.paymentservice.payment.iso20022.pain001;
 
-import iso.std.iso._20022.tech.xsd.pain_001_001.CreditTransferTransaction34;
-import iso.std.iso._20022.tech.xsd.pain_001_001.CustomerCreditTransferInitiationV09;
+import iso.std.iso._20022.tech.xsd.pain_001_001.CreditTransferTransaction61;
+import iso.std.iso._20022.tech.xsd.pain_001_001.CustomerCreditTransferInitiationV12;
 import iso.std.iso._20022.tech.xsd.pain_001_001.Document;
-import iso.std.iso._20022.tech.xsd.pain_001_001.PaymentInstruction30;
+import iso.std.iso._20022.tech.xsd.pain_001_001.PaymentInstruction44;
 import jakarta.xml.bind.JAXBException;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
@@ -44,7 +44,7 @@ class Pain001XmlParserTest {
         assertThat(parseResult.getCstmrCdtTrfInitn().getPmtInf()).isNotNull();
         assertThat(parseResult.getCstmrCdtTrfInitn().getGrpHdr()).isNotNull();
 
-        CustomerCreditTransferInitiationV09 crtCrdtTrfInit = parseResult.getCstmrCdtTrfInitn();
+        CustomerCreditTransferInitiationV12 crtCrdtTrfInit = parseResult.getCstmrCdtTrfInitn();
         assertThat(crtCrdtTrfInit).isNotNull();
 
         assertThat(crtCrdtTrfInit.getGrpHdr().getMsgId())
@@ -54,7 +54,7 @@ class Pain001XmlParserTest {
                 .isEqualTo(GROUP_HEADER_NUMBER_OF_TRANSACTION);
 
         assertThat(crtCrdtTrfInit.getPmtInf()).hasSize(1);
-        PaymentInstruction30 paymentInfo = crtCrdtTrfInit.getPmtInf().getFirst();
+        PaymentInstruction44 paymentInfo = crtCrdtTrfInit.getPmtInf().getFirst();
         assertThat(paymentInfo.getDbtr()).isNotNull();
         assertThat(paymentInfo.getDbtr().getNm()).isEqualTo(PAYMENT_INFO_DEBTOR_NAME);
         assertThat(paymentInfo.getDbtrAcct()).isNotNull();
@@ -62,7 +62,7 @@ class Pain001XmlParserTest {
         assertThat(paymentInfo.getDbtrAcct().getId().getIBAN()).isEqualTo(PAYMENT_INFO_DEBTOR_ACCOUNT_IBAN);
         assertThat(paymentInfo.getCdtTrfTxInf()).hasSize(1);
 
-        CreditTransferTransaction34 crdTrfTxInf = paymentInfo.getCdtTrfTxInf().getFirst();
+        CreditTransferTransaction61 crdTrfTxInf = paymentInfo.getCdtTrfTxInf().getFirst();
         assertThat(crdTrfTxInf.getPmtId()).isNotNull();
         assertThat(crdTrfTxInf.getPmtId().getEndToEndId()).isEqualTo(PAYMENT_END_TO_END_ID);
         assertThat(crdTrfTxInf.getAmt()).isNotNull();

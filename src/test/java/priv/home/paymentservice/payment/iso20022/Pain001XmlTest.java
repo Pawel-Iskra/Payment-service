@@ -1,9 +1,9 @@
 package priv.home.paymentservice.payment.iso20022;
 
-import iso.std.iso._20022.tech.xsd.pain_001_001.CreditTransferTransaction34;
-import iso.std.iso._20022.tech.xsd.pain_001_001.CustomerCreditTransferInitiationV09;
+import iso.std.iso._20022.tech.xsd.pain_001_001.CreditTransferTransaction61;
+import iso.std.iso._20022.tech.xsd.pain_001_001.CustomerCreditTransferInitiationV12;
 import iso.std.iso._20022.tech.xsd.pain_001_001.Document;
-import iso.std.iso._20022.tech.xsd.pain_001_001.PaymentInstruction30;
+import iso.std.iso._20022.tech.xsd.pain_001_001.PaymentInstruction44;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.JAXBException;
@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /*
- * The limited-pain001.xsd is the limited version of EPC132-08_2025_V1.0_pain.001.001.09.xsd.
+ * The limited-pain001.xsd is the limited version of pain.001.001.12.xsd.
  * The limited-pain001.xsd is the api contract for POST/pain001.
  * The limited-pain001.xsd represents a single payment instruction and a single credit transfer transaction.
  *
@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class Pain001XmlTest {
 
     // TODO: refactor
-    private static final String PAIN001_ISO_EPC_STANDARD_XSD_PATH = "/iso20022/xsd/EPC132-08_2025_V1.0_pain.001.001.09.xsd";
+    private static final String PAIN001_ISO_STANDARD_XSD_PATH = "/iso20022/xsd/pain.001.001.12.xsd";
     private static final String LIMITED_PAIN001_XSD_PATH = "/iso20022/xsd/limited-pain001.xsd";
     private static final String SINGLE_PAYMENT_PAIN001_XML_PATH = "/iso20022/pain001-single-payment.xml";
     // expected values from pain001-single-payment.xml
@@ -54,7 +54,7 @@ public class Pain001XmlTest {
     @Test
     public void shouldValidatePain001SinglePaymentSchemaAndSelectedFields() throws SAXException, JAXBException, IOException {
         // given
-        URL isoEpcPain001XsdUrl = getClass().getResource(PAIN001_ISO_EPC_STANDARD_XSD_PATH);
+        URL isoEpcPain001XsdUrl = getClass().getResource(PAIN001_ISO_STANDARD_XSD_PATH);
         URL singlePaymentPain001XmlUrl = getClass().getResource(SINGLE_PAYMENT_PAIN001_XML_PATH);
         assertThat(isoEpcPain001XsdUrl).isNotNull();
         assertThat(singlePaymentPain001XmlUrl).isNotNull();
@@ -75,7 +75,7 @@ public class Pain001XmlTest {
         }
 
         // then
-        CustomerCreditTransferInitiationV09 crtCrdtTrfInit = document.getCstmrCdtTrfInitn();
+        CustomerCreditTransferInitiationV12 crtCrdtTrfInit = document.getCstmrCdtTrfInitn();
         assertThat(crtCrdtTrfInit).isNotNull();
 
         assertThat(crtCrdtTrfInit.getGrpHdr().getMsgId())
@@ -85,7 +85,7 @@ public class Pain001XmlTest {
                 .isEqualTo(GROUP_HEADER_NUMBER_OF_TRANSACTION);
 
         assertThat(crtCrdtTrfInit.getPmtInf()).hasSize(1);
-        PaymentInstruction30 paymentInfo = crtCrdtTrfInit.getPmtInf().getFirst();
+        PaymentInstruction44 paymentInfo = crtCrdtTrfInit.getPmtInf().getFirst();
         assertThat(paymentInfo.getDbtr()).isNotNull();
         assertThat(paymentInfo.getDbtr().getNm()).isEqualTo(PAYMENT_INFO_DEBTOR_NAME);
         assertThat(paymentInfo.getDbtrAcct()).isNotNull();
@@ -93,7 +93,7 @@ public class Pain001XmlTest {
         assertThat(paymentInfo.getDbtrAcct().getId().getIBAN()).isEqualTo(PAYMENT_INFO_DEBTOR_ACCOUNT_IBAN);
         assertThat(paymentInfo.getCdtTrfTxInf()).hasSize(1);
 
-        CreditTransferTransaction34 crdTrfTxInf = paymentInfo.getCdtTrfTxInf().getFirst();
+        CreditTransferTransaction61 crdTrfTxInf = paymentInfo.getCdtTrfTxInf().getFirst();
         assertThat(crdTrfTxInf.getPmtId()).isNotNull();
         assertThat(crdTrfTxInf.getPmtId().getEndToEndId()).isEqualTo(PAYMENT_END_TO_END_ID);
         assertThat(crdTrfTxInf.getAmt()).isNotNull();
@@ -105,7 +105,7 @@ public class Pain001XmlTest {
 
     @Test
     public void shouldBeValidAgainstBothSchemas() throws SAXException, IOException {
-        assertValidAgainstSchema(PAIN001_ISO_EPC_STANDARD_XSD_PATH);
+        assertValidAgainstSchema(PAIN001_ISO_STANDARD_XSD_PATH);
         assertValidAgainstSchema(LIMITED_PAIN001_XSD_PATH);
     }
 

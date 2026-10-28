@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns="urn:iso:std:iso:20022:tech:xsd:pain.002.001.14"
+    targetNamespace="urn:iso:std:iso:20022:tech:xsd:pain.002.001.14"
+    elementFormDefault="qualified">
+
+    <xs:element name="Document" type="DocumentType"/>
+
+    <xs:complexType name="DocumentType">
+        <xs:sequence>
+            <xs:element name="CstmrPmtStsRpt" type="CustomerPaymentStatusReportType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="CustomerPaymentStatusReportType">
+        <xs:sequence>
+            <xs:element name="GrpHdr" type="GroupHeaderType"/>
+            <xs:element name="OrgnlGrpInfAndSts" type="OriginalGroupInformationAndStatusType"/>
+            <xs:element name="OrgnlPmtInfAndSts" type="OriginalPaymentInformationAndStatusType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="GroupHeaderType">
+        <xs:sequence>
+            <xs:element name="MsgId" type="Max35Text"/>
+            <xs:element name="CreDtTm" type="xs:dateTime"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="OriginalGroupInformationAndStatusType">
+        <xs:sequence>
+            <xs:element name="OrgnlMsgId" type="Max35Text"/>
+            <xs:element name="OrgnlMsgNmId" type="OriginalMessageNameType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="OriginalPaymentInformationAndStatusType">
+        <xs:sequence>
+            <xs:element name="OrgnlPmtInfId" type="Max35Text"/>
+            <xs:element name="TxInfAndSts" type="TransactionInformationAndStatusType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="TransactionInformationAndStatusType">
+        <xs:sequence>
+            <xs:element name="OrgnlEndToEndId" type="Max35Text"/>
+            <xs:element name="TxSts" type="SupportedTransactionStatusType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:simpleType name="Max35Text">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="35"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="OriginalMessageNameType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="pain.001.001.09"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="SupportedTransactionStatusType">
+        <xs:restriction base="xs:string">
+            <!-- This endpoint profile returns only successful technical acceptance. -->
+            <xs:enumeration value="ACTC"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>

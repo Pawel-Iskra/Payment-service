@@ -137,8 +137,8 @@
 									<fileset>
 										<directory>${project.basedir}/src/main/resources/iso20022/xsd</directory>
 										<includes>
-											<include>EPC132-08_2025_V1.0_pain.001.001.09.xsd</include>
-											<include>EPC132-08_2025_V1.0_pain.002.001.10.xsd</include>
+											<include>pain.001.001.12.xsd</include>
+											<include>pain.002.001.14.xsd</include>
 										</includes>
 									</fileset>
 								</schema>
