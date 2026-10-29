@@ -1,0 +1,60 @@
+package priv.home.paymentservice.payment.iso20022.pain002;
+
+import iso.std.iso._20022.tech.xsd.pain_002_001.*;
+import org.springframework.stereotype.Component;
+import priv.home.paymentservice.payment.iso20022.pain001.Pain001PaymentData;
+
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
+
+@Component
+public class Pain002ResponseMapper {
+
+    private static final String STATUS_PREFIX = "S-";
+    private static final String PAIN001_VERSION = "pain.001.001.12";
+    private static final String TRANSACTION_STATUS_REPORT_ACTC = "ACTC";
+
+
+    public Document buildCustomerPaymentStatusReport(Pain001PaymentData pain001PaymentData) {
+        Document statusReportDocument = new Document();
+        CustomerPaymentStatusReportV14 customerPaymentStatusReport = new CustomerPaymentStatusReportV14();
+        GroupHeader128 groupHeader = new GroupHeader128();
+        groupHeader.setMsgId(STATUS_PREFIX + generateUuid());
+        groupHeader.setCreDtTm(toXmlGregorianCalendar(OffsetDateTime.now()));
+
+        OriginalGroupHeader22 groupHeaderAndStatus = new OriginalGroupHeader22();
+        groupHeaderAndStatus.setOrgnlMsgId(pain001PaymentData.messageId());
+        groupHeaderAndStatus.setOrgnlMsgNmId(PAIN001_VERSION);
+
+        OriginalPaymentInstruction51 paymentInstructionAndStatus = new OriginalPaymentInstruction51();
+        paymentInstructionAndStatus.setOrgnlPmtInfId(pain001PaymentData.paymentInformationId());
+        PaymentTransaction160 paymentTransaction = new PaymentTransaction160();
+        paymentTransaction.setOrgnlEndToEndId(pain001PaymentData.endToEndId());
+        paymentTransaction.setTxSts(TRANSACTION_STATUS_REPORT_ACTC);
+        paymentInstructionAndStatus.getTxInfAndSts().add(paymentTransaction);
+
+        customerPaymentStatusReport.getOrgnlPmtInfAndSts().add(paymentInstructionAndStatus);
+        customerPaymentStatusReport.setOrgnlGrpInfAndSts(groupHeaderAndStatus);
+        customerPaymentStatusReport.setGrpHdr(groupHeader);
+        statusReportDocument.setCstmrPmtStsRpt(customerPaymentStatusReport);
+        return statusReportDocument;
+    }
+
+
+    private String generateUuid() {
+        return UUID.randomUUID().toString().replace("-","");
+    }
+
+    private XMLGregorianCalendar toXmlGregorianCalendar(OffsetDateTime offsetDateTime) {
+        try {
+            return DatatypeFactory.newInstance().newXMLGregorianCalendar(
+                    offsetDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        } catch (DatatypeConfigurationException exception) {
+            throw new IllegalStateException("Can not create XML date-time value", exception);
+        }
+    }
+}

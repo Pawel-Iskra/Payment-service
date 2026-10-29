@@ -9,6 +9,7 @@ import java.util.UUID;
 
 @Builder
 @Getter
+//TODO: record
 public class CreatePaymentResult {
 
     private final UUID paymentId;
