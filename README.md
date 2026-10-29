@@ -36,7 +36,7 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 
 <h3 align="center">Current Scope</h3>
 
-1. REST API for creating payments supporting both JSO
+1. REST API for creating payments supporting both JSON and XML requests
 2. Request validation and centralized error handling
 3. Idempotent payment creation using idempotency keys
 4. Limited ISO 20022 pain.001.001.12 XML input with XSD validation and payment data mapping.
