@@ -132,8 +132,8 @@ These limitations reflect the project's intended scope and timeframe. A producti
 - Custom exception handling for missing payments (`404 Not Found`).
 - Centralized exception handling with `@ControllerAdvice`.
 
-#### Task 03 — REST API Integration Testing
-**Goal:** Verify HTTP endpoints and request validation at the web layer.
+#### Task 03 — Web Layer Testing
+**Goal:** Verify controller behavior, HTTP responses, and request validation at the MVC layer.
 
 - MVC tests using `@WebMvcTest` and `MockMvc`.
 - Tests for successful payment creation and retrieval.
