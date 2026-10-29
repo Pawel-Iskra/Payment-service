@@ -1,6 +1,6 @@
 ### Payment Service
 A Java 25 and Spring Boot project demonstrating reliable payment processing and event-driven communication.<br>
-An idempotent payment REST API with asynchronous Kafka publishing using the Transactional Outbox Pattern,  and a limited ISO 20022 XML workflow supporting pain.001.001.12 payment initiation and pain.002.001.14 status reporting.
+An idempotent payment REST API with asynchronous Kafka publishing using the Transactional Outbox Pattern, and a workflow supporting limited ISO 20022 pain.001.001.12 and pain.002.001.14.
 
 ### Overview
 1. The service exposes a REST API for creating and retrieving payments, with request validation and idempotent payment creation using the Idempotency-Key request header. Both JSON and ISO 20022 XML input formats are supported.
