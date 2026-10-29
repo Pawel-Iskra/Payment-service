@@ -86,8 +86,8 @@ These limitations reflect the project's intended scope and timeframe. A producti
 
 | Task | Description |
 |:---|---|
-| **✅ Task 01 — Basic Payment REST API** | Implemented a REST API for creating payments with DTOs, service logic, and unit tests. |
-| **✅ Task 02 — Payment Retrieval** | Added payment retrieval by ID and handling of missing payments. |
+| **✅ Task 01 — Basic Payment REST API** | Implemented payment creation with request validation, DTOs, service-layer logic, persistence, and unit tests. |
+| **✅ Task 02 — Payment Retrieval** | Added payment retrieval by ID, handling of missing payments with HTTP 404, and centralized exception handling. |
 | **✅ Task 03 — MVC Tests** | Added controller tests covering successful requests, validation, and error responses. |
 | **✅ Task 04 — PostgreSQL Persistence** | Integrated PostgreSQL, JDBC, Liquibase, and Testcontainers. |
 | **✅ Task 05 — Idempotent Payment Creation** | Implemented idempotent payment creation using `Idempotency-Key` and database constraints. |
