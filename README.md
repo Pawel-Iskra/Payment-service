@@ -60,6 +60,7 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 - **Database Migrations:** Liquibase 5.0.4
 - **Data Access:** Spring Data JPA, Spring JDBC
 - **Messaging:** Apache Kafka, Spring for Apache Kafka
+- **XML Processing:** JAXB, XML Schema (XSD)
 - **Testing:** JUnit, Mockito, WebMvcTest, SpringBootTest, Testcontainers
 - **Build Tool:** Maven
 - **Infrastructure:** Docker
