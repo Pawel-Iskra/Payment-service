@@ -14,9 +14,9 @@ import java.util.UUID;
 @Component
 public class Pain002ResponseMapper {
 
-    private static final String STATUS_PREFIX = "STATUS-";
+    private static final String STATUS_PREFIX = "S-";
     private static final String PAIN001_VERSION = "pain.001.001.12";
-    private static final String TRANSACTION_STATUS_REPORT = "ACTC";
+    private static final String TRANSACTION_STATUS_REPORT_ACTC = "ACTC";
 
 
     public Document buildCustomerPaymentStatusReport(Pain001PaymentData pain001PaymentData) {
@@ -34,7 +34,7 @@ public class Pain002ResponseMapper {
         paymentInstructionAndStatus.setOrgnlPmtInfId(pain001PaymentData.paymentInformationId());
         PaymentTransaction160 paymentTransaction = new PaymentTransaction160();
         paymentTransaction.setOrgnlEndToEndId(pain001PaymentData.endToEndId());
-        paymentTransaction.setTxSts(TRANSACTION_STATUS_REPORT);
+        paymentTransaction.setTxSts(TRANSACTION_STATUS_REPORT_ACTC);
         paymentInstructionAndStatus.getTxInfAndSts().add(paymentTransaction);
 
         customerPaymentStatusReport.getOrgnlPmtInfAndSts().add(paymentInstructionAndStatus);
@@ -45,8 +45,8 @@ public class Pain002ResponseMapper {
     }
 
 
-    private UUID generateUuid() {
-        return UUID.randomUUID();
+    private String generateUuid() {
+        return UUID.randomUUID().toString().replace("-","");
     }
 
     private XMLGregorianCalendar toXmlGregorianCalendar(OffsetDateTime offsetDateTime) {
@@ -54,7 +54,7 @@ public class Pain002ResponseMapper {
             return DatatypeFactory.newInstance().newXMLGregorianCalendar(
                     offsetDateTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         } catch (DatatypeConfigurationException exception) {
-            throw new IllegalStateException("Cannot createXML date-time value", exception);
+            throw new IllegalStateException("Can not create XML date-time value", exception);
         }
     }
 }

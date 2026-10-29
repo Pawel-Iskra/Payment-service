@@ -2,7 +2,7 @@
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.002.001.14">
     <CstmrPmtStsRpt>
         <GrpHdr>
-            <MsgId>STATUS-550e8400-e29b-41d4-a716</MsgId>
+            <MsgId>S-946c271cd4c14bc9b96eaf1622b9c2b5</MsgId>
             <CreDtTm>2026-10-28T12:00:00</CreDtTm>
         </GrpHdr>
         <OrgnlGrpInfAndSts>

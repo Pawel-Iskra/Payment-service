@@ -64,8 +64,8 @@
 
     <xs:simpleType name="SupportedTransactionStatusType">
         <xs:restriction base="xs:string">
-            <!-- This endpoint profile returns only successful technical acceptance. -->
             <xs:enumeration value="ACTC"/>
+            <xs:enumeration value="RJCT"/>
         </xs:restriction>
     </xs:simpleType>
 

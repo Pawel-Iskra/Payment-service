@@ -9,7 +9,7 @@ public class Pain001TestData {
                 <CstmrCdtTrfInitn>
                     <GrpHdr>
                         <MsgId>MSG-20261027-001</MsgId>
-                        <CreDtTm>2026-10-27T10:00:00</CreDtTm>
+                        <CreDtTm>2026-10-27T10:00:00+01:00</CreDtTm>
                         <NbOfTxs>1</NbOfTxs>
                         <CtrlSum>125.50</CtrlSum>
                         <InitgPty><Nm>Example Debtor Ltd</Nm></InitgPty>
@@ -84,14 +84,17 @@ public class Pain001TestData {
     }
 
     public static String getPain001SinglePaymentNotCorrectStructureXmlString() {
-        return PAIN001_SINGLE_PAYMENT_CORRECT_XML.replace("<CstmrCdtTrfInitn>", "");
+        return PAIN001_SINGLE_PAYMENT_CORRECT_XML
+                .replace("<CstmrCdtTrfInitn>", "");
     }
 
     public static String getPain001SinglePaymentWithTransactionCountAsTwoXmlString() {
-        return PAIN001_SINGLE_PAYMENT_CORRECT_XML.replace("<NbOfTxs>1</NbOfTxs>", "<NbOfTxs>2</NbOfTxs>");
+        return PAIN001_SINGLE_PAYMENT_CORRECT_XML
+                .replace("<NbOfTxs>1</NbOfTxs>", "<NbOfTxs>2</NbOfTxs>");
     }
 
     public static String getPain001SinglePaymentWithTwoTransactionBlocksXmlString() {
-        return PAIN001_TWO_TRANSACTION_BLOCKS.replace("<NbOfTxs>2</NbOfTxs>", "<NbOfTxs>1</NbOfTxs>");
+        return PAIN001_TWO_TRANSACTION_BLOCKS
+                .replace("<NbOfTxs>2</NbOfTxs>", "<NbOfTxs>1</NbOfTxs>");
     }
 }

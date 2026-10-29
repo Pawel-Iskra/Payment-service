@@ -9,6 +9,8 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException;
+import priv.home.paymentservice.payment.iso20022.pain001.InvalidPain001XmlException;
+import priv.home.paymentservice.payment.iso20022.pain001.MappingPain001ToDomainException;
 
 
 @Slf4j
@@ -53,9 +55,25 @@ public class ControllerExceptionHandler {
                 .body(new ErrorResponse(HttpStatus.BAD_REQUEST, errorResponseMessage));
     }
 
+    // TODO:tests
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> mappingPain001ToDomainException(MappingPain001ToDomainException exception) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage()));
+    }
+    // TODO:tests
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> invalidPain001xml(InvalidPain001XmlException exception) {
+        log.error(exception.getMessage() + ",\n" + exception.getCause());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage()));
+    }
+
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> technicalException(Exception exception) {
-        log.error(exception.getMessage()+ ", \n" + exception.getCause());
+        log.error(exception.getMessage() + ",\n" + exception.getCause());
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, UNEXPECTED_ERROR_OCCURRED));
