@@ -4,7 +4,7 @@ An idempotent payment REST API with asynchronous Kafka publishing using the Tran
 
 ### Overview
 1. The service exposes a REST API for creating and retrieving payments, with request validation and idempotent payment creation using the Idempotency-Key request header. Both JSON and ISO 20022 XML input formats are supported.
-2. The service supports limited project-specific XSD structures related to pain.001.001.12 and pain.002.001.14. ISO 20022. Incoming payment messages are validated against XSD profile, mapped to the application's payment model, and processed through the existing payment creation flow. Responses are returned as structured pain.002 XML messages.
+2. The service supports limited, project-specific XML profiles based on ISO 20022 `pain.001.001.12` and `pain.002.001.14`. Incoming payment messages are validated against the corresponding limited XSD profile, mapped to the application's payment model, and processed through the existing payment creation flow. Responses are returned as structured `pain.002` XML messages.
 3. Payment data and corresponding events are persisted atomically within a single PostgreSQL transaction using the Transactional Outbox Pattern.
 4. Pending outbox events are published asynchronously to Apache Kafka in configurable batches, with keyset scrolling, exponential backoff, and a configurable retry limit. Events are marked as published after broker acknowledgment.
 5. A lightweight Kafka consumer demonstrates idempotent event processing and duplicate message handling.
