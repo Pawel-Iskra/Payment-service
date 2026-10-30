@@ -1,0 +1,2209 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+paths:
+  /payments:
+    post:
+      tags:
+      - payment-controller
+      operationId: createPayment
+      parameters:
+      - name: idempotency-key
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaymentRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+  /payments/pain001:
+    post:
+      tags:
+      - payment-controller
+      operationId: createPaymentFromPain001
+      parameters:
+      - name: idempotency-key
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/xml:
+            schema:
+              type: string
+              format: byte
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/JAXBElementDocument"
+  /payments/{id}:
+    get:
+      tags:
+      - payment-controller
+      operationId: retrievePayment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+components:
+  schemas:
+    CreatePaymentRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          exclusiveMinimum: 0
+        currency:
+          type: string
+          minLength: 1
+      required:
+      - amount
+      - currency
+    PaymentResponse:
+      type: object
+      properties:
+        paymentId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        currency:
+          type: string
+        paymentStatus:
+          type: string
+          enum:
+          - CREATED
+    AccountIdentification4Choice:
+      type: object
+      properties:
+        iban:
+          type: string
+          xml:
+            name: IBAN
+        othr:
+          $ref: "#/components/schemas/GenericAccountIdentification1"
+          xml:
+            name: Othr
+    AccountSchemeName1Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    ActiveCurrencyAndAmount:
+      type: object
+      properties:
+        value:
+          type: number
+        ccy:
+          type: string
+          xml:
+            name: Ccy
+            attribute: true
+    ActiveOrHistoricCurrencyAndAmount:
+      type: object
+      properties:
+        value:
+          type: number
+        ccy:
+          type: string
+          xml:
+            name: Ccy
+            attribute: true
+    AddressType3Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          enum:
+          - ADDR
+          - PBOX
+          - HOME
+          - BIZZ
+          - MLTO
+          - DLVY
+          xml:
+            name: Cd
+        prtry:
+          $ref: "#/components/schemas/GenericIdentification30"
+          xml:
+            name: Prtry
+    AmendmentInformationDetails15:
+      type: object
+      properties:
+        orgnlMndtId:
+          type: string
+          xml:
+            name: OrgnlMndtId
+        orgnlCdtrSchmeId:
+          $ref: "#/components/schemas/PartyIdentification272"
+          xml:
+            name: OrgnlCdtrSchmeId
+        orgnlCdtrAgt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: OrgnlCdtrAgt
+        orgnlCdtrAgtAcct:
+          $ref: "#/components/schemas/CashAccount40"
+          xml:
+            name: OrgnlCdtrAgtAcct
+        orgnlDbtr:
+          $ref: "#/components/schemas/PartyIdentification272"
+          xml:
+            name: OrgnlDbtr
+        orgnlDbtrAcct:
+          $ref: "#/components/schemas/CashAccount40"
+          xml:
+            name: OrgnlDbtrAcct
+        orgnlDbtrAgt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: OrgnlDbtrAgt
+        orgnlDbtrAgtAcct:
+          $ref: "#/components/schemas/CashAccount40"
+          xml:
+            name: OrgnlDbtrAgtAcct
+        orgnlFnlColltnDt:
+          type: string
+          format: date-time
+          xml:
+            name: OrgnlFnlColltnDt
+        orgnlFrqcy:
+          $ref: "#/components/schemas/Frequency36Choice"
+          xml:
+            name: OrgnlFrqcy
+        orgnlRsn:
+          $ref: "#/components/schemas/MandateSetupReason1Choice"
+          xml:
+            name: OrgnlRsn
+        orgnlTrckgDays:
+          type: string
+          xml:
+            name: OrgnlTrckgDays
+    AmountType4Choice:
+      type: object
+      properties:
+        instdAmt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: InstdAmt
+        eqvtAmt:
+          $ref: "#/components/schemas/EquivalentAmount2"
+          xml:
+            name: EqvtAmt
+    BranchAndFinancialInstitutionIdentification8:
+      type: object
+      properties:
+        finInstnId:
+          $ref: "#/components/schemas/FinancialInstitutionIdentification23"
+          xml:
+            name: FinInstnId
+        brnchId:
+          $ref: "#/components/schemas/BranchData5"
+          xml:
+            name: BrnchId
+      required:
+      - finInstnId
+    BranchData5:
+      type: object
+      properties:
+        id:
+          type: string
+          xml:
+            name: Id
+        lei:
+          type: string
+          xml:
+            name: LEI
+        nm:
+          type: string
+          xml:
+            name: Nm
+        pstlAdr:
+          $ref: "#/components/schemas/PostalAddress27"
+          xml:
+            name: PstlAdr
+    CashAccount40:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/AccountIdentification4Choice"
+          xml:
+            name: Id
+        tp:
+          $ref: "#/components/schemas/CashAccountType2Choice"
+          xml:
+            name: Tp
+        ccy:
+          type: string
+          xml:
+            name: Ccy
+        nm:
+          type: string
+          xml:
+            name: Nm
+        prxy:
+          $ref: "#/components/schemas/ProxyAccountIdentification1"
+          xml:
+            name: Prxy
+    CashAccountType2Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    CategoryPurpose1Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    ChargeType3Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          $ref: "#/components/schemas/GenericIdentification3"
+          xml:
+            name: Prtry
+    Charges16:
+      type: object
+      properties:
+        amt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: Amt
+        agt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: Agt
+        tp:
+          $ref: "#/components/schemas/ChargeType3Choice"
+          xml:
+            name: Tp
+      required:
+      - agt
+      - amt
+    ClearingSystemIdentification2Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    ClearingSystemIdentification3Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    ClearingSystemMemberIdentification2:
+      type: object
+      properties:
+        clrSysId:
+          $ref: "#/components/schemas/ClearingSystemIdentification2Choice"
+          xml:
+            name: ClrSysId
+        mmbId:
+          type: string
+          xml:
+            name: MmbId
+      required:
+      - mmbId
+    Contact13:
+      type: object
+      properties:
+        nmPrfx:
+          type: string
+          enum:
+          - DOCT
+          - MADM
+          - MISS
+          - MIST
+          - MIKS
+          xml:
+            name: NmPrfx
+        nm:
+          type: string
+          xml:
+            name: Nm
+        phneNb:
+          type: string
+          xml:
+            name: PhneNb
+        mobNb:
+          type: string
+          xml:
+            name: MobNb
+        faxNb:
+          type: string
+          xml:
+            name: FaxNb
+        emailAdr:
+          type: string
+          xml:
+            name: EmailAdr
+        emailPurp:
+          type: string
+          xml:
+            name: EmailPurp
+        jobTitl:
+          type: string
+          xml:
+            name: JobTitl
+        rspnsblty:
+          type: string
+          xml:
+            name: Rspnsblty
+        dept:
+          type: string
+          xml:
+            name: Dept
+        othr:
+          type: array
+          items:
+            $ref: "#/components/schemas/OtherContact1"
+          xml:
+            name: Othr
+        prefrdMtd:
+          type: string
+          enum:
+          - MAIL
+          - FAXX
+          - LETT
+          - CELL
+          - ONLI
+          - PHON
+          xml:
+            name: PrefrdMtd
+        urladr:
+          type: string
+    CreditTransferMandateData1:
+      type: object
+      properties:
+        mndtId:
+          type: string
+          xml:
+            name: MndtId
+        tp:
+          $ref: "#/components/schemas/MandateTypeInformation2"
+          xml:
+            name: Tp
+        dtOfSgntr:
+          type: string
+          format: date-time
+          xml:
+            name: DtOfSgntr
+        dtOfVrfctn:
+          type: string
+          format: date-time
+          xml:
+            name: DtOfVrfctn
+        elctrncSgntr:
+          type: string
+          format: byte
+          xml:
+            name: ElctrncSgntr
+        frstPmtDt:
+          type: string
+          format: date-time
+          xml:
+            name: FrstPmtDt
+        fnlPmtDt:
+          type: string
+          format: date-time
+          xml:
+            name: FnlPmtDt
+        frqcy:
+          $ref: "#/components/schemas/Frequency36Choice"
+          xml:
+            name: Frqcy
+        rsn:
+          $ref: "#/components/schemas/MandateSetupReason1Choice"
+          xml:
+            name: Rsn
+    CreditorReferenceInformation3:
+      type: object
+      properties:
+        tp:
+          $ref: "#/components/schemas/CreditorReferenceType3"
+          xml:
+            name: Tp
+        ref:
+          type: string
+          xml:
+            name: Ref
+    CreditorReferenceType2Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    CreditorReferenceType3:
+      type: object
+      properties:
+        cdOrPrtry:
+          $ref: "#/components/schemas/CreditorReferenceType2Choice"
+          xml:
+            name: CdOrPrtry
+        issr:
+          type: string
+          xml:
+            name: Issr
+      required:
+      - cdOrPrtry
+    CurrencyExchange13:
+      type: object
+      properties:
+        srcCcy:
+          type: string
+          xml:
+            name: SrcCcy
+        trgtCcy:
+          type: string
+          xml:
+            name: TrgtCcy
+        xchgRate:
+          type: number
+          xml:
+            name: XchgRate
+        unitCcy:
+          type: string
+          xml:
+            name: UnitCcy
+      required:
+      - srcCcy
+      - trgtCcy
+      - xchgRate
+    CustomerPaymentStatusReportV14:
+      type: object
+      properties:
+        grpHdr:
+          $ref: "#/components/schemas/GroupHeader128"
+          xml:
+            name: GrpHdr
+        orgnlGrpInfAndSts:
+          $ref: "#/components/schemas/OriginalGroupHeader22"
+          xml:
+            name: OrgnlGrpInfAndSts
+        orgnlPmtInfAndSts:
+          type: array
+          items:
+            $ref: "#/components/schemas/OriginalPaymentInstruction51"
+          xml:
+            name: OrgnlPmtInfAndSts
+        splmtryData:
+          type: array
+          items:
+            $ref: "#/components/schemas/SupplementaryData1"
+          xml:
+            name: SplmtryData
+      required:
+      - grpHdr
+      - orgnlGrpInfAndSts
+    DateAndDateTime2Choice:
+      type: object
+      properties:
+        dt:
+          type: string
+          format: date-time
+          xml:
+            name: Dt
+        dtTm:
+          type: string
+          format: date-time
+          xml:
+            name: DtTm
+    DateAndPlaceOfBirth1:
+      type: object
+      properties:
+        birthDt:
+          type: string
+          format: date-time
+          xml:
+            name: BirthDt
+        prvcOfBirth:
+          type: string
+          xml:
+            name: PrvcOfBirth
+        cityOfBirth:
+          type: string
+          xml:
+            name: CityOfBirth
+        ctryOfBirth:
+          type: string
+          xml:
+            name: CtryOfBirth
+      required:
+      - birthDt
+      - cityOfBirth
+      - ctryOfBirth
+    DateAndType1:
+      type: object
+      properties:
+        tp:
+          $ref: "#/components/schemas/DateType2Choice"
+          xml:
+            name: Tp
+        dt:
+          type: string
+          format: date-time
+          xml:
+            name: Dt
+      required:
+      - dt
+      - tp
+    DatePeriod2:
+      type: object
+      properties:
+        frDt:
+          type: string
+          format: date-time
+          xml:
+            name: FrDt
+        toDt:
+          type: string
+          format: date-time
+          xml:
+            name: ToDt
+      required:
+      - frDt
+      - toDt
+    DateType2Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    Document:
+      type: object
+      properties:
+        cstmrPmtStsRpt:
+          $ref: "#/components/schemas/CustomerPaymentStatusReportV14"
+          xml:
+            name: CstmrPmtStsRpt
+      required:
+      - cstmrPmtStsRpt
+    DocumentAdjustment1:
+      type: object
+      properties:
+        amt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: Amt
+        cdtDbtInd:
+          type: string
+          enum:
+          - CRDT
+          - DBIT
+          xml:
+            name: CdtDbtInd
+        rsn:
+          type: string
+          xml:
+            name: Rsn
+        addtlInf:
+          type: string
+          xml:
+            name: AddtlInf
+      required:
+      - amt
+    DocumentAmount1:
+      type: object
+      properties:
+        tp:
+          $ref: "#/components/schemas/DocumentAmountType1Choice"
+          xml:
+            name: Tp
+        amt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: Amt
+      required:
+      - amt
+      - tp
+    DocumentAmountType1Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    DocumentLineIdentification1:
+      type: object
+      properties:
+        tp:
+          $ref: "#/components/schemas/DocumentLineType1"
+          xml:
+            name: Tp
+        nb:
+          type: string
+          xml:
+            name: Nb
+        rltdDt:
+          type: string
+          format: date-time
+          xml:
+            name: RltdDt
+    DocumentLineInformation2:
+      type: object
+      properties:
+        id:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentLineIdentification1"
+          xml:
+            name: Id
+        desc:
+          type: string
+          xml:
+            name: Desc
+        amt:
+          $ref: "#/components/schemas/RemittanceAmount4"
+          xml:
+            name: Amt
+      required:
+      - id
+    DocumentLineType1:
+      type: object
+      properties:
+        cdOrPrtry:
+          $ref: "#/components/schemas/DocumentLineType1Choice"
+          xml:
+            name: CdOrPrtry
+        issr:
+          type: string
+          xml:
+            name: Issr
+      required:
+      - cdOrPrtry
+    DocumentLineType1Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    DocumentType1:
+      type: object
+      properties:
+        cdOrPrtry:
+          $ref: "#/components/schemas/DocumentType2Choice"
+          xml:
+            name: CdOrPrtry
+        issr:
+          type: string
+          xml:
+            name: Issr
+      required:
+      - cdOrPrtry
+    DocumentType2Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    EquivalentAmount2:
+      type: object
+      properties:
+        amt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: Amt
+        ccyOfTrf:
+          type: string
+          xml:
+            name: CcyOfTrf
+      required:
+      - amt
+      - ccyOfTrf
+    FinancialIdentificationSchemeName1Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    FinancialInstitutionIdentification23:
+      type: object
+      properties:
+        bicfi:
+          type: string
+          xml:
+            name: BICFI
+        clrSysMmbId:
+          $ref: "#/components/schemas/ClearingSystemMemberIdentification2"
+          xml:
+            name: ClrSysMmbId
+        lei:
+          type: string
+          xml:
+            name: LEI
+        nm:
+          type: string
+          xml:
+            name: Nm
+        pstlAdr:
+          $ref: "#/components/schemas/PostalAddress27"
+          xml:
+            name: PstlAdr
+        othr:
+          $ref: "#/components/schemas/GenericFinancialIdentification1"
+          xml:
+            name: Othr
+    Frequency36Choice:
+      type: object
+      properties:
+        tp:
+          type: string
+          enum:
+          - YEAR
+          - MNTH
+          - QURT
+          - MIAN
+          - WEEK
+          - DAIL
+          - ADHO
+          - INDA
+          - FRTN
+          xml:
+            name: Tp
+        prd:
+          $ref: "#/components/schemas/FrequencyPeriod1"
+          xml:
+            name: Prd
+        ptInTm:
+          $ref: "#/components/schemas/FrequencyAndMoment1"
+          xml:
+            name: PtInTm
+    FrequencyAndMoment1:
+      type: object
+      properties:
+        tp:
+          type: string
+          enum:
+          - YEAR
+          - MNTH
+          - QURT
+          - MIAN
+          - WEEK
+          - DAIL
+          - ADHO
+          - INDA
+          - FRTN
+          xml:
+            name: Tp
+        ptInTm:
+          type: string
+          xml:
+            name: PtInTm
+      required:
+      - ptInTm
+      - tp
+    FrequencyPeriod1:
+      type: object
+      properties:
+        tp:
+          type: string
+          enum:
+          - YEAR
+          - MNTH
+          - QURT
+          - MIAN
+          - WEEK
+          - DAIL
+          - ADHO
+          - INDA
+          - FRTN
+          xml:
+            name: Tp
+        cntPerPrd:
+          type: number
+          xml:
+            name: CntPerPrd
+      required:
+      - cntPerPrd
+      - tp
+    Garnishment4:
+      type: object
+      properties:
+        tp:
+          $ref: "#/components/schemas/GarnishmentType1"
+          xml:
+            name: Tp
+        grnshee:
+          $ref: "#/components/schemas/PartyIdentification272"
+          xml:
+            name: Grnshee
+        grnshmtAdmstr:
+          $ref: "#/components/schemas/PartyIdentification272"
+          xml:
+            name: GrnshmtAdmstr
+        refNb:
+          type: string
+          xml:
+            name: RefNb
+        dt:
+          type: string
+          format: date-time
+          xml:
+            name: Dt
+        rmtdAmt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: RmtdAmt
+        fmlyMdclInsrncInd:
+          type: boolean
+          xml:
+            name: FmlyMdclInsrncInd
+        mplyeeTermntnInd:
+          type: boolean
+          xml:
+            name: MplyeeTermntnInd
+      required:
+      - tp
+    GarnishmentType1:
+      type: object
+      properties:
+        cdOrPrtry:
+          $ref: "#/components/schemas/GarnishmentType1Choice"
+          xml:
+            name: CdOrPrtry
+        issr:
+          type: string
+          xml:
+            name: Issr
+      required:
+      - cdOrPrtry
+    GarnishmentType1Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    GenericAccountIdentification1:
+      type: object
+      properties:
+        id:
+          type: string
+          xml:
+            name: Id
+        schmeNm:
+          $ref: "#/components/schemas/AccountSchemeName1Choice"
+          xml:
+            name: SchmeNm
+        issr:
+          type: string
+          xml:
+            name: Issr
+      required:
+      - id
+    GenericFinancialIdentification1:
+      type: object
+      properties:
+        id:
+          type: string
+          xml:
+            name: Id
+        schmeNm:
+          $ref: "#/components/schemas/FinancialIdentificationSchemeName1Choice"
+          xml:
+            name: SchmeNm
+        issr:
+          type: string
+          xml:
+            name: Issr
+      required:
+      - id
+    GenericIdentification3:
+      type: object
+      properties:
+        id:
+          type: string
+          xml:
+            name: Id
+        issr:
+          type: string
+          xml:
+            name: Issr
+      required:
+      - id
+    GenericIdentification30:
+      type: object
+      properties:
+        id:
+          type: string
+          xml:
+            name: Id
+        issr:
+          type: string
+          xml:
+            name: Issr
+        schmeNm:
+          type: string
+          xml:
+            name: SchmeNm
+      required:
+      - id
+      - issr
+    GenericOrganisationIdentification3:
+      type: object
+      properties:
+        id:
+          type: string
+          xml:
+            name: Id
+        schmeNm:
+          $ref: "#/components/schemas/OrganisationIdentificationSchemeName1Choice"
+          xml:
+            name: SchmeNm
+        issr:
+          type: string
+          xml:
+            name: Issr
+      required:
+      - id
+    GenericPersonIdentification2:
+      type: object
+      properties:
+        id:
+          type: string
+          xml:
+            name: Id
+        schmeNm:
+          $ref: "#/components/schemas/PersonIdentificationSchemeName1Choice"
+          xml:
+            name: SchmeNm
+        issr:
+          type: string
+          xml:
+            name: Issr
+      required:
+      - id
+    GroupHeader128:
+      type: object
+      properties:
+        msgId:
+          type: string
+          xml:
+            name: MsgId
+        creDtTm:
+          type: string
+          format: date-time
+          xml:
+            name: CreDtTm
+        initgPty:
+          $ref: "#/components/schemas/PartyIdentification272"
+          xml:
+            name: InitgPty
+        fwdgAgt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: FwdgAgt
+        dbtrAgt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: DbtrAgt
+        cdtrAgt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: CdtrAgt
+      required:
+      - creDtTm
+      - msgId
+    JAXBElementDocument:
+      type: object
+      properties:
+        name:
+          type: object
+          properties:
+            namespaceURI:
+              type: string
+            localPart:
+              type: string
+            prefix:
+              type: string
+        value:
+          $ref: "#/components/schemas/Document"
+        nil:
+          type: boolean
+        typeSubstituted:
+          type: boolean
+        globalScope:
+          type: boolean
+    LocalInstrument2Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    MandateClassification1Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          enum:
+          - FIXE
+          - USGB
+          - VARI
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    MandateRelatedData3Choice:
+      type: object
+      properties:
+        drctDbtMndt:
+          $ref: "#/components/schemas/MandateRelatedInformation16"
+          xml:
+            name: DrctDbtMndt
+        cdtTrfMndt:
+          $ref: "#/components/schemas/CreditTransferMandateData1"
+          xml:
+            name: CdtTrfMndt
+    MandateRelatedInformation16:
+      type: object
+      properties:
+        mndtId:
+          type: string
+          xml:
+            name: MndtId
+        dtOfSgntr:
+          type: string
+          format: date-time
+          xml:
+            name: DtOfSgntr
+        amdmntInd:
+          type: boolean
+          xml:
+            name: AmdmntInd
+        amdmntInfDtls:
+          $ref: "#/components/schemas/AmendmentInformationDetails15"
+          xml:
+            name: AmdmntInfDtls
+        elctrncSgntr:
+          type: string
+          xml:
+            name: ElctrncSgntr
+        frstColltnDt:
+          type: string
+          format: date-time
+          xml:
+            name: FrstColltnDt
+        fnlColltnDt:
+          type: string
+          format: date-time
+          xml:
+            name: FnlColltnDt
+        frqcy:
+          $ref: "#/components/schemas/Frequency36Choice"
+          xml:
+            name: Frqcy
+        rsn:
+          $ref: "#/components/schemas/MandateSetupReason1Choice"
+          xml:
+            name: Rsn
+        trckgDays:
+          type: string
+          xml:
+            name: TrckgDays
+    MandateSetupReason1Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    MandateTypeInformation2:
+      type: object
+      properties:
+        svcLvl:
+          $ref: "#/components/schemas/ServiceLevel8Choice"
+          xml:
+            name: SvcLvl
+        lclInstrm:
+          $ref: "#/components/schemas/LocalInstrument2Choice"
+          xml:
+            name: LclInstrm
+        ctgyPurp:
+          $ref: "#/components/schemas/CategoryPurpose1Choice"
+          xml:
+            name: CtgyPurp
+        clssfctn:
+          $ref: "#/components/schemas/MandateClassification1Choice"
+          xml:
+            name: Clssfctn
+    NumberOfTransactionsPerStatus5:
+      type: object
+      properties:
+        dtldNbOfTxs:
+          type: string
+          xml:
+            name: DtldNbOfTxs
+        dtldSts:
+          type: string
+          xml:
+            name: DtldSts
+        dtldCtrlSum:
+          type: number
+          xml:
+            name: DtldCtrlSum
+      required:
+      - dtldNbOfTxs
+      - dtldSts
+    OrganisationIdentification39:
+      type: object
+      properties:
+        anyBIC:
+          type: string
+          xml:
+            name: AnyBIC
+        lei:
+          type: string
+          xml:
+            name: LEI
+        othr:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenericOrganisationIdentification3"
+          xml:
+            name: Othr
+    OrganisationIdentificationSchemeName1Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    OriginalGroupHeader22:
+      type: object
+      properties:
+        orgnlMsgId:
+          type: string
+          xml:
+            name: OrgnlMsgId
+        orgnlMsgNmId:
+          type: string
+          xml:
+            name: OrgnlMsgNmId
+        orgnlCreDtTm:
+          type: string
+          format: date-time
+          xml:
+            name: OrgnlCreDtTm
+        orgnlNbOfTxs:
+          type: string
+          xml:
+            name: OrgnlNbOfTxs
+        orgnlCtrlSum:
+          type: number
+          xml:
+            name: OrgnlCtrlSum
+        grpSts:
+          type: string
+          xml:
+            name: GrpSts
+        stsRsnInf:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusReasonInformation14"
+          xml:
+            name: StsRsnInf
+        nbOfTxsPerSts:
+          type: array
+          items:
+            $ref: "#/components/schemas/NumberOfTransactionsPerStatus5"
+          xml:
+            name: NbOfTxsPerSts
+      required:
+      - orgnlMsgId
+      - orgnlMsgNmId
+    OriginalPaymentInstruction51:
+      type: object
+      properties:
+        orgnlPmtInfId:
+          type: string
+          xml:
+            name: OrgnlPmtInfId
+        orgnlNbOfTxs:
+          type: string
+          xml:
+            name: OrgnlNbOfTxs
+        orgnlCtrlSum:
+          type: number
+          xml:
+            name: OrgnlCtrlSum
+        pmtInfSts:
+          type: string
+          xml:
+            name: PmtInfSts
+        stsRsnInf:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusReasonInformation14"
+          xml:
+            name: StsRsnInf
+        nbOfTxsPerSts:
+          type: array
+          items:
+            $ref: "#/components/schemas/NumberOfTransactionsPerStatus5"
+          xml:
+            name: NbOfTxsPerSts
+        txInfAndSts:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentTransaction160"
+          xml:
+            name: TxInfAndSts
+      required:
+      - orgnlPmtInfId
+    OriginalTransactionReference42:
+      type: object
+      properties:
+        intrBkSttlmAmt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: IntrBkSttlmAmt
+        amt:
+          $ref: "#/components/schemas/AmountType4Choice"
+          xml:
+            name: Amt
+        intrBkSttlmDt:
+          type: string
+          format: date-time
+          xml:
+            name: IntrBkSttlmDt
+        reqdColltnDt:
+          type: string
+          format: date-time
+          xml:
+            name: ReqdColltnDt
+        reqdExctnDt:
+          $ref: "#/components/schemas/DateAndDateTime2Choice"
+          xml:
+            name: ReqdExctnDt
+        cdtrSchmeId:
+          $ref: "#/components/schemas/PartyIdentification272"
+          xml:
+            name: CdtrSchmeId
+        sttlmInf:
+          $ref: "#/components/schemas/SettlementInstruction15"
+          xml:
+            name: SttlmInf
+        pmtTpInf:
+          $ref: "#/components/schemas/PaymentTypeInformation27"
+          xml:
+            name: PmtTpInf
+        pmtMtd:
+          type: string
+          enum:
+          - CHK
+          - TRF
+          - DD
+          - TRA
+          xml:
+            name: PmtMtd
+        mndtRltdInf:
+          $ref: "#/components/schemas/MandateRelatedData3Choice"
+          xml:
+            name: MndtRltdInf
+        rmtInf:
+          $ref: "#/components/schemas/RemittanceInformation22"
+          xml:
+            name: RmtInf
+        ultmtDbtr:
+          $ref: "#/components/schemas/Party50Choice"
+          xml:
+            name: UltmtDbtr
+        dbtr:
+          $ref: "#/components/schemas/Party50Choice"
+          xml:
+            name: Dbtr
+        dbtrAcct:
+          $ref: "#/components/schemas/CashAccount40"
+          xml:
+            name: DbtrAcct
+        dbtrAgt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: DbtrAgt
+        dbtrAgtAcct:
+          $ref: "#/components/schemas/CashAccount40"
+          xml:
+            name: DbtrAgtAcct
+        cdtrAgt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: CdtrAgt
+        cdtrAgtAcct:
+          $ref: "#/components/schemas/CashAccount40"
+          xml:
+            name: CdtrAgtAcct
+        cdtr:
+          $ref: "#/components/schemas/Party50Choice"
+          xml:
+            name: Cdtr
+        cdtrAcct:
+          $ref: "#/components/schemas/CashAccount40"
+          xml:
+            name: CdtrAcct
+        ultmtCdtr:
+          $ref: "#/components/schemas/Party50Choice"
+          xml:
+            name: UltmtCdtr
+        purp:
+          $ref: "#/components/schemas/Purpose2Choice"
+          xml:
+            name: Purp
+    OtherContact1:
+      type: object
+      properties:
+        chanlTp:
+          type: string
+          xml:
+            name: ChanlTp
+        id:
+          type: string
+          xml:
+            name: Id
+      required:
+      - chanlTp
+    Party50Choice:
+      type: object
+      properties:
+        pty:
+          $ref: "#/components/schemas/PartyIdentification272"
+          xml:
+            name: Pty
+        agt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: Agt
+    Party52Choice:
+      type: object
+      properties:
+        orgId:
+          $ref: "#/components/schemas/OrganisationIdentification39"
+          xml:
+            name: OrgId
+        prvtId:
+          $ref: "#/components/schemas/PersonIdentification18"
+          xml:
+            name: PrvtId
+    PartyIdentification272:
+      type: object
+      properties:
+        nm:
+          type: string
+          xml:
+            name: Nm
+        pstlAdr:
+          $ref: "#/components/schemas/PostalAddress27"
+          xml:
+            name: PstlAdr
+        id:
+          $ref: "#/components/schemas/Party52Choice"
+          xml:
+            name: Id
+        ctryOfRes:
+          type: string
+          xml:
+            name: CtryOfRes
+        ctctDtls:
+          $ref: "#/components/schemas/Contact13"
+          xml:
+            name: CtctDtls
+    PaymentTransaction160:
+      type: object
+      properties:
+        stsId:
+          type: string
+          xml:
+            name: StsId
+        orgnlInstrId:
+          type: string
+          xml:
+            name: OrgnlInstrId
+        orgnlEndToEndId:
+          type: string
+          xml:
+            name: OrgnlEndToEndId
+        orgnlUETR:
+          type: string
+          xml:
+            name: OrgnlUETR
+        txSts:
+          type: string
+          xml:
+            name: TxSts
+        stsRsnInf:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusReasonInformation14"
+          xml:
+            name: StsRsnInf
+        chrgsInf:
+          type: array
+          items:
+            $ref: "#/components/schemas/Charges16"
+          xml:
+            name: ChrgsInf
+        trckrData:
+          $ref: "#/components/schemas/TrackerData7"
+          xml:
+            name: TrckrData
+        accptncDtTm:
+          type: string
+          format: date-time
+          xml:
+            name: AccptncDtTm
+        acctSvcrRef:
+          type: string
+          xml:
+            name: AcctSvcrRef
+        clrSysRef:
+          type: string
+          xml:
+            name: ClrSysRef
+        orgnlTxRef:
+          $ref: "#/components/schemas/OriginalTransactionReference42"
+          xml:
+            name: OrgnlTxRef
+        splmtryData:
+          type: array
+          items:
+            $ref: "#/components/schemas/SupplementaryData1"
+          xml:
+            name: SplmtryData
+    PaymentTypeInformation27:
+      type: object
+      properties:
+        instrPrty:
+          type: string
+          enum:
+          - HIGH
+          - NORM
+          xml:
+            name: InstrPrty
+        clrChanl:
+          type: string
+          enum:
+          - RTGS
+          - RTNS
+          - MPNS
+          - BOOK
+          xml:
+            name: ClrChanl
+        svcLvl:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceLevel8Choice"
+          xml:
+            name: SvcLvl
+        lclInstrm:
+          $ref: "#/components/schemas/LocalInstrument2Choice"
+          xml:
+            name: LclInstrm
+        seqTp:
+          type: string
+          enum:
+          - FRST
+          - RCUR
+          - FNAL
+          - OOFF
+          - RPRE
+          xml:
+            name: SeqTp
+        ctgyPurp:
+          $ref: "#/components/schemas/CategoryPurpose1Choice"
+          xml:
+            name: CtgyPurp
+    PersonIdentification18:
+      type: object
+      properties:
+        dtAndPlcOfBirth:
+          $ref: "#/components/schemas/DateAndPlaceOfBirth1"
+          xml:
+            name: DtAndPlcOfBirth
+        othr:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenericPersonIdentification2"
+          xml:
+            name: Othr
+    PersonIdentificationSchemeName1Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    PostalAddress27:
+      type: object
+      properties:
+        adrTp:
+          $ref: "#/components/schemas/AddressType3Choice"
+          xml:
+            name: AdrTp
+        careOf:
+          type: string
+          xml:
+            name: CareOf
+        dept:
+          type: string
+          xml:
+            name: Dept
+        subDept:
+          type: string
+          xml:
+            name: SubDept
+        strtNm:
+          type: string
+          xml:
+            name: StrtNm
+        bldgNb:
+          type: string
+          xml:
+            name: BldgNb
+        bldgNm:
+          type: string
+          xml:
+            name: BldgNm
+        flr:
+          type: string
+          xml:
+            name: Flr
+        unitNb:
+          type: string
+          xml:
+            name: UnitNb
+        pstBx:
+          type: string
+          xml:
+            name: PstBx
+        room:
+          type: string
+          xml:
+            name: Room
+        pstCd:
+          type: string
+          xml:
+            name: PstCd
+        twnNm:
+          type: string
+          xml:
+            name: TwnNm
+        twnLctnNm:
+          type: string
+          xml:
+            name: TwnLctnNm
+        dstrctNm:
+          type: string
+          xml:
+            name: DstrctNm
+        ctrySubDvsn:
+          type: string
+          xml:
+            name: CtrySubDvsn
+        ctry:
+          type: string
+          xml:
+            name: Ctry
+        adrLine:
+          type: array
+          items:
+            type: string
+            xml:
+              name: AdrLine
+          xml:
+            name: AdrLine
+    ProxyAccountIdentification1:
+      type: object
+      properties:
+        tp:
+          $ref: "#/components/schemas/ProxyAccountType1Choice"
+          xml:
+            name: Tp
+        id:
+          type: string
+          xml:
+            name: Id
+      required:
+      - id
+    ProxyAccountType1Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    Purpose2Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    ReferredDocumentInformation8:
+      type: object
+      properties:
+        tp:
+          $ref: "#/components/schemas/DocumentType1"
+          xml:
+            name: Tp
+        nb:
+          type: string
+          xml:
+            name: Nb
+        rltdDt:
+          $ref: "#/components/schemas/DateAndType1"
+          xml:
+            name: RltdDt
+        lineDtls:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentLineInformation2"
+          xml:
+            name: LineDtls
+    RemittanceAmount4:
+      type: object
+      properties:
+        rmtAmtAndTp:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentAmount1"
+          xml:
+            name: RmtAmtAndTp
+        adjstmntAmtAndRsn:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentAdjustment1"
+          xml:
+            name: AdjstmntAmtAndRsn
+    RemittanceInformation22:
+      type: object
+      properties:
+        ustrd:
+          type: array
+          items:
+            type: string
+            xml:
+              name: Ustrd
+          xml:
+            name: Ustrd
+        strd:
+          type: array
+          items:
+            $ref: "#/components/schemas/StructuredRemittanceInformation18"
+          xml:
+            name: Strd
+    ServiceLevel8Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    SettlementInstruction15:
+      type: object
+      properties:
+        sttlmMtd:
+          type: string
+          enum:
+          - INDA
+          - INGA
+          - COVE
+          - CLRG
+          xml:
+            name: SttlmMtd
+        sttlmAcct:
+          $ref: "#/components/schemas/CashAccount40"
+          xml:
+            name: SttlmAcct
+        clrSys:
+          $ref: "#/components/schemas/ClearingSystemIdentification3Choice"
+          xml:
+            name: ClrSys
+        instgRmbrsmntAgt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: InstgRmbrsmntAgt
+        instgRmbrsmntAgtAcct:
+          $ref: "#/components/schemas/CashAccount40"
+          xml:
+            name: InstgRmbrsmntAgtAcct
+        instdRmbrsmntAgt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: InstdRmbrsmntAgt
+        instdRmbrsmntAgtAcct:
+          $ref: "#/components/schemas/CashAccount40"
+          xml:
+            name: InstdRmbrsmntAgtAcct
+        thrdRmbrsmntAgt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: ThrdRmbrsmntAgt
+        thrdRmbrsmntAgtAcct:
+          $ref: "#/components/schemas/CashAccount40"
+          xml:
+            name: ThrdRmbrsmntAgtAcct
+      required:
+      - sttlmMtd
+    StatusReason6Choice:
+      type: object
+      properties:
+        cd:
+          type: string
+          xml:
+            name: Cd
+        prtry:
+          type: string
+          xml:
+            name: Prtry
+    StatusReasonInformation14:
+      type: object
+      properties:
+        orgtr:
+          $ref: "#/components/schemas/PartyIdentification272"
+          xml:
+            name: Orgtr
+        rsn:
+          $ref: "#/components/schemas/StatusReason6Choice"
+          xml:
+            name: Rsn
+        addtlInf:
+          type: array
+          items:
+            type: string
+            xml:
+              name: AddtlInf
+          xml:
+            name: AddtlInf
+    StructuredRemittanceInformation18:
+      type: object
+      properties:
+        rfrdDocInf:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReferredDocumentInformation8"
+          xml:
+            name: RfrdDocInf
+        rfrdDocAmt:
+          $ref: "#/components/schemas/RemittanceAmount4"
+          xml:
+            name: RfrdDocAmt
+        cdtrRefInf:
+          $ref: "#/components/schemas/CreditorReferenceInformation3"
+          xml:
+            name: CdtrRefInf
+        invcr:
+          $ref: "#/components/schemas/PartyIdentification272"
+          xml:
+            name: Invcr
+        invcee:
+          $ref: "#/components/schemas/PartyIdentification272"
+          xml:
+            name: Invcee
+        taxRmt:
+          $ref: "#/components/schemas/TaxData1"
+          xml:
+            name: TaxRmt
+        grnshmtRmt:
+          $ref: "#/components/schemas/Garnishment4"
+          xml:
+            name: GrnshmtRmt
+        addtlRmtInf:
+          type: array
+          items:
+            type: string
+            xml:
+              name: AddtlRmtInf
+          xml:
+            name: AddtlRmtInf
+    SupplementaryData1:
+      type: object
+      properties:
+        plcAndNm:
+          type: string
+          xml:
+            name: PlcAndNm
+        envlp:
+          $ref: "#/components/schemas/SupplementaryDataEnvelope1"
+          xml:
+            name: Envlp
+      required:
+      - envlp
+    SupplementaryDataEnvelope1:
+      type: object
+      properties:
+        any: {}
+    TaxAmount3:
+      type: object
+      properties:
+        rate:
+          type: number
+          xml:
+            name: Rate
+        taxblBaseAmt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: TaxblBaseAmt
+        ttlAmt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: TtlAmt
+        dtls:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaxRecordDetails3"
+          xml:
+            name: Dtls
+    TaxAuthorisation1:
+      type: object
+      properties:
+        titl:
+          type: string
+          xml:
+            name: Titl
+        nm:
+          type: string
+          xml:
+            name: Nm
+    TaxData1:
+      type: object
+      properties:
+        cdtr:
+          $ref: "#/components/schemas/TaxParty1"
+          xml:
+            name: Cdtr
+        dbtr:
+          $ref: "#/components/schemas/TaxParty2"
+          xml:
+            name: Dbtr
+        ultmtDbtr:
+          $ref: "#/components/schemas/TaxParty2"
+          xml:
+            name: UltmtDbtr
+        admstnZone:
+          type: string
+          xml:
+            name: AdmstnZone
+        refNb:
+          type: string
+          xml:
+            name: RefNb
+        mtd:
+          type: string
+          xml:
+            name: Mtd
+        ttlTaxblBaseAmt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: TtlTaxblBaseAmt
+        ttlTaxAmt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: TtlTaxAmt
+        dt:
+          type: string
+          format: date-time
+          xml:
+            name: Dt
+        seqNb:
+          type: number
+          xml:
+            name: SeqNb
+        rcrd:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaxRecord3"
+          xml:
+            name: Rcrd
+    TaxParty1:
+      type: object
+      properties:
+        taxId:
+          type: string
+          xml:
+            name: TaxId
+        regnId:
+          type: string
+          xml:
+            name: RegnId
+        taxTp:
+          type: string
+          xml:
+            name: TaxTp
+    TaxParty2:
+      type: object
+      properties:
+        taxId:
+          type: string
+          xml:
+            name: TaxId
+        regnId:
+          type: string
+          xml:
+            name: RegnId
+        taxTp:
+          type: string
+          xml:
+            name: TaxTp
+        authstn:
+          $ref: "#/components/schemas/TaxAuthorisation1"
+          xml:
+            name: Authstn
+    TaxPeriod3:
+      type: object
+      properties:
+        yr:
+          type: string
+          format: date-time
+          xml:
+            name: Yr
+        tp:
+          type: string
+          enum:
+          - MM_01
+          - MM_02
+          - MM_03
+          - MM_04
+          - MM_05
+          - MM_06
+          - MM_07
+          - MM_08
+          - MM_09
+          - MM_10
+          - MM_11
+          - MM_12
+          - QTR_1
+          - QTR_2
+          - QTR_3
+          - QTR_4
+          - HLF_1
+          - HLF_2
+          xml:
+            name: Tp
+        frToDt:
+          $ref: "#/components/schemas/DatePeriod2"
+          xml:
+            name: FrToDt
+    TaxRecord3:
+      type: object
+      properties:
+        tp:
+          type: string
+          xml:
+            name: Tp
+        ctgy:
+          type: string
+          xml:
+            name: Ctgy
+        ctgyDtls:
+          type: string
+          xml:
+            name: CtgyDtls
+        dbtrSts:
+          type: string
+          xml:
+            name: DbtrSts
+        certId:
+          type: string
+          xml:
+            name: CertId
+        frmsCd:
+          type: string
+          xml:
+            name: FrmsCd
+        prd:
+          $ref: "#/components/schemas/TaxPeriod3"
+          xml:
+            name: Prd
+        taxAmt:
+          $ref: "#/components/schemas/TaxAmount3"
+          xml:
+            name: TaxAmt
+        addtlInf:
+          type: string
+          xml:
+            name: AddtlInf
+    TaxRecordDetails3:
+      type: object
+      properties:
+        prd:
+          $ref: "#/components/schemas/TaxPeriod3"
+          xml:
+            name: Prd
+        amt:
+          $ref: "#/components/schemas/ActiveOrHistoricCurrencyAndAmount"
+          xml:
+            name: Amt
+      required:
+      - amt
+    TrackerData7:
+      type: object
+      properties:
+        confdDt:
+          $ref: "#/components/schemas/DateAndDateTime2Choice"
+          xml:
+            name: ConfdDt
+        confdAmt:
+          $ref: "#/components/schemas/ActiveCurrencyAndAmount"
+          xml:
+            name: ConfdAmt
+        trckrRcrd:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrackerRecord5"
+          xml:
+            name: TrckrRcrd
+      required:
+      - confdAmt
+      - confdDt
+      - trckrRcrd
+    TrackerRecord5:
+      type: object
+      properties:
+        agt:
+          $ref: "#/components/schemas/BranchAndFinancialInstitutionIdentification8"
+          xml:
+            name: Agt
+        chrgBr:
+          type: string
+          enum:
+          - DEBT
+          - CRED
+          - SHAR
+          - SLEV
+          xml:
+            name: ChrgBr
+        chrgsAmt:
+          $ref: "#/components/schemas/ActiveCurrencyAndAmount"
+          xml:
+            name: ChrgsAmt
+        xchgRateData:
+          $ref: "#/components/schemas/CurrencyExchange13"
+          xml:
+            name: XchgRateData
+      required:
+      - agt
