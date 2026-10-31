@@ -142,8 +142,10 @@
 									<fileset>
 										<directory>${project.basedir}/src/main/resources/iso20022/xsd</directory>
 										<includes>
-											<include>pain.001.001.12.xsd</include>
-											<include>pain.002.001.14.xsd</include>
+											<include>limited-pain001.xsd</include>
+											<include>limited-pain002.xsd</include>
+<!--											<include>pain.001.001.12.xsd</include>-->
+<!--											<include>pain.002.001.14.xsd</include>-->
 										</includes>
 									</fileset>
 								</schema>
