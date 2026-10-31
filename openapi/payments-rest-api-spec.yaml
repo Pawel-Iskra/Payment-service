@@ -42,19 +42,26 @@ paths:
         schema:
           type: string
       requestBody:
-        description: Payment initiation message using the Payment Service limited profile based on ISO 20022 pain.001.001.12. Only the elements and fields defined by this profile are supported.
+        description: Payment initiation message using the Payment Service limited profile based on ISO 20022 pain.001.001.12. 
+                     Only the elements and fields defined by this profile are supported.
         content:
           application/xml:
             schema:
               $ref: '#/components/schemas/Pain001Document'
+            examples:
+              ValidLimitedPain001RequestBody:
+                $ref: '#/components/examples/LimitedPain001RequestBody'
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description:  Payment instruction created. Technical status report returned.
           content:
             application/xml:
               schema:
                 $ref: "#/components/schemas/JAXBElementDocument"
+              examples:
+                ValidLimitedPain001ResponseBody:
+                  $ref: '#/components/examples/LimitedPain002ResponseBody'
   /payments/{id}:
     get:
       tags:
@@ -75,6 +82,101 @@ paths:
               schema:
                 $ref: "#/components/schemas/PaymentResponse"
 components:
+  examples:
+    LimitedPain001RequestBody:
+      summary: Valid pain.001.001.12 payment initiation request
+      description: Example of a single credit transfer instruction.
+      value: |
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.12">
+            <CstmrCdtTrfInitn>
+                <GrpHdr>
+                    <MsgId>MSG-20261031-001</MsgId>
+                    <CreDtTm>2026-10-31T16:51:01Z</CreDtTm>
+                    <NbOfTxs>1</NbOfTxs>
+                    <CtrlSum>1250.50</CtrlSum>
+                    <InitgPty>
+                        <Nm>Example Company</Nm>
+                    </InitgPty>
+                </GrpHdr>
+                <PmtInf>
+                    <PmtInfId>PMT-20261031-001</PmtInfId>
+                    <PmtMtd>TRF</PmtMtd>
+                    <NbOfTxs>1</NbOfTxs>
+                    <CtrlSum>1250.50</CtrlSum>
+                    <PmtTpInf>
+                        <InstrPrty>NORM</InstrPrty>
+                        <SvcLvl>
+                            <Cd>SEPA</Cd>
+                        </SvcLvl>
+                    </PmtTpInf>
+                    <ReqdExctnDt>
+                        <Dt>2026-11-02</Dt>
+                    </ReqdExctnDt>
+                    <Dbtr>
+                        <Nm>Example Debtor Ltd</Nm>
+                    </Dbtr>
+                    <DbtrAcct>
+                        <Id>
+                            <IBAN>DE89370400440532013000</IBAN>
+                        </Id>
+                    </DbtrAcct>
+                    <DbtrAgt>
+                        <FinInstnId>
+                            <BICFI>DEUTDEFF</BICFI>
+                        </FinInstnId>
+                    </DbtrAgt>
+                    <ChrgBr>SLEV</ChrgBr>
+                    <CdtTrfTxInf>
+                        <PmtId>
+                            <InstrId>INSTR-20261031-001</InstrId>
+                            <EndToEndId>E2E-20261031-001</EndToEndId>
+                            <UETR>f98ffe76-19a0-4f27-ba4d-091991b54db9</UETR>
+                        </PmtId>
+                        <Amt>
+                            <InstdAmt Ccy="EUR">1250.50</InstdAmt>
+                        </Amt>
+                        <CdtrAgt>
+                            <FinInstnId>
+                                <BICFI>BNPAFRPP</BICFI>
+                            </FinInstnId>
+                        </CdtrAgt>
+                        <Cdtr>
+                            <Nm>Example Creditor SAS</Nm>
+                        </Cdtr>
+                        <CdtrAcct>
+                            <Id>
+                                <IBAN>FR1420041010050500013M02606</IBAN>
+                            </Id>
+                        </CdtrAcct>
+                    </CdtTrfTxInf>
+                </PmtInf>
+            </CstmrCdtTrfInitn>
+        </Document>
+    LimitedPain002ResponseBody:
+      summary: Accepted pain.001 payment initiation
+      description: Technical acceptance confirmation for a single payment instruction.
+      value: |
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.002.001.14">
+            <CstmrPmtStsRpt>
+                <GrpHdr>
+                    <MsgId>S-44387ce1b18c4a1e882fe0e5446f9d34</MsgId>
+                    <CreDtTm>2026-10-31T18:06:37.1878498+01:00</CreDtTm>
+                </GrpHdr>
+                <OrgnlGrpInfAndSts>
+                    <OrgnlMsgId>MSG-20261031-001</OrgnlMsgId>
+                    <OrgnlMsgNmId>pain.001.001.12</OrgnlMsgNmId>
+                </OrgnlGrpInfAndSts>
+                <OrgnlPmtInfAndSts>
+                    <OrgnlPmtInfId>PMT-20261031-001</OrgnlPmtInfId>
+                    <TxInfAndSts>
+                        <OrgnlEndToEndId>E2E-20261031-001</OrgnlEndToEndId>
+                        <TxSts>ACTC</TxSts>
+                    </TxInfAndSts>
+                </OrgnlPmtInfAndSts>
+            </CstmrPmtStsRpt>
+        </Document>
   schemas:
     CreatePaymentRequest:
       type: object
