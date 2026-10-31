@@ -67,15 +67,9 @@ public class Pain001PaymentMapper {
     }
 
     private CreditTransferTransaction61 extractCreditTransferTransaction(PaymentInstruction44 paymentInstrInfo) {
-        List<CreditTransferTransaction61> creditTransferTransactionList = paymentInstrInfo.getCdtTrfTxInf();
-
-        if (creditTransferTransactionList == null || creditTransferTransactionList.isEmpty()) {
-            throw new MappingPain001ToDomainException("Credit transfer transaction is required");
-        }
-        if (creditTransferTransactionList.size() > NUMBER_OF_PAYMENT_INSTRUCTIONS_IS_ONE) {
-            throw new MappingPain001ToDomainException("One and only one credit transfer transaction is allowed");
-        }
-        return creditTransferTransactionList.getFirst();
+        return Optional.ofNullable(paymentInstrInfo)
+                .map(PaymentInstruction44::getCdtTrfTxInf)
+                .orElseThrow(() -> new MappingPain001ToDomainException("Credit transfer transaction is required"));
     }
 
     private OffsetDateTime getOffsetDateTime(XMLGregorianCalendar creationDateTime) {

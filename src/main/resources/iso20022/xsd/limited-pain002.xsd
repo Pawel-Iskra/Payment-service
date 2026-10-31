@@ -1,51 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema
-    xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    xmlns="urn:iso:std:iso:20022:tech:xsd:pain.002.001.14"
-    targetNamespace="urn:iso:std:iso:20022:tech:xsd:pain.002.001.14"
-    elementFormDefault="qualified">
+<!--
+    Payment Service output message profile based on ISO 20022 pain.002.001.14.
+    This profile intentionally supports a limited subset of the official ISO 20022 message structure and fields.
+    It does not implement the full ISO 20022 message specification or the associated SEPA business rules.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="urn:iso:std:iso:20022:tech:xsd:pain.002.001.14"
+           targetNamespace="urn:iso:std:iso:20022:tech:xsd:pain.002.001.14"
+           elementFormDefault="qualified">
 
-    <xs:element name="Document" type="DocumentType"/>
+    <xs:element name="Document" type="Document"/>
 
-    <xs:complexType name="DocumentType">
+    <xs:complexType name="Document">
         <xs:sequence>
-            <xs:element name="CstmrPmtStsRpt" type="CustomerPaymentStatusReportType"/>
+            <xs:element name="CstmrPmtStsRpt" type="CustomerPaymentStatusReportV14"/>
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="CustomerPaymentStatusReportType">
+    <xs:complexType name="CustomerPaymentStatusReportV14"> <!-- intentionally changed -->
         <xs:sequence>
-            <xs:element name="GrpHdr" type="GroupHeaderType"/>
-            <xs:element name="OrgnlGrpInfAndSts" type="OriginalGroupInformationAndStatusType"/>
-            <xs:element name="OrgnlPmtInfAndSts" type="OriginalPaymentInformationAndStatusType"/>
+            <xs:element name="GrpHdr" type="GroupHeader128"/>
+            <xs:element name="OrgnlGrpInfAndSts" type="OriginalGroupHeader22"/>
+            <xs:element maxOccurs="unbounded" minOccurs="0" name="OrgnlPmtInfAndSts" type="OriginalPaymentInstruction51"/>
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="GroupHeaderType">
+    <xs:complexType name="GroupHeader128"> <!-- intentionally changed -->
         <xs:sequence>
             <xs:element name="MsgId" type="Max35Text"/>
             <xs:element name="CreDtTm" type="xs:dateTime"/>
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="OriginalGroupInformationAndStatusType">
+    <xs:complexType name="OriginalGroupHeader22"> <!-- intentionally changed -->
         <xs:sequence>
             <xs:element name="OrgnlMsgId" type="Max35Text"/>
-            <xs:element name="OrgnlMsgNmId" type="OriginalMessageNameType"/>
+            <xs:element name="OrgnlMsgNmId" type="Max35Text"/>
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="OriginalPaymentInformationAndStatusType">
+    <xs:complexType name="OriginalPaymentInstruction51"> <!-- intentionally changed -->
         <xs:sequence>
             <xs:element name="OrgnlPmtInfId" type="Max35Text"/>
-            <xs:element name="TxInfAndSts" type="TransactionInformationAndStatusType"/>
+            <xs:element maxOccurs="unbounded" minOccurs="0" name="TxInfAndSts" type="PaymentTransaction160"/>
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="TransactionInformationAndStatusType">
+    <xs:complexType name="PaymentTransaction160"> <!-- intentionally changed -->
         <xs:sequence>
             <xs:element name="OrgnlEndToEndId" type="Max35Text"/>
-            <xs:element name="TxSts" type="SupportedTransactionStatusType"/>
+            <xs:element name="TxSts" type="ExternalPaymentTransactionStatus1Code"/>
         </xs:sequence>
     </xs:complexType>
 
@@ -56,16 +60,10 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="OriginalMessageNameType">
+    <xs:simpleType name="ExternalPaymentTransactionStatus1Code">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="pain.001.001.12"/>
-        </xs:restriction>
-    </xs:simpleType>
-
-    <xs:simpleType name="SupportedTransactionStatusType">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="ACTC"/>
-            <xs:enumeration value="RJCT"/>
+            <xs:minLength value="1"/>
+            <xs:maxLength value="4"/>
         </xs:restriction>
     </xs:simpleType>
 

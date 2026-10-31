@@ -43,7 +43,7 @@ class Pain001PaymentMapperTest {
         CustomerCreditTransferInitiationV12 ctrCrdtTrfInitiation = pain001Document.getCstmrCdtTrfInitn();
         GroupHeader114 groupHeader = ctrCrdtTrfInitiation.getGrpHdr();
         PaymentInstruction44 paymentInstrInfo = ctrCrdtTrfInitiation.getPmtInf().getFirst();
-        CreditTransferTransaction61 crdtTrfTransaction = paymentInstrInfo.getCdtTrfTxInf().getFirst();
+        CreditTransferTransaction61 crdtTrfTransaction = paymentInstrInfo.getCdtTrfTxInf();
 
         assertThat(resultPain001Data.messageId()).isEqualTo(groupHeader.getMsgId());
         assertThat(resultPain001Data.creationDateTime()).isEqualTo(getOffsetDateTime(groupHeader.getCreDtTm()));
@@ -66,7 +66,7 @@ class Pain001PaymentMapperTest {
         Document pain001Document = preparePain001Document(Pain001TestData.getPain001SinglePaymentCorrectXmlString());
         pain001Document.getCstmrCdtTrfInitn()
                 .getPmtInf().getFirst()
-                .getCdtTrfTxInf().getFirst()
+                .getCdtTrfTxInf()
                 .getPmtId().setEndToEndId(null);
 
         // when + then
