@@ -30,7 +30,7 @@
         <xs:sequence>
             <xs:element name="MsgId" type="Max35Text"/>
             <xs:element name="CreDtTm" type="ISODateTime"/>
-            <xs:element name="NbOfTxs" type="Max15NumericText"/>
+            <xs:element name="NbOfTxs" type="Max15NumericText"/> <!-- this type is limited to value '1' as limited-pain001 allows 1 transaction -->
             <xs:element name="CtrlSum" type="DecimalNumber"/>
             <xs:element name="InitgPty" type="PartyIdentification272"/>
         </xs:sequence>
@@ -39,8 +39,8 @@
     <xs:complexType name="PaymentInstruction44">
         <xs:sequence>
             <xs:element name="PmtInfId" type="Max35Text"/>
-            <xs:element name="PmtMtd" fixed="PaymentMethod3Code"/>
-            <xs:element name="NbOfTxs" type="Max15NumericText"/>
+            <xs:element name="PmtMtd" type="PaymentMethod3Code"/>
+            <xs:element name="NbOfTxs" type="Max15NumericText"/> <!-- this type is limited to value '1' as limited-pain001 allows 1 transaction -->
             <xs:element name="CtrlSum" type="DecimalNumber"/>
             <xs:element name="PmtTpInf" type="PaymentTypeInformation26"/>
             <xs:element name="ReqdExctnDt" type="DateAndDateTime2Choice"/>
@@ -48,17 +48,17 @@
             <xs:element name="DbtrAcct" type="CashAccount40"/>
             <xs:element name="DbtrAgt" type="BranchAndFinancialInstitutionIdentification8"/>
             <xs:element name="ChrgBr" type="ChargeBearerType1Code"/>
-            <xs:element maxOccurs="unbounded" minOccurs="1" name="CdtTrfTxInf" type="CreditTransferTransaction61"/>
+            <xs:element maxOccurs="1" minOccurs="1" name="CdtTrfTxInf" type="CreditTransferTransaction61"/> <!-- intentionally changed maxOccurs to 1 as limited-pain001 allows 1 transaction -->
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="CashAccount40"> <!-- intentionally changed -->
+    <xs:complexType name="CashAccount40"> <!-- intentionally limited to 1 field -->
         <xs:sequence>
-            <xs:element maxOccurs="1" minOccurs="0" name="Id" type="AccountIdentification4Choice"/>
+            <xs:element maxOccurs="1" minOccurs="1" name="Id" type="AccountIdentification4Choice"/>  <!-- intentionally changed minOccurs to 1 -->
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="AccountIdentification4Choice"> <!-- intentionally changed -->
+    <xs:complexType name="AccountIdentification4Choice"> <!-- intentionally limited to 1 field -->
         <xs:choice>
             <xs:element name="IBAN" type="IBAN2007Identifier"/>
         </xs:choice>
@@ -148,7 +148,7 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:complexType name="CreditTransferTransaction61"> <!-- intentionally changed-->
+    <xs:complexType name="CreditTransferTransaction61"> <!-- intentionally limited to 4 fields-->
         <xs:sequence>
             <xs:element name="PmtId" type="PaymentIdentification6"/>
             <xs:element name="Amt" type="AmountType4Choice"/>
@@ -158,15 +158,15 @@
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="BranchAndFinancialInstitutionIdentification8"> <!-- intentionally changed-->
+    <xs:complexType name="BranchAndFinancialInstitutionIdentification8"> <!-- intentionally limited to 1 field -->
         <xs:sequence>
             <xs:element name="FinInstnId" type="FinancialInstitutionIdentification23"/>
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="FinancialInstitutionIdentification23"> <!-- intentionally changed-->
+    <xs:complexType name="FinancialInstitutionIdentification23"> <!-- intentionally limited to 1 field -->
         <xs:sequence>
-            <xs:element maxOccurs="1" minOccurs="1" name="BICFI" type="BICFIDec2014Identifier"/> <!-- intentionally changed-->
+            <xs:element maxOccurs="1" minOccurs="1" name="BICFI" type="BICFIDec2014Identifier"/> <!-- intentionally changed minOccurs to 1 -->
         </xs:sequence>
     </xs:complexType>
 
@@ -190,7 +190,7 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:complexType name="AmountType4Choice"> <!-- intentionally changed-->
+    <xs:complexType name="AmountType4Choice"> <!-- intentionally limited to 1 field -->
         <xs:choice>
             <xs:element name="InstdAmt" type="ActiveOrHistoricCurrencyAndAmount"/>
         </xs:choice>
@@ -220,7 +220,7 @@
 
     <xs:complexType name="PartyIdentification272"> <!-- intentionally limited to one field -->
         <xs:sequence>
-            <xs:element maxOccurs="1" minOccurs="0" name="Nm" type="Max140Text"/>
+            <xs:element maxOccurs="1" minOccurs="1" name="Nm" type="Max140Text"/> <!-- intentionally changed minOccurs to 1 -->
         </xs:sequence>
     </xs:complexType>
 
@@ -265,7 +265,8 @@
 
     <xs:simpleType name="Max15NumericText">
         <xs:restriction base="xs:string">
-            <xs:pattern value="[0-9]{1,15}"/>
+            <!-- intentionally fixed to value '1' as limited-pain001 allows 1 transaction -->
+            <xs:pattern value="1"/>
         </xs:restriction>
     </xs:simpleType>
 

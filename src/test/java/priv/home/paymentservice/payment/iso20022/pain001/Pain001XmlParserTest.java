@@ -62,9 +62,9 @@ class Pain001XmlParserTest {
         assertThat(paymentInfo.getDbtrAcct()).isNotNull();
         assertThat(paymentInfo.getDbtrAcct().getId()).isNotNull();
         assertThat(paymentInfo.getDbtrAcct().getId().getIBAN()).isEqualTo(PAYMENT_INFO_DEBTOR_ACCOUNT_IBAN);
-        assertThat(paymentInfo.getCdtTrfTxInf()).hasSize(1);
+        assertThat(paymentInfo.getCdtTrfTxInf()).isNotNull();
 
-        CreditTransferTransaction61 crdTrfTxInf = paymentInfo.getCdtTrfTxInf().getFirst();
+        CreditTransferTransaction61 crdTrfTxInf = paymentInfo.getCdtTrfTxInf();
         assertThat(crdTrfTxInf.getPmtId()).isNotNull();
         assertThat(crdTrfTxInf.getPmtId().getEndToEndId()).isEqualTo(PAYMENT_END_TO_END_ID);
         assertThat(crdTrfTxInf.getAmt()).isNotNull();
