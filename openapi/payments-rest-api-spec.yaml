@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: OpenAPI definition
+  title: Payment Service API
   version: v0
 servers:
 - url: http://localhost:8080
@@ -42,11 +42,11 @@ paths:
         schema:
           type: string
       requestBody:
+        description: Payment initiation message using the Payment Service limited profile based on ISO 20022 pain.001.001.12. Only the elements and fields defined by this profile are supported.
         content:
           application/xml:
             schema:
-              type: string
-              format: byte
+              $ref: '#/components/schemas/Pain001Document'
         required: true
       responses:
         "200":
@@ -88,6 +88,147 @@ components:
       required:
       - amount
       - currency
+    Pain001Document:
+      type: object
+      properties:
+        cstmrCdtTrfInitn:
+          $ref: '#/components/schemas/CustomerCreditTransferInitiationV12'
+          xml:
+            name: CstmrCdtTrfInitn
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+      required:
+        - cstmrCdtTrfInitn
+      xml:
+        name: Document
+        namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+      additionalProperties: false
+      description: Root element of the limited pain.001.001.12 input profile.
+    CustomerCreditTransferInitiationV12:
+      type: object
+      properties:
+        grpHdr:
+          $ref: '#/components/schemas/GroupHeader114'
+          xml:
+            name: GrpHdr
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        pmtInf:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentInstruction44'
+          xml:
+            name: PmtInf
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          minItems: 1
+      required:
+        - grpHdr
+        - pmtInf
+      additionalProperties: false
+    GroupHeader114:
+        type: object
+        properties:
+          msgId:
+            $ref: '#/components/schemas/Max35Text'
+            xml:
+              name: MsgId
+              namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          creDtTm:
+            $ref: '#/components/schemas/ISODateTime'
+            xml:
+              name: CreDtTm
+              namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          nbOfTxs:
+            $ref: '#/components/schemas/Max15NumericText'
+            xml:
+              name: NbOfTxs
+              namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          ctrlSum:
+            $ref: '#/components/schemas/DecimalNumber'
+            xml:
+              name: CtrlSum
+              namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          initgPty:
+            $ref: '#/components/schemas/PartyIdentification272'
+            xml:
+              name: InitgPty
+              namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        required:
+          - msgId
+          - creDtTm
+          - nbOfTxs
+          - ctrlSum
+          - initgPty
+        additionalProperties: false
+    PaymentInstruction44:
+      type: object
+      properties:
+        pmtInfId:
+          $ref: '#/components/schemas/Max35Text'
+          xml:
+            name: PmtInfId
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        pmtMtd:
+          $ref: '#/components/schemas/PaymentMethod3Code'
+          xml:
+            name: PmtMtd
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        nbOfTxs:
+          $ref: '#/components/schemas/Max15NumericText'
+          xml:
+            name: NbOfTxs
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        ctrlSum:
+          $ref: '#/components/schemas/DecimalNumber'
+          xml:
+            name: CtrlSum
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        pmtTpInf:
+          $ref: '#/components/schemas/PaymentTypeInformation26'
+          xml:
+            name: PmtTpInf
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        reqdExctnDt:
+          $ref: '#/components/schemas/DateAndDateTime2Choice'
+          xml:
+            name: ReqdExctnDt
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        dbtr:
+          $ref: '#/components/schemas/PartyIdentification272'
+          xml:
+            name: Dbtr
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        dbtrAcct:
+          $ref: '#/components/schemas/CashAccount40'
+          xml:
+            name: DbtrAcct
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        dbtrAgt:
+          $ref: '#/components/schemas/BranchAndFinancialInstitutionIdentification8'
+          xml:
+            name: DbtrAgt
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        chrgBr:
+          $ref: '#/components/schemas/ChargeBearerType1Code'
+          xml:
+            name: ChrgBr
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        cdtTrfTxInf:
+          $ref: '#/components/schemas/CreditTransferTransaction61'
+          xml:
+            name: CdtTrfTxInf
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+      required:
+        - pmtInfId
+        - pmtMtd
+        - nbOfTxs
+        - ctrlSum
+        - pmtTpInf
+        - reqdExctnDt
+        - dbtr
+        - dbtrAcct
+        - dbtrAgt
+        - chrgBr
+        - cdtTrfTxInf
+      additionalProperties: false
     PaymentResponse:
       type: object
       properties:
@@ -209,3 +350,320 @@ components:
       required:
       - orgnlEndToEndId
       - txSts
+    PaymentIdentification6:
+      type: object
+      properties:
+        instrId:
+          $ref: '#/components/schemas/Max35Text'
+          xml:
+            name: InstrId
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        endToEndId:
+          $ref: '#/components/schemas/Max35Text'
+          xml:
+            name: EndToEndId
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        uetr:
+          $ref: '#/components/schemas/UUIDv4Identifier'
+          xml:
+            name: UETR
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+      required:
+        - endToEndId
+      additionalProperties: false
+    PartyIdentification272:
+      type: object
+      properties:
+        nm:
+          $ref: '#/components/schemas/Max140Text'
+          xml:
+            name: Nm
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+      required:
+        - nm
+      additionalProperties: false
+    BranchAndFinancialInstitutionIdentification8:
+      type: object
+      properties:
+        finInstnId:
+          $ref: '#/components/schemas/FinancialInstitutionIdentification23'
+          xml:
+            name: FinInstnId
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+      required:
+        - finInstnId
+      additionalProperties: false
+    FinancialInstitutionIdentification23:
+      type: object
+      properties:
+        bicfi:
+          $ref: '#/components/schemas/BICFIDec2014Identifier'
+          xml:
+            name: BICFI
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+      required:
+        - bicfi
+      additionalProperties: false
+    PaymentTypeInformation26:
+      type: object
+      properties:
+        instrPrty:
+          $ref: '#/components/schemas/Priority2Code'
+          xml:
+            name: InstrPrty
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        svcLvl:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceLevel8Choice'
+          xml:
+            name: SvcLvl
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        lclInstrm:
+          $ref: '#/components/schemas/LocalInstrument2Choice'
+          xml:
+            name: LclInstrm
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        ctgyPurp:
+          $ref: '#/components/schemas/CategoryPurpose1Choice'
+          xml:
+            name: CtgyPurp
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+      additionalProperties: false
+    CashAccount40:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/AccountIdentification4Choice'
+          xml:
+            name: Id
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+      required:
+        - id
+      additionalProperties: false
+    CreditTransferTransaction61:
+      type: object
+      properties:
+        pmtId:
+          $ref: '#/components/schemas/PaymentIdentification6'
+          xml:
+            name: PmtId
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        amt:
+          $ref: '#/components/schemas/AmountType4Choice'
+          xml:
+            name: Amt
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        cdtrAgt:
+          $ref: '#/components/schemas/BranchAndFinancialInstitutionIdentification8'
+          xml:
+            name: CdtrAgt
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        cdtr:
+          $ref: '#/components/schemas/PartyIdentification272'
+          xml:
+            name: Cdtr
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+        cdtrAcct:
+          $ref: '#/components/schemas/CashAccount40'
+          xml:
+            name: CdtrAcct
+            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+      required:
+        - pmtId
+        - amt
+        - cdtrAgt
+        - cdtr
+        - cdtrAcct
+      additionalProperties: false
+    AccountIdentification4Choice:
+      oneOf:
+        - type: object
+          properties:
+            iban:
+              $ref: '#/components/schemas/IBAN2007Identifier'
+              xml:
+                name: IBAN
+                namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          required:
+            - iban
+      description: Exactly one of the alternatives defined by the limited XSD profile must be supplied.
+    AmountType4Choice:
+      oneOf:
+        - type: object
+          properties:
+            instdAmt:
+              $ref: '#/components/schemas/ActiveOrHistoricCurrencyAndAmount'
+              xml:
+                name: InstdAmt
+                namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          required:
+            - instdAmt
+      description: Exactly one of the alternatives defined by the limited XSD profile must be supplied.
+    CategoryPurpose1Choice:
+      oneOf:
+        - type: object
+          properties:
+            cd:
+              $ref: '#/components/schemas/ExternalCategoryPurpose1Code'
+              xml:
+                name: Cd
+                namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          required:
+            - cd
+        - type: object
+          properties:
+            prtry:
+              $ref: '#/components/schemas/Max35Text'
+              xml:
+                name: Prtry
+                namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          required:
+            - prtry
+      description: Exactly one of the alternatives defined by the limited XSD profile must be supplied.
+    DateAndDateTime2Choice:
+      oneOf:
+        - type: object
+          properties:
+            dt:
+              $ref: '#/components/schemas/ISODate'
+              xml:
+                name: Dt
+                namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          required:
+            - dt
+        - type: object
+          properties:
+            dtTm:
+              $ref: '#/components/schemas/ISODateTime'
+              xml:
+                name: DtTm
+                namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          required:
+            - dtTm
+      description: Exactly one of the alternatives defined by the limited XSD profile must be supplied.
+    ServiceLevel8Choice:
+      oneOf:
+        - type: object
+          properties:
+            cd:
+              $ref: '#/components/schemas/ExternalServiceLevel1Code'
+              xml:
+                name: Cd
+                namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          required:
+            - cd
+        - type: object
+          properties:
+            prtry:
+              $ref: '#/components/schemas/Max35Text'
+              xml:
+                name: Prtry
+                namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          required:
+            - prtry
+      description: Exactly one of the alternatives defined by the limited XSD profile must be supplied.
+    LocalInstrument2Choice:
+      oneOf:
+        - type: object
+          properties:
+            cd:
+              $ref: '#/components/schemas/ExternalLocalInstrument1Code'
+              xml:
+                name: Cd
+                namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          required:
+            - cd
+        - type: object
+          properties:
+            prtry:
+              $ref: '#/components/schemas/Max35Text'
+              xml:
+                name: Prtry
+                namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
+          required:
+            - prtry
+      description: Exactly one of the alternatives defined by the limited XSD profile must be supplied.
+    Max35Text:
+      type: string
+      minLength: 1
+      maxLength: 35
+    Max140Text:
+      type: string
+      minLength: 1
+      maxLength: 140
+    Max15NumericText:
+      type: string
+      pattern: ^1$
+      description: Restricted by this profile to the value '1' because only one transaction is supported.
+    IBAN2007Identifier:
+      type: string
+      pattern: ^[A-Z]{2}[0-9]{2}[a-zA-Z0-9]{1,30}$
+    BICFIDec2014Identifier:
+      type: string
+      pattern: ^[A-Z0-9]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$
+    UUIDv4Identifier:
+      type: string
+      pattern: ^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$
+    ExternalServiceLevel1Code:
+      type: string
+      minLength: 1
+      maxLength: 4
+    ExternalLocalInstrument1Code:
+      type: string
+      minLength: 1
+      maxLength: 35
+    ExternalCategoryPurpose1Code:
+      type: string
+      minLength: 1
+      maxLength: 4
+    ISODate:
+      type: string
+      format: date
+    ISODateTime:
+      type: string
+      format: date-time
+    DecimalNumber:
+      type: number
+      multipleOf: 0.00001
+      description: Decimal value with up to 18 total digits and 17 fractional digits, as constrained by the XSD.
+    Priority2Code:
+      type: string
+      enum:
+        - HIGH
+        - NORM
+    PaymentMethod3Code:
+      type: string
+      enum:
+        - CHK
+        - TRF
+        - TRA
+    ChargeBearerType1Code:
+      type: string
+      enum:
+        - DEBT
+        - CRED
+        - SHAR
+        - SLEV
+    ActiveOrHistoricCurrencyCode:
+      type: string
+      pattern: ^[A-Z]{3}$
+    ActiveOrHistoricCurrencyAndAmount:
+      type: object
+      description: 'XML simple content: the element text is the decimal amount; the Ccy attribute is required.'
+      properties:
+        value:
+          type: number
+          minimum: 0
+          multipleOf: 0.00001
+          description: Decimal text content; maximum 18 total digits and 5 fractional digits.
+          x-xml-text: true
+        ccy:
+          $ref: '#/components/schemas/ActiveOrHistoricCurrencyCode'
+          xml:
+            name: Ccy
+            attribute: true
+      required:
+        - value
+        - ccy
+      additionalProperties: false
