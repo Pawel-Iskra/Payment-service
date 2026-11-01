@@ -1,16 +1,17 @@
 openapi: 3.1.0
 info:
-  title: Payment Service API
-  version: v0
+  title: Payment Service REST API
+  version: v.0.0.1
 servers:
 - url: http://localhost:8080
   description: Generated server url
 paths:
   /payments:
     post:
+      summary: Payment creation JSON input
       tags:
-      - payment-controller
-      operationId: createPayment
+      - payment-creation
+      operationId: createPaymentFromJson
       parameters:
       - name: idempotency-key
         in: header
@@ -18,22 +19,57 @@ paths:
         schema:
           type: string
       requestBody:
+        description: Payment initiation message using JSON format input.
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/CreatePaymentRequest"
+            examples:
+              PaymentCreationJsonInutExample:
+                $ref: '#/components/examples/paymentCreationJsonInputExample'
         required: true
       responses:
         "200":
-          description: OK
+          description: OK. Payment instruction for given idempotency-key was already created.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PaymentResponse"
+                $ref: '#/components/schemas/PaymentResponse'
+              examples:
+                ValidPaymentResponse:
+                  $ref: '#/components/examples/paymentResponseExample'
+        "201":
+          description: CREATED. Payment instruction created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+              examples:
+                ValidPaymentResponse:
+                  $ref: '#/components/examples/paymentResponseExample'
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponseBadRequestJsonExample:
+                  $ref: '#/components/examples/ErrorResponseBadRequestJsonExample'
+        "500":
+          description: 500 INTERNAL_SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponseInternalServerError:
+                  $ref: '#/components/examples/ErrorResponseInternalServerError'
   /payments/pain001:
     post:
+      summary: Payment creation XML input
       tags:
-      - payment-controller
+      - payment-creation
       operationId: createPaymentFromPain001
       parameters:
       - name: idempotency-key
@@ -42,8 +78,7 @@ paths:
         schema:
           type: string
       requestBody:
-        description: Payment initiation message using the Payment Service limited profile based on ISO 20022 pain.001.001.12. 
-                     Only the elements and fields defined by this profile are supported.
+        description: Payment initiation message using the Payment Service limited profile based on ISO 20022 pain.001.001.12. Only the elements and fields defined by this profile are supported.
         content:
           application/xml:
             schema:
@@ -53,19 +88,47 @@ paths:
                 $ref: '#/components/examples/LimitedPain001RequestBody'
         required: true
       responses:
-        "201":
-          description:  Payment instruction created. Technical status report returned.
+        "200":
+          description: OK. Payment instruction for given idempotency-key was already created.
           content:
             application/xml:
               schema:
-                $ref: "#/components/schemas/JAXBElementDocument"
+                $ref: '#/components/schemas/JAXBElementDocument'
               examples:
                 ValidLimitedPain001ResponseBody:
                   $ref: '#/components/examples/LimitedPain002ResponseBody'
+        "201":
+          description: CREATED. Payment instruction created.
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/JAXBElementDocument'
+              examples:
+                ValidLimitedPain001ResponseBody:
+                  $ref: '#/components/examples/LimitedPain002ResponseBody'
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponseBadRequestXmlExample:
+                  $ref: '#/components/examples/ErrorResponseBadRequestXmlExample'
+        "500":
+          description: 500 INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponseInternalServerError:
+                  $ref: '#/components/examples/ErrorResponseInternalServerError'
   /payments/{id}:
     get:
+      summary: Payment retrieval
       tags:
-      - payment-controller
+      - payment-retrieval
       operationId: retrievePayment
       parameters:
       - name: id
@@ -78,13 +141,34 @@ paths:
         "200":
           description: OK
           content:
-            '*/*':
+            application/json:
               schema:
-                $ref: "#/components/schemas/PaymentResponse"
+                $ref: '#/components/schemas/PaymentResponse'
+              examples:
+                PaymentRetrievedExample:
+                  $ref: '#/components/examples/paymentResponseExample'
+        "404":
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                PaymentRetrievalNotFoundExample:
+                  $ref: '#/components/examples/PaymentRetrievalNotFoundExample'
+        "500":
+          description: 500 INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponseInternalServerError:
+                  $ref: '#/components/examples/ErrorResponseInternalServerError'
 components:
   examples:
     LimitedPain001RequestBody:
-      summary: Valid pain.001.001.12 payment initiation request
+      summary: limited-pain001 payment initiation request example
       description: Example of a single credit transfer instruction.
       value: |
         <?xml version="1.0" encoding="UTF-8"?>
@@ -129,9 +213,7 @@ components:
                     <ChrgBr>SLEV</ChrgBr>
                     <CdtTrfTxInf>
                         <PmtId>
-                            <InstrId>INSTR-20261031-001</InstrId>
                             <EndToEndId>E2E-20261031-001</EndToEndId>
-                            <UETR>f98ffe76-19a0-4f27-ba4d-091991b54db9</UETR>
                         </PmtId>
                         <Amt>
                             <InstdAmt Ccy="EUR">1250.50</InstdAmt>
@@ -154,7 +236,7 @@ components:
             </CstmrCdtTrfInitn>
         </Document>
     LimitedPain002ResponseBody:
-      summary: Accepted pain.001 payment initiation
+      summary: Limited-pain002 response example
       description: Technical acceptance confirmation for a single payment instruction.
       value: |
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -177,7 +259,52 @@ components:
                 </OrgnlPmtInfAndSts>
             </CstmrPmtStsRpt>
         </Document>
+    paymentResponseExample:
+      summary: payment response json
+      description: Example of a correct payment response.
+      value:
+        amount: 123.45
+        currency: PLN
+        paymentId: dc22d83f-8d08-4156-9937-f5f15897ff34
+        paymentStatus: CREATED
+    ErrorResponseBadRequestJsonExample:
+      summary: error response example of bad request
+      description: Field 'currency' must not be blank
+      value:
+        httpStatus: 400 BAD_REQUEST
+        message: Field 'currency' must not be blank
+    ErrorResponseBadRequestXmlExample:
+      summary: error response example of bad request
+      description: Pain.001 XML is malformed or does not match the supported profile
+      value:
+        httpStatus: 400 BAD_REQUEST
+        message: Pain.001 XML is malformed or does not match the supported profile
+    ErrorResponseInternalServerError:
+      summary: error response server exception
+      description: Unexpected error occurred
+      value:
+        httpStatus: 500 INTERNAL_SERVER_ERROR
+        message: Unexpected error occurred
+    PaymentRetrievalNotFoundExample:
+      summary: payment not found
+      description: not found payment for given id
+      value:
+        httpStatus: 404 NOT_FOUND
+        message: Not found payment with given id = 1aca62b8-9a7f-4110-98ec-33cd67a9325d
+    paymentCreationJsonInputExample:
+      summary: JSON input example
+      description: Example of JSON input payment creation
+      value:
+        amount: 123.45
+        currency: PLN
   schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        httpStatus:
+          type: string
+        message:
+          type: string
     CreatePaymentRequest:
       type: object
       properties:
@@ -187,6 +314,7 @@ components:
         currency:
           type: string
           minLength: 1
+          maxLength: 3
       required:
       - amount
       - currency
@@ -204,7 +332,7 @@ components:
         name: Document
         namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
       additionalProperties: false
-      description: Root element of the limited pain.001.001.12 input profile.
+      description: Root element of the limited-pain001 input profile.
     CustomerCreditTransferInitiationV12:
       type: object
       properties:
