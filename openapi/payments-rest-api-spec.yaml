@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
   title: Payment Service REST API
-  version: v.0.0.1
+  version: 0.0.1
 servers:
 - url: http://localhost:8080
-  description: Generated server url
+  description: Local deployment server url
 paths:
   /payments:
     post:
@@ -16,6 +16,7 @@ paths:
       - name: idempotency-key
         in: header
         required: true
+        description: key for idempotent payment creation
         schema:
           type: string
       requestBody:
@@ -25,7 +26,7 @@ paths:
             schema:
               $ref: "#/components/schemas/CreatePaymentRequest"
             examples:
-              PaymentCreationJsonInutExample:
+              PaymentCreationJsonInputExample:
                 $ref: '#/components/examples/paymentCreationJsonInputExample'
         required: true
       responses:
@@ -39,7 +40,8 @@ paths:
                 ValidPaymentResponse:
                   $ref: '#/components/examples/paymentResponseExample'
         "201":
-          description: CREATED. Payment instruction created.
+          description: CREATED. Payment instruction created. Payment instruction successfully validated and accepted for processing. 
+                       The ACTC status confirms technical acceptance only. It does not mean that the payment has been executed, settled, or credited to the beneficiary.
           content:
             application/json:
               schema:
@@ -93,18 +95,19 @@ paths:
           content:
             application/xml:
               schema:
-                $ref: '#/components/schemas/JAXBElementDocument'
+                $ref: '#/components/schemas/Pain002Document'
               examples:
-                ValidLimitedPain001ResponseBody:
+                LimitedPain002ResponseBody:
                   $ref: '#/components/examples/LimitedPain002ResponseBody'
         "201":
-          description: CREATED. Payment instruction created.
+          description: CREATED. Payment instruction created. Payment instruction successfully validated and accepted for processing.
+                       The ACTC status confirms technical acceptance only. It does not mean that the payment has been executed, settled, or credited to the beneficiary.
           content:
             application/xml:
               schema:
-                $ref: '#/components/schemas/JAXBElementDocument'
+                $ref: '#/components/schemas/Pain002Document'
               examples:
-                ValidLimitedPain001ResponseBody:
+                LimitedPain002ResponseBody:
                   $ref: '#/components/examples/LimitedPain002ResponseBody'
         "400":
           description: BAD REQUEST
@@ -237,7 +240,9 @@ components:
         </Document>
     LimitedPain002ResponseBody:
       summary: Limited-pain002 response example
-      description: Technical acceptance confirmation for a single payment instruction.
+      description: Technical acceptance confirmation for a single payment instruction. 
+                   Example of a pain.002 status report indicating successful technical validation and acceptance. 
+                   ACTC does not indicate payment execution or settlement.
       value: |
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.002.001.14">
@@ -335,19 +340,19 @@ components:
       description: Root element of the limited-pain001 input profile.
     CustomerCreditTransferInitiationV12:
       type: object
+      xml:
+        namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
       properties:
         grpHdr:
           $ref: '#/components/schemas/GroupHeader114'
           xml:
             name: GrpHdr
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         pmtInf:
           type: array
           items:
             $ref: '#/components/schemas/PaymentInstruction44'
           xml:
             name: PmtInf
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
           minItems: 1
       required:
         - grpHdr
@@ -355,32 +360,29 @@ components:
       additionalProperties: false
     GroupHeader114:
         type: object
+        xml:
+          namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         properties:
           msgId:
             $ref: '#/components/schemas/Max35Text'
             xml:
               name: MsgId
-              namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
           creDtTm:
             $ref: '#/components/schemas/ISODateTime'
             xml:
               name: CreDtTm
-              namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
           nbOfTxs:
             $ref: '#/components/schemas/Max15NumericText'
             xml:
               name: NbOfTxs
-              namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
           ctrlSum:
             $ref: '#/components/schemas/DecimalNumber'
             xml:
               name: CtrlSum
-              namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
           initgPty:
             $ref: '#/components/schemas/PartyIdentification272'
             xml:
               name: InitgPty
-              namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         required:
           - msgId
           - creDtTm
@@ -390,62 +392,53 @@ components:
         additionalProperties: false
     PaymentInstruction44:
       type: object
+      xml:
+        namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
       properties:
         pmtInfId:
           $ref: '#/components/schemas/Max35Text'
           xml:
             name: PmtInfId
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         pmtMtd:
           $ref: '#/components/schemas/PaymentMethod3Code'
           xml:
             name: PmtMtd
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         nbOfTxs:
           $ref: '#/components/schemas/Max15NumericText'
           xml:
             name: NbOfTxs
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         ctrlSum:
           $ref: '#/components/schemas/DecimalNumber'
           xml:
             name: CtrlSum
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         pmtTpInf:
           $ref: '#/components/schemas/PaymentTypeInformation26'
           xml:
             name: PmtTpInf
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         reqdExctnDt:
           $ref: '#/components/schemas/DateAndDateTime2Choice'
           xml:
             name: ReqdExctnDt
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         dbtr:
           $ref: '#/components/schemas/PartyIdentification272'
           xml:
             name: Dbtr
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         dbtrAcct:
           $ref: '#/components/schemas/CashAccount40'
           xml:
             name: DbtrAcct
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         dbtrAgt:
           $ref: '#/components/schemas/BranchAndFinancialInstitutionIdentification8'
           xml:
             name: DbtrAgt
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         chrgBr:
           $ref: '#/components/schemas/ChargeBearerType1Code'
           xml:
             name: ChrgBr
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         cdtTrfTxInf:
           $ref: '#/components/schemas/CreditTransferTransaction61'
           xml:
             name: CdtTrfTxInf
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
       required:
         - pmtInfId
         - pmtMtd
@@ -460,6 +453,11 @@ components:
         - cdtTrfTxInf
       additionalProperties: false
     PaymentResponse:
+      required:
+        - paymentId
+        - amount
+        - currency
+        - paymentStatus
       type: object
       properties:
         paymentId:
@@ -493,7 +491,7 @@ components:
       required:
       - grpHdr
       - orgnlGrpInfAndSts
-    Document:
+    Pain002Document:
       type: object
       properties:
         cstmrPmtStsRpt:
@@ -517,26 +515,6 @@ components:
       required:
       - creDtTm
       - msgId
-    JAXBElementDocument:
-      type: object
-      properties:
-        name:
-          type: object
-          properties:
-            namespaceURI:
-              type: string
-            localPart:
-              type: string
-            prefix:
-              type: string
-        value:
-          $ref: "#/components/schemas/Document"
-        nil:
-          type: boolean
-        globalScope:
-          type: boolean
-        typeSubstituted:
-          type: boolean
     OriginalGroupHeader22:
       type: object
       properties:
@@ -582,22 +560,21 @@ components:
       - txSts
     PaymentIdentification6:
       type: object
+      xml:
+        namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
       properties:
         instrId:
           $ref: '#/components/schemas/Max35Text'
           xml:
             name: InstrId
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         endToEndId:
           $ref: '#/components/schemas/Max35Text'
           xml:
             name: EndToEndId
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         uetr:
           $ref: '#/components/schemas/UUIDv4Identifier'
           xml:
             name: UETR
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
       required:
         - endToEndId
       additionalProperties: false
@@ -636,29 +613,27 @@ components:
       additionalProperties: false
     PaymentTypeInformation26:
       type: object
+      xml:
+        namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
       properties:
         instrPrty:
           $ref: '#/components/schemas/Priority2Code'
           xml:
             name: InstrPrty
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         svcLvl:
           type: array
           items:
             $ref: '#/components/schemas/ServiceLevel8Choice'
           xml:
             name: SvcLvl
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         lclInstrm:
           $ref: '#/components/schemas/LocalInstrument2Choice'
           xml:
             name: LclInstrm
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         ctgyPurp:
           $ref: '#/components/schemas/CategoryPurpose1Choice'
           xml:
             name: CtgyPurp
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
       additionalProperties: false
     CashAccount40:
       type: object
@@ -673,32 +648,29 @@ components:
       additionalProperties: false
     CreditTransferTransaction61:
       type: object
+      xml:
+        namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
       properties:
         pmtId:
           $ref: '#/components/schemas/PaymentIdentification6'
           xml:
             name: PmtId
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         amt:
           $ref: '#/components/schemas/AmountType4Choice'
           xml:
             name: Amt
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         cdtrAgt:
           $ref: '#/components/schemas/BranchAndFinancialInstitutionIdentification8'
           xml:
             name: CdtrAgt
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         cdtr:
           $ref: '#/components/schemas/PartyIdentification272'
           xml:
             name: Cdtr
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
         cdtrAcct:
           $ref: '#/components/schemas/CashAccount40'
           xml:
             name: CdtrAcct
-            namespace: urn:iso:std:iso:20022:tech:xsd:pain.001.001.12
       required:
         - pmtId
         - amt
