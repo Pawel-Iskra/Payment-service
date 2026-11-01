@@ -4,10 +4,14 @@ package priv.home.paymentservice.payment.api.errorhandling;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException;
 import priv.home.paymentservice.payment.iso20022.pain001.InvalidPain001XmlException;
 import priv.home.paymentservice.payment.iso20022.pain001.MappingPain001ToDomainException;
@@ -62,14 +66,49 @@ public class ControllerExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage()));
     }
-    // TODO:tests
+
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> invalidPain001xml(InvalidPain001XmlException exception) {
         log.error(exception.getMessage() + ",\n" + exception.getCause());
+        // TODO: more details for different cases
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage()));
     }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> noResourceFound(NoResourceFoundException exception) {
+        log.error(exception.getMessage() + ",\n" + exception.getCause());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(HttpStatus.NOT_FOUND, exception.getMessage()));
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> unsupportedMediatype(HttpMediaTypeNotSupportedException exception) {
+        log.error(exception.getMessage() + ",\n" + exception.getCause());
+        return ResponseEntity
+                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(new ErrorResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, exception.getMessage()));
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> methodNotSupported(HttpRequestMethodNotSupportedException exception) {
+        log.error(exception.getMessage() + ",\n" + exception.getCause());
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(new ErrorResponse(HttpStatus.METHOD_NOT_ALLOWED, exception.getMessage()));
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> argumentMismatch(MethodArgumentTypeMismatchException exception) {
+        log.error(exception.getMessage() + ",\n" + exception.getCause());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST, exception.getCause().getMessage()));
+    }
+
+    // TODO: HTTP.406 maybe?
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> technicalException(Exception exception) {

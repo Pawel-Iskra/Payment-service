@@ -41,7 +41,7 @@ paths:
                   $ref: '#/components/examples/paymentResponseExample'
         "201":
           description: CREATED. Payment instruction created. Payment instruction successfully validated and accepted for processing. 
-                       The ACTC status confirms technical acceptance only. It does not mean that the payment has been executed, settled, or credited to the beneficiary.
+                       (It does not mean that the payment has been executed, settled, or credited to the beneficiary)
           content:
             application/json:
               schema:
@@ -58,6 +58,33 @@ paths:
               examples:
                 ErrorResponseBadRequestJsonExample:
                   $ref: '#/components/examples/ErrorResponseBadRequestJsonExample'
+        "404":
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                NoStaticResourceNotFoundExample:
+                  $ref: '#/components/examples/NoStaticResourceNotFoundExample'
+        "405":
+          description: METHOD NOT ALLOWED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponseMethodGetNotAllowedExample:
+                  $ref: '#/components/examples/ErrorResponseMethodGetNotAllowedExample'
+        "415":
+          description: UNSUPPORTED MEDIA TYPE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponseNotSupportedXmlExample:
+                  $ref: '#/components/examples/ErrorResponseNotSupportedXmlExample'
         "500":
           description: 500 INTERNAL_SERVER_ERROR
           content:
@@ -101,7 +128,7 @@ paths:
                   $ref: '#/components/examples/LimitedPain002ResponseBody'
         "201":
           description: CREATED. Payment instruction created. Payment instruction successfully validated and accepted for processing.
-                       The ACTC status confirms technical acceptance only. It does not mean that the payment has been executed, settled, or credited to the beneficiary.
+                       (It does not mean that the payment has been executed, settled, or credited to the beneficiary)
           content:
             application/xml:
               schema:
@@ -118,6 +145,33 @@ paths:
               examples:
                 ErrorResponseBadRequestXmlExample:
                   $ref: '#/components/examples/ErrorResponseBadRequestXmlExample'
+        "404":
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                NoStaticResourceNotFoundExample:
+                  $ref: '#/components/examples/NoStaticResourceNotFoundExample'
+        "405":
+          description: METHOD NOT ALLOWED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponseMethodGetNotAllowedExample:
+                  $ref: '#/components/examples/ErrorResponseMethodGetNotAllowedExample'
+        "415":
+          description: UNSUPPORTED MEDIA TYPE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponseNotSupportedJsonExample:
+                  $ref: '#/components/examples/ErrorResponseNotSupportedJsonExample'
         "500":
           description: 500 INTERNAL SERVER ERROR
           content:
@@ -150,6 +204,15 @@ paths:
               examples:
                 PaymentRetrievedExample:
                   $ref: '#/components/examples/paymentResponseExample'
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponseBadRequestInvalidUuidExample:
+                  $ref: '#/components/examples/ErrorResponseBadRequestInvalidUuidExample'
         "404":
           description: NOT FOUND
           content:
@@ -159,6 +222,15 @@ paths:
               examples:
                 PaymentRetrievalNotFoundExample:
                   $ref: '#/components/examples/PaymentRetrievalNotFoundExample'
+        "405":
+          description: METHOD NOT ALLOWED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponseMethodNotAllowedExample:
+                  $ref: '#/components/examples/ErrorResponseMethodPostNotAllowedExample'
         "500":
           description: 500 INTERNAL SERVER ERROR
           content:
@@ -273,13 +345,13 @@ components:
         paymentId: dc22d83f-8d08-4156-9937-f5f15897ff34
         paymentStatus: CREATED
     ErrorResponseBadRequestJsonExample:
-      summary: error response example of bad request
+      summary: error response bad request
       description: Field 'currency' must not be blank
       value:
         httpStatus: 400 BAD_REQUEST
         message: Field 'currency' must not be blank
     ErrorResponseBadRequestXmlExample:
-      summary: error response example of bad request
+      summary: error response bad request
       description: Pain.001 XML is malformed or does not match the supported profile
       value:
         httpStatus: 400 BAD_REQUEST
@@ -296,6 +368,42 @@ components:
       value:
         httpStatus: 404 NOT_FOUND
         message: Not found payment with given id = 1aca62b8-9a7f-4110-98ec-33cd67a9325d
+    ErrorResponseNotSupportedXmlExample:
+      summary: error response unsupported media type
+      description: Content-Type 'application/xml' is not supported
+      value:
+        httpStatus: 415 UNSUPPORTED_MEDIA_TYPE
+        message: Content-Type 'application/xml' is not supported
+    ErrorResponseNotSupportedJsonExample:
+      summary: error response unsupported media type
+      description: Content-Type 'application/json' is not supported
+      value:
+        httpStatus: 415 UNSUPPORTED_MEDIA_TYPE
+        message: Content-Type 'application/json' is not supported
+    ErrorResponseMethodGetNotAllowedExample:
+      summary: error response method not allowed
+      description: Request method 'GET' is not supported
+      value:
+        httpStatus: 405 METHOD_NOT_ALLOWED
+        message: Request method 'GET' is not supported
+    ErrorResponseMethodPostNotAllowedExample:
+      summary: error response method not allowed
+      description: Request method 'POST' is not supported
+      value:
+        httpStatus: 405 METHOD_NOT_ALLOWED
+        message: Request method 'POST' is not supported
+    ErrorResponseBadRequestInvalidUuidExample:
+      summary: bad request invalid uuid value
+      description: 'Invalid UUID string: 1aca62b8-9a7f-4110-33cd67a9325d'
+      value:
+        httpStatus: 400 BAD_REQUEST
+        message: 'Invalid UUID string: 1aca62b8-9a7f-4110-33cd67a9325d'
+    NoStaticResourceNotFoundExample:
+      summary: error response not found static resource
+      description: Not found 404 - no static resource
+      value:
+        httpStatus: 404 NOT_FOUND
+        message: No static resource create-payment/pain001 for request '/create-payment/pain001'
     paymentCreationJsonInputExample:
       summary: JSON input example
       description: Example of JSON input payment creation
@@ -304,6 +412,9 @@ components:
         currency: PLN
   schemas:
     ErrorResponse:
+      required:
+        - httpStatus
+        - message
       type: object
       properties:
         httpStatus:
