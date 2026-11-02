@@ -29,6 +29,7 @@ public class ControllerExceptionHandler {
     private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Field 'amount' must be greater than 0";
     private static final String CURRENCY_MUST_MATCH_PATTERN = "Field 'currency' must match the pattern [A-Z]{3}";
     private static final String UNRECOGNIZED_PROPERTY = "Unrecognized property";
+    private static final String INTERNAL_SERVER_ERROR = "Internal server error (500). ";
     private static final String AMOUNT = "amount";
     private static final String CURRENCY = "currency";
 
@@ -77,7 +78,6 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> invalidPain001xml(InvalidPain001XmlException exception) {
-        log.error(exception.getMessage() + ",\n" + exception.getCause());
         // TODO: more details for different cases
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -87,7 +87,6 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> noResourceFound(NoResourceFoundException exception) {
-        log.error(exception.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -96,7 +95,6 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> unsupportedMediatype(HttpMediaTypeNotSupportedException exception) {
-        log.error(exception.getMessage());
         return ResponseEntity
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -105,7 +103,6 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> methodNotSupported(HttpRequestMethodNotSupportedException exception) {
-        log.error(exception.getMessage());
         return ResponseEntity
                 .status(HttpStatus.METHOD_NOT_ALLOWED)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -114,7 +111,6 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> argumentMismatch(MethodArgumentTypeMismatchException exception) {
-        log.error(exception.getMessage() + ",\n" + exception.getCause());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -123,7 +119,6 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> mediaTypeNotAcceptable(HttpMediaTypeNotAcceptableException exception) {
-        log.error(exception.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_ACCEPTABLE)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -132,7 +127,7 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> technicalException(Exception exception) {
-        log.error(exception.getMessage() + ",\n" + exception.getCause());
+        log.error(INTERNAL_SERVER_ERROR, exception);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -148,7 +143,7 @@ public class ControllerExceptionHandler {
             errorResponseMessage = AMOUNT_MUST_BE_GREATER_THAN_ZERO;
         } else if (exceptionMessage.contains(CURRENCY)) {
             errorResponseMessage = CURRENCY_MUST_MATCH_PATTERN;
-        } else if (exceptionMessage.contains(UNRECOGNIZED_PROPERTY)) {
+        } else if (exceptionMessage.contains(UNRECOGNIZED_PROPERTY) && exceptionMessage.contains("(")) {
             errorResponseMessage = UNRECOGNIZED_PROPERTY + exceptionMessage.substring(
                     exceptionMessage.indexOf(UNRECOGNIZED_PROPERTY) + UNRECOGNIZED_PROPERTY.length(),
                     exceptionMessage.indexOf("("));

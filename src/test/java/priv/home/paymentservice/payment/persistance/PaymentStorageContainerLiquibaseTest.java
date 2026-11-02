@@ -142,14 +142,17 @@ class PaymentStorageContainerLiquibaseTest {
         Future<Optional<PaymentEntity>> first = executor.submit(insertPayment);
         Future<Optional<PaymentEntity>> second = executor.submit(insertPayment);
 
-        // when
-        startThreadsForInsert.countDown();
+        try {
+            // when
+            startThreadsForInsert.countDown();
 
-        // then
-        Optional<PaymentEntity> firstThreadResult = first.get();
-        Optional<PaymentEntity> secondThreadResult = second.get();
-        executor.shutdown();
-        assertThat(firstThreadResult.isPresent()).isNotEqualTo(secondThreadResult.isPresent());
+            // then
+            Optional<PaymentEntity> firstThreadResult = first.get();
+            Optional<PaymentEntity> secondThreadResult = second.get();
+            assertThat(firstThreadResult.isPresent()).isNotEqualTo(secondThreadResult.isPresent());
+        } finally {
+            executor.shutdownNow();
+        }
 
         Integer countRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment", Integer.class);
         assertThat(countRecords).isOne();
