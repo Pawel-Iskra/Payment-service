@@ -46,8 +46,9 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 8. Asynchronous Kafka event publishing with acknowledgement-based outbox updates
 9. Kafka publisher with synchronous and asynchronous failure handling
 10. Configurable outbox batch processing with keyset scrolling, exponential backoff and retry limits
-11. Idempotent Kafka event consumer with concurrent duplicate protection
-12. Unit and integration tests including concurrent event processing
+11. A lightweight idempotent Kafka event consumer with concurrent duplicate protection
+12. OpenAPI 3.x specification documented in a YAML file, integrated with Swagger UI
+13. Unit and integration tests including concurrent event processing
 
 </td>
 <td width="45%" valign="top">
@@ -64,6 +65,14 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 - **Testing:** JUnit, Mockito, WebMvcTest, SpringBootTest, Testcontainers
 - **Build Tool:** Maven
 - **Infrastructure:** Docker
+- **API Documentation:** OpenAPI 3.1, Swagger UI
+
+**Tools & Development Environment**:
+- IDE: IntelliJ IDEA
+- Database Management: pgAdmin
+- Containers: Docker.desktop
+- Version Control: Git, GitHub
+- API manual tests: Postman
 
 </td>
 </tr>
@@ -97,7 +106,7 @@ These limitations reflect the project's intended scope and timeframe. A producti
 | **✅ Task 09 — Idempotent Kafka Consumer** | Prevent duplicate consumed event processing through event identification and deduplication. |
 | **✅ Task 10 — Outbox Reliability & Retry Policy** | Improve event publishing with configurable batch size, retries, backoff, and failure tracking. |
 | **✅ Task 11 — ISO 20022 Payment Messages** | Add selected ISO 20022 pain.001 and pain.002 message structures with a limited set of fields and validation. |
-| **Task 12 — OpenAPI Contract** | Define the REST API contract in openapi.yaml, covering endpoints, schemas, validation rules, error responses, and examples. |
+| **✅ Task 12 — OpenAPI Contract** | Define the REST API contract in openapi.yaml, covering endpoints, schemas, validation rules, error responses, and examples. |
 | **Task 13 — Test Coverage & End-to-End Testing** | Add JaCoCo with an 85% line coverage target and end-to-end tests using Kafka Testcontainers. |
 | **Task 14 — Observability & Logging** | Add basic application metrics, health checks, and Logback logging with sensitive payment data masking. |
 | **Task 15 — DevOps & CI/CD** | Containerize the application stack with Docker Compose and automate build, test, and Docker image publishing using GitHub Actions. |<br>
@@ -196,3 +205,10 @@ These limitations reflect the project's intended scope and timeframe. A producti
 - Implemented JAXB-based XML parsing and mapping of selected payment fields to the application model.
 - Added limited ISO pain.002.001.14 status report generation with original payment references and a limited response profile supporting ACTC and RJCT.
 - Added tests covering XML validation, parsing, mapping, and response generation against official and limited XSD schemas.
+
+#### Task 12 — OpenAPI Contract Documentation
+**Goal:** Define and document the REST API contract using an OpenAPI specification.
+
+- Created an OpenAPI 3.1 specification in YAML covering API endpoints, request and response schemas, HTTP status codes, and error responses.
+- Added request and response examples, including JSON payment requests and ISO 20022 XML messages.
+- Integrated the YAML specification with Swagger UI to provide interactive API documentation, accessible at `http://localhost:8080/swagger-ui/index.html`
