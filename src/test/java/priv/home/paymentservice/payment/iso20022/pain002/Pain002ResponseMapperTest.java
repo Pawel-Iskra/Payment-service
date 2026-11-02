@@ -111,9 +111,9 @@ class Pain002ResponseMapperTest {
     }
 
     @Test
-    public void shouldThrowExceptionWhenPain002ResponseStatusIsOtherThanActc() throws SAXException, JAXBException {
+    public void shouldThrowExceptionWhenPain002ResponseStatusIsTooLong() throws SAXException, JAXBException {
         // given
-        String responseStatusReject = "ACCP";
+        String notValidResponseStatus = "ACCEPT";
         Pain001PaymentData pain001PaymentData = getCorrectPaymentData();
         Marshaller limitedPain002marshaller = prepareJaxbMarshaller(LIMITED_PAIN002_XSD_PATH);
 
@@ -121,15 +121,15 @@ class Pain002ResponseMapperTest {
         Document pain002ResponseDocument = pain002ResponseMapper.buildCustomerPaymentStatusReport(pain001PaymentData);
         pain002ResponseDocument.getCstmrPmtStsRpt().getOrgnlPmtInfAndSts().getFirst()
                 .getTxInfAndSts().getFirst()
-                .setTxSts(responseStatusReject);
+                .setTxSts(notValidResponseStatus);
 
         // then
         assertThatThrownBy(() -> limitedPain002marshaller.marshal(
                 new ObjectFactory().createDocument(pain002ResponseDocument),
                 new DefaultHandler()))
                 .isInstanceOf(JAXBException.class)
-                .hasStackTraceContaining("Value '%s' is not facet-valid with respect to enumeration"
-                        .formatted(responseStatusReject));
+                .hasStackTraceContaining("Value '%s' with length = '%s' is not facet-valid with respect to maxLength"
+                        .formatted(notValidResponseStatus, notValidResponseStatus.length()));
     }
 
 

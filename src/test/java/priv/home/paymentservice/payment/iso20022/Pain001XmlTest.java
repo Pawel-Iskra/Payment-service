@@ -116,9 +116,9 @@ public class Pain001XmlTest {
         assertThat(paymentInfo.getDbtrAcct()).isNotNull();
         assertThat(paymentInfo.getDbtrAcct().getId()).isNotNull();
         assertThat(paymentInfo.getDbtrAcct().getId().getIBAN()).isEqualTo(PAYMENT_INFO_DEBTOR_ACCOUNT_IBAN);
-        assertThat(paymentInfo.getCdtTrfTxInf()).hasSize(1);
+        assertThat(paymentInfo.getCdtTrfTxInf()).isNotNull();
 
-        CreditTransferTransaction61 crdTrfTxInf = paymentInfo.getCdtTrfTxInf().getFirst();
+        CreditTransferTransaction61 crdTrfTxInf = paymentInfo.getCdtTrfTxInf();
         assertThat(crdTrfTxInf.getPmtId()).isNotNull();
         assertThat(crdTrfTxInf.getPmtId().getEndToEndId()).isEqualTo(PAYMENT_END_TO_END_ID);
         assertThat(crdTrfTxInf.getAmt()).isNotNull();
@@ -141,7 +141,7 @@ public class Pain001XmlTest {
         // when + then
         SAXException thrown = assertThrows(SAXException.class, () -> schemaLimitedPain001Xsd.newValidator()
                 .validate(new StreamSource(new StringReader(incorrectInputXmlAsString))));
-        assertThat(thrown.getMessage()).contains("Value '2' is not facet-valid with respect to enumeration '[1]'");
+        assertThat(thrown.getMessage()).contains("Value '2' is not facet-valid with respect to");
     }
 
     @Test
