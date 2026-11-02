@@ -50,15 +50,14 @@ public class PaymentController {
                 .createPaymentFromPain001Xml(idempotencyKey, xmlPain001Bytes);
         JAXBElement<Document> responsePain002XmlDocument = new ObjectFactory()
                 .createDocument(createPain001Result.createPain001PaymentStatusReportDocument());
+        URI location = getLocation(createPain001Result.paymentId());
 
         if (createPain001Result.wasAlreadyInDb()) {
             return ResponseEntity.ok()
-                    .location(getLocation(createPain001Result.paymentId()))
-                    .contentType(MediaType.APPLICATION_XML)
+                    .location(location)
                     .body(responsePain002XmlDocument);
         }
-        return ResponseEntity.created(getLocation(createPain001Result.paymentId()))
-                .contentType(MediaType.APPLICATION_XML)
+        return ResponseEntity.created(location)
                 .body(responsePain002XmlDocument);
     }
 
@@ -70,13 +69,20 @@ public class PaymentController {
             @Valid @RequestBody CreatePaymentRequest createPaymentRequest)
     {
         CreatePaymentResult createPaymentResult = paymentService.createPayment(idempotencyKey, createPaymentRequest);
+        URI location = getLocation(createPaymentResult.getPaymentId());
+
         if (createPaymentResult.isWasAlreadyInDb()) {
-            return new ResponseEntity<>(buildPaymentResponseFromCreatePaymentResult(createPaymentResult), HttpStatus.OK);
+            return ResponseEntity.ok()
+                    .location(location)
+                    .body(buildPaymentResponseFromCreatePaymentResult(createPaymentResult));
         }
-        return new ResponseEntity<>(buildPaymentResponseFromCreatePaymentResult(createPaymentResult), HttpStatus.CREATED);
+        return ResponseEntity.created(location)
+                .body(buildPaymentResponseFromCreatePaymentResult(createPaymentResult));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(
+            value = "/{id}",
+            produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PaymentResponse> retrievePayment(@PathVariable("id") UUID paymentId)
     {
         Optional<PaymentResponse> paymentResponseOptional =

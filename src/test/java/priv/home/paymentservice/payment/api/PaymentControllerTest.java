@@ -1,6 +1,8 @@
 package priv.home.paymentservice.payment.api;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -9,12 +11,15 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
-import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException;
-import priv.home.paymentservice.payment.application.CreatePaymentResult;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
-import priv.home.paymentservice.payment.model.PaymentStatus;
+import priv.home.paymentservice.payment.application.CreatePaymentResult;
 import priv.home.paymentservice.payment.application.PaymentService;
+import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException;
+import priv.home.paymentservice.payment.model.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -34,6 +39,19 @@ class PaymentControllerTest {
     @InjectMocks
     private PaymentController underTest;
 
+    @BeforeEach
+    void setUpRequestContext() {
+        MockHttpServletRequest mockRequest = new MockHttpServletRequest();
+        mockRequest.setScheme(MockHttpServletRequest.DEFAULT_SCHEME);
+        mockRequest.setServerName("localhost");
+        mockRequest.setServerPort(8080);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(mockRequest));
+    }
+
+    @AfterEach
+    void clearMvcContext() {
+        RequestContextHolder.resetRequestAttributes();
+    }
 
     @Test
     public void whenPaymentAddedSuccessfullyThenShouldBeProperResponse() {
