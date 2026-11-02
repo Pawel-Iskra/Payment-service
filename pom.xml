@@ -31,6 +31,8 @@
 	<properties>
 		<java.version>25</java.version>
 		<testcontainers.version>2.0.5</testcontainers.version>
+        <jacoco.coverage>0.80</jacoco.coverage>
+        <common.package>priv/home/paymentservice</common.package>
 	</properties>
 
 
@@ -192,7 +194,70 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.14</version>
+
+				<!-- Attach JaCoCo agent to test execution -->
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+
+					<!-- Generate HTML coverage report -->
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+
+				<!-- minimum coverage -->
+                    <execution>
+                        <id>check-coverage</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.coverage}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+				</executions>
+
+				<!-- common config for check and report -->
+				<configuration>
+					<includes>
+						<include>${common.package}/eventconsumer/**</include>
+						<include>${common.package}/outbox/application/**</include>
+						<include>${common.package}/outbox/kafka/**</include>
+						<include>${common.package}/payment/api/**</include>
+						<include>${common.package}/payment/application/**</include>
+						<include>${common.package}/payment/exception/**</include>
+						<include>${common.package}/payment/iso20022/pain001/**</include>
+						<include>${common.package}/payment/iso20022/pain002/**</include>
+						<include>${common.package}/payment/persistence/PaymentStorageJpaCustomImpl.class</include>
+					</includes>
+				</configuration>
+			</plugin>
+
 		</plugins>
 	</build>
-
 </project>
