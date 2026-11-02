@@ -32,6 +32,12 @@ paths:
       responses:
         "200":
           description: OK. Payment instruction for given idempotency-key was already created.
+          headers:
+            Location:
+              description: URI of the payment resource
+              schema:
+                type: string
+                format: uri
           content:
             application/json:
               schema:
@@ -42,6 +48,12 @@ paths:
         "201":
           description: CREATED. Payment instruction created. Payment instruction successfully validated and accepted for processing. 
                        (It does not mean that the payment has been executed, settled, or credited to the beneficiary)
+          headers:
+            Location:
+              description: URI of the newly created payment resource
+              schema:
+                type: string
+                format: uri
           content:
             application/json:
               schema:
@@ -76,6 +88,15 @@ paths:
               examples:
                 ErrorResponseMethodGetNotAllowedExample:
                   $ref: '#/components/examples/ErrorResponseMethodGetNotAllowedExample'
+        "406":
+          description: NOT ACCEPTABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponse406AcceptableIsJsonExample:
+                  $ref: '#/components/examples/ErrorResponse406AcceptableIsJsonExample'
         "415":
           description: UNSUPPORTED MEDIA TYPE
           content:
@@ -104,6 +125,7 @@ paths:
       - name: idempotency-key
         in: header
         required: true
+        description: key for idempotent payment creation
         schema:
           type: string
       requestBody:
@@ -119,6 +141,12 @@ paths:
       responses:
         "200":
           description: OK. Payment instruction for given idempotency-key was already created.
+          headers:
+            Location:
+              description: URI of the payment resource
+              schema:
+                type: string
+                format: uri
           content:
             application/xml:
               schema:
@@ -129,6 +157,12 @@ paths:
         "201":
           description: CREATED. Payment instruction created. Payment instruction successfully validated and accepted for processing.
                        (It does not mean that the payment has been executed, settled, or credited to the beneficiary)
+          headers:
+            Location:
+              description: URI of the newly created payment resource
+              schema:
+                type: string
+                format: uri
           content:
             application/xml:
               schema:
@@ -163,6 +197,15 @@ paths:
               examples:
                 ErrorResponseMethodGetNotAllowedExample:
                   $ref: '#/components/examples/ErrorResponseMethodGetNotAllowedExample'
+        "406":
+          description: NOT ACCEPTABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponse406AcceptableIsXmlExample:
+                  $ref: '#/components/examples/ErrorResponse406AcceptableIsXmlExample'
         "415":
           description: UNSUPPORTED MEDIA TYPE
           content:
@@ -231,6 +274,15 @@ paths:
               examples:
                 ErrorResponseMethodNotAllowedExample:
                   $ref: '#/components/examples/ErrorResponseMethodPostNotAllowedExample'
+        "406":
+          description: NOT ACCEPTABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ErrorResponse406AcceptableIsJsonExample:
+                  $ref: '#/components/examples/ErrorResponse406AcceptableIsJsonExample'
         "500":
           description: 500 INTERNAL SERVER ERROR
           content:
@@ -313,8 +365,7 @@ components:
     LimitedPain002ResponseBody:
       summary: Limited-pain002 response example
       description: Technical acceptance confirmation for a single payment instruction. 
-                   Example of a pain.002 status report indicating successful technical validation and acceptance. 
-                   ACTC does not indicate payment execution or settlement.
+                   (ACTC does not indicate payment execution or settlement)
       value: |
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.002.001.14">
@@ -404,6 +455,18 @@ components:
       value:
         httpStatus: 404 NOT_FOUND
         message: No static resource create-payment/pain001 for request '/create-payment/pain001'
+    ErrorResponse406AcceptableIsJsonExample:
+      summary: error response not supported expected response type
+      description: 'Acceptable representations: [application/json].'
+      value:
+        httpStatus: 406 NOT_ACCEPTABLE
+        message: 'Acceptable representations: [application/json].'
+    ErrorResponse406AcceptableIsXmlExample:
+      summary: error response not supported expected response type
+      description: 'Acceptable representations: [application/xml].'
+      value:
+        httpStatus: 406 NOT_ACCEPTABLE
+        message: 'Acceptable representations: [application/xml].'
     paymentCreationJsonInputExample:
       summary: JSON input example
       description: Example of JSON input payment creation
@@ -602,6 +665,7 @@ components:
       required:
       - grpHdr
       - orgnlGrpInfAndSts
+      - orgnlPmtInfAndSts
     Pain002Document:
       type: object
       properties:
@@ -655,6 +719,7 @@ components:
             name: TxInfAndSts
       required:
       - orgnlPmtInfId
+      - txInfAndSts
     PaymentTransaction160:
       type: object
       properties:
