@@ -1,6 +1,7 @@
 package priv.home.paymentservice.payment.api.errorhandling;
 
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,10 +19,12 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException;
 import priv.home.paymentservice.payment.iso20022.pain001.InvalidPain001XmlException;
 import priv.home.paymentservice.payment.iso20022.pain001.MappingPain001ToDomainException;
+import priv.home.paymentservice.payment.iso20022.pain001.Pain001XmlErrorMessageExtractor;
 
 
 @Slf4j
 @ControllerAdvice
+@AllArgsConstructor
 public class ControllerExceptionHandler {
 
     private static final String UNEXPECTED_ERROR_OCCURRED = "Unexpected error occurred";
@@ -32,6 +35,8 @@ public class ControllerExceptionHandler {
     private static final String INTERNAL_SERVER_ERROR = "Internal server error (500). ";
     private static final String AMOUNT = "amount";
     private static final String CURRENCY = "currency";
+
+    private final Pain001XmlErrorMessageExtractor pain001XmlErrorMessageExtractor;
 
 
     @ExceptionHandler
@@ -78,11 +83,11 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> invalidPain001xml(InvalidPain001XmlException exception) {
-        // TODO: more details for different cases
+        String errorMessage = pain001XmlErrorMessageExtractor.extractMessageFromPain001XmlParseException(exception);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage()));
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST, errorMessage));
     }
 
     @ExceptionHandler
@@ -111,10 +116,11 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> argumentMismatch(MethodArgumentTypeMismatchException exception) {
+        String responseMessage = exception.getCause() != null ? exception.getCause().getMessage() : exception.getMessage();
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponse(HttpStatus.BAD_REQUEST, exception.getCause().getMessage()));
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST, responseMessage));
     }
 
     @ExceptionHandler
