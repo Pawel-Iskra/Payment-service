@@ -130,18 +130,25 @@ class PaymentStorageContainerLiquibaseTest {
     @Test
     public void testRaceConditionForInsertOfTheSamePaymentRequest() throws ExecutionException, InterruptedException {
         // given
-        UUID paymentId = generateUuid();
-        PaymentEntity payment = getValidPaymentEntity(IDEMPOTENCY_KEY_SECOND, paymentId);
+        UUID paymentIdFirst = generateUuid();
+        UUID paymentIdSecond = generateUuid();
+        PaymentEntity paymentFirst = getValidPaymentEntity(IDEMPOTENCY_KEY_SECOND, paymentIdFirst);
+        PaymentEntity paymentSecond = getValidPaymentEntity(IDEMPOTENCY_KEY_SECOND, paymentIdSecond);
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch startThreadsForInsert = new CountDownLatch(1);
 
-        Callable<Optional<PaymentEntity>> insertPayment = () -> {
+        Callable<Optional<PaymentEntity>> insertPaymentOne = () -> {
             startThreadsForInsert.await();
-            return paymentStorageJpa.insertPaymentIfAbsent(payment);
+            return paymentStorageJpa.insertPaymentIfAbsent(paymentFirst);
         };
-        Future<Optional<PaymentEntity>> first = executor.submit(insertPayment);
-        Future<Optional<PaymentEntity>> second = executor.submit(insertPayment);
 
+        Callable<Optional<PaymentEntity>> insertPaymentTwo = () -> {
+            startThreadsForInsert.await();
+            return paymentStorageJpa.insertPaymentIfAbsent(paymentSecond);
+        };
+        Future<Optional<PaymentEntity>> first = executor.submit(insertPaymentOne);
+        Future<Optional<PaymentEntity>> second = executor.submit(insertPaymentTwo);
+        // TODO: refactor maybe, awati+common start
         try {
             // when
             startThreadsForInsert.countDown();

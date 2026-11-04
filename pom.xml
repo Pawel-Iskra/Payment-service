@@ -31,7 +31,7 @@
 	<properties>
 		<java.version>25</java.version>
 		<testcontainers.version>2.0.5</testcontainers.version>
-        <jacoco.coverage>0.85</jacoco.coverage>
+        <jacoco.coverage>0.90</jacoco.coverage>
         <common.package>priv/home/paymentservice</common.package>
 	</properties>
 
@@ -247,14 +247,18 @@
 					<includes>
 						<include>${common.package}/eventconsumer/**</include>
 						<include>${common.package}/outbox/application/**</include>
+						<include>${common.package}/outbox/config/**</include>
 						<include>${common.package}/outbox/kafka/**</include>
 						<include>${common.package}/payment/api/**</include>
 						<include>${common.package}/payment/application/**</include>
 						<include>${common.package}/payment/exception/**</include>
 						<include>${common.package}/payment/iso20022/pain001/**</include>
 						<include>${common.package}/payment/iso20022/pain002/**</include>
-						<include>${common.package}/payment/persistence/PaymentStorageJpaCustomImpl.class</include>
+						<include>${common.package}/payment/persistence/**</include>
 					</includes>
+					<excludes>
+						<exclude>**/*Entity.class</exclude>
+					</excludes>
 				</configuration>
 			</plugin>
 
