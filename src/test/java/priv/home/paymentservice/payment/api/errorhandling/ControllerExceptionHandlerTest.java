@@ -96,12 +96,13 @@ class ControllerExceptionHandlerTest {
     @Test
     public void shouldReturnBadRequestWhenRequestAmountIsZero() throws NoSuchMethodException {
         // given
-        CreatePaymentRequest notValidPaymentRequest = new CreatePaymentRequest(new BigDecimal("0"), "PLN");
+        CreatePaymentRequest notValidPaymentRequest = new CreatePaymentRequest(
+                new BigDecimal("0"), "PLN");
         DirectFieldBindingResult bindingResult = new DirectFieldBindingResult(notValidPaymentRequest, "request");
         bindingResult.rejectValue(
                 AMOUNT,
                 "Positive",
-                "Amount must be positive");
+                AMOUNT_MUST_BE_GREATER_THAN_ZERO);
         MethodArgumentNotValidException exception = new MethodArgumentNotValidException(
                 getTestMethodParameter(),
                 bindingResult);
@@ -119,7 +120,8 @@ class ControllerExceptionHandlerTest {
     @Test
     public void shouldReturnBadRequestWhenCurrencyNotMatchesPattern() throws NoSuchMethodException {
         // given
-        CreatePaymentRequest notValidPaymentRequest = new CreatePaymentRequest(new BigDecimal("123.45"), "USDD");
+        CreatePaymentRequest notValidPaymentRequest = new CreatePaymentRequest(
+                new BigDecimal("123.45"), "USDD");
         DirectFieldBindingResult bindingResult = new DirectFieldBindingResult(notValidPaymentRequest, "request");
         bindingResult.rejectValue(
                 CURRENCY,
@@ -140,12 +142,43 @@ class ControllerExceptionHandlerTest {
     }
 
     @Test
-    public void shouldReturnBadRequestWhenRequestNotReadable() {
+    public void shouldReturnBadRequestWhenCurrencyAndAmountAreNull() throws NoSuchMethodException {
         // given
+        CreatePaymentRequest notValidPaymentRequest = new CreatePaymentRequest(null, null);
+        DirectFieldBindingResult bindingResult = new DirectFieldBindingResult(notValidPaymentRequest, "request");
+        bindingResult.rejectValue(
+                CURRENCY,
+                "NotBlank.currency",
+                CURRENCY_MUST_MATCH_PATTERN);
+        bindingResult.rejectValue(
+                AMOUNT,
+                "NotNull.amount",
+                AMOUNT_MUST_BE_GREATER_THAN_ZERO);
+        MethodArgumentNotValidException exception = new MethodArgumentNotValidException(
+                getTestMethodParameter(),
+                bindingResult);
+
+        // when
+        ResponseEntity<ErrorResponse> responseResponseEntity = exceptionHandler.notValidRequest(exception);
+
+        // then
+        assertThat(responseResponseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody()).isNotNull();
+        assertThat(responseResponseEntity.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody().message())
+                .contains(AMOUNT_MUST_BE_GREATER_THAN_ZERO)
+                .contains(CURRENCY_MUST_MATCH_PATTERN);
+    }
+
+    @Test
+    public void shouldReturnBadRequestWhenUnrecognizedProperty() {
+        // given
+        String errorMessage = "JSON parse error: Unrecognized property \"val\" " +
+                "(class priv.home.paymentservice.payment.api.dto.CreatePaymentRequest), not marked as ignorable";
         HttpInputMessage httpInputMessage = mock(HttpInputMessage.class);
 
         HttpMessageNotReadableException exception = new HttpMessageNotReadableException(
-                "JSON parse error: Unrecognized property \"value\"",
+                errorMessage,
                 httpInputMessage);
 
         // when
@@ -156,6 +189,27 @@ class ControllerExceptionHandlerTest {
         assertThat(responseResponseEntity.getBody()).isNotNull();
         assertThat(responseResponseEntity.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(responseResponseEntity.getBody().message()).contains(UNRECOGNIZED_PROPERTY);
+    }
+
+    @Test
+    public void shouldReturnBadRequestNotReadableJson() {
+        // given
+        String errorMessage = "JSON parse error: Unexpected character ('}' (code 125)):" +
+                " was expecting double-quote to start property name";
+        HttpInputMessage httpInputMessage = mock(HttpInputMessage.class);
+
+        HttpMessageNotReadableException exception = new HttpMessageNotReadableException(
+                errorMessage,
+                httpInputMessage);
+
+        // when
+        ResponseEntity<ErrorResponse> responseResponseEntity = exceptionHandler.requestNotReadable(exception);
+
+        // then
+        assertThat(responseResponseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody()).isNotNull();
+        assertThat(responseResponseEntity.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody().message()).contains(errorMessage);
     }
 
     @Test
