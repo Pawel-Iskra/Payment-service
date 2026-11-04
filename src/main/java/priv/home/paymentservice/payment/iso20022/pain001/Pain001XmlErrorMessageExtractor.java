@@ -10,10 +10,10 @@ import java.util.Optional;
 public class Pain001XmlErrorMessageExtractor {
 
     private static final String PAIN001_XML_MALFORMED = "Pain.001 XML is malformed or does not match the supported profile";
-    private static final String SAX_PARSE_EXCEPTION = "org.xml.sax.SAXParseException; ";
-    private static final String XML_STREAM_EXCEPTION = "javax.xml.stream.XMLStreamException: ";
     private static final String PAIN001_NAMESPACE = "\"urn:iso:std:iso:20022:tech:xsd:pain.001.001.12\":";
     private static final String RESPONSE_MESSAGE_FORMAT = "Line %d, column %d: %s";
+    private static final String REGEX_TO_REMOVE_FROM_XML_STREAM_EXCEPTION = "ParseError[\\s\\S]*?Message:\\s*";
+    private static final String REGEX_TO_REMOVE_CVC_FROM_SAX_EXCEPTION = "cvc-[\\w.-]+:\\s*";
 
 
     public String extractMessageFromPain001XmlParseException(InvalidPain001XmlException pain001XmlException) {
@@ -29,15 +29,14 @@ public class Pain001XmlErrorMessageExtractor {
             String message = saxException.getMessage()
                     .replace(PAIN001_NAMESPACE, "")
                     .replaceAll("[{}]", "")
-                    .replaceAll("cvc-[\\w.-]+:\\s*", "");
+                    .replaceAll(REGEX_TO_REMOVE_CVC_FROM_SAX_EXCEPTION, "");
             responseMessage = RESPONSE_MESSAGE_FORMAT.formatted(
                     lineNumber,
                     columnNumber,
                     message);
         } else if (exception instanceof XMLStreamException xmlStreamException) {
             String message = xmlStreamException.getMessage()
-                    .replace(XML_STREAM_EXCEPTION, "")
-                    .replaceAll("ParseError[\\s\\S]*?Message:\\s*", "");
+                    .replaceAll(REGEX_TO_REMOVE_FROM_XML_STREAM_EXCEPTION, "");
             if (xmlStreamException.getLocation() != null) {
                 int lineNumber = xmlStreamException.getLocation().getLineNumber();
                 int columnNumber = xmlStreamException.getLocation().getColumnNumber();

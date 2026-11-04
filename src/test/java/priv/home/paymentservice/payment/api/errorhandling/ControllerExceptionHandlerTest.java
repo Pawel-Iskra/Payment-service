@@ -16,12 +16,16 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.xml.sax.SAXParseException;
+import org.xml.sax.helpers.LocatorImpl;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException;
 import priv.home.paymentservice.payment.iso20022.pain001.InvalidPain001XmlException;
 import priv.home.paymentservice.payment.iso20022.pain001.MappingPain001ToDomainException;
 import priv.home.paymentservice.payment.iso20022.pain001.Pain001XmlErrorMessageExtractor;
 
+import javax.xml.stream.Location;
+import javax.xml.stream.XMLStreamException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.List;
@@ -29,6 +33,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class ControllerExceptionHandlerTest {
@@ -46,6 +51,8 @@ class ControllerExceptionHandlerTest {
     private static final String CONTENT_TYPE_NOT_SUPPORTED = "Content-Type '%s' is not supported";
     private static final String REQUEST_METHOD_NOT_SUPPORTED = "Request method '%s' is not supported";
     private static final String ACCEPTABLE_REPRESENTATIONS = "Acceptable representations: [%s].";
+    private static final String REGEX_TO_REMOVE_CVC_FROM_SAX_EXCEPTION = "cvc-[\\w.-]+:\\s*";
+    private static final String REGEX_TO_REMOVE_FROM_XML_STREAM_EXCEPTION = "ParseError[\\s\\S]*?Message:\\s*";
 
     private final ControllerExceptionHandler exceptionHandler = new ControllerExceptionHandler(
             new Pain001XmlErrorMessageExtractor());
@@ -110,6 +117,29 @@ class ControllerExceptionHandlerTest {
     }
 
     @Test
+    public void shouldReturnBadRequestWhenCurrencyNotMatchesPattern() throws NoSuchMethodException {
+        // given
+        CreatePaymentRequest notValidPaymentRequest = new CreatePaymentRequest(new BigDecimal("123.45"), "USDD");
+        DirectFieldBindingResult bindingResult = new DirectFieldBindingResult(notValidPaymentRequest, "request");
+        bindingResult.rejectValue(
+                CURRENCY,
+                "Pattern.currency",
+                CURRENCY_MUST_MATCH_PATTERN);
+        MethodArgumentNotValidException exception = new MethodArgumentNotValidException(
+                getTestMethodParameter(),
+                bindingResult);
+
+        // when
+        ResponseEntity<ErrorResponse> responseResponseEntity = exceptionHandler.notValidRequest(exception);
+
+        // then
+        assertThat(responseResponseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody()).isNotNull();
+        assertThat(responseResponseEntity.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody().message()).isEqualTo(CURRENCY_MUST_MATCH_PATTERN);
+    }
+
+    @Test
     public void shouldReturnBadRequestWhenRequestNotReadable() {
         // given
         HttpInputMessage httpInputMessage = mock(HttpInputMessage.class);
@@ -161,6 +191,72 @@ class ControllerExceptionHandlerTest {
     }
 
     @Test
+    public void shouldReturnBadRequestWhenSAXParseException() {
+        // given
+        String saxParseExceptionMessage = "cvc-complex-type.2.4.a: Invalid content was found starting with element " +
+                "'{\"urn:iso:std:iso:20022:tech:xsd:pain.001.001.12\":GrpH}'. " +
+                "One of '{\"urn:iso:std:iso:20022:tech:xsd:pain.001.001.12\":GrpHdr}' is expected.";
+        String responseMessage = saxParseExceptionMessage
+                .replaceAll(REGEX_TO_REMOVE_CVC_FROM_SAX_EXCEPTION, "")
+                .replaceAll("\\{\"urn:iso:std:iso:20022:tech:xsd:pain\\.001\\.001\\.12\":([^}]+)}", "$1");
+        int lineNumber = 4;
+        int columnNumber = 15;
+        LocatorImpl locator = new LocatorImpl();
+        locator.setLineNumber(lineNumber);
+        locator.setColumnNumber(columnNumber);
+        SAXParseException saxParseException = new SAXParseException(
+                saxParseExceptionMessage,
+                locator);
+        InvalidPain001XmlException exception = new InvalidPain001XmlException(
+                PAIN001_XML_IS_MALFORMED,
+                saxParseException);
+
+        // when
+        ResponseEntity<ErrorResponse> responseResponseEntity = exceptionHandler.invalidPain001xml(exception);
+
+        // then
+        assertThat(responseResponseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody()).isNotNull();
+        assertThat(responseResponseEntity.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody().message())
+                .contains("Line %d".formatted(lineNumber))
+                .contains("column %d".formatted(columnNumber))
+                .contains(responseMessage);
+    }
+
+    @Test
+    public void shouldReturnBadRequestWhenXMLStreamException() {
+        // given
+        String xmlStreamExceptionMessage = "ParseError at [row,col]:[1,1]\nMessage: Content is not allowed in prolog.";
+        String responseMessage = xmlStreamExceptionMessage
+                .replaceAll(REGEX_TO_REMOVE_FROM_XML_STREAM_EXCEPTION, "");
+        int lineNumber = 1;
+        int columnNumber = 1;
+        Location locationMock = mock(Location.class);
+        when(locationMock.getLineNumber()).thenReturn(lineNumber);
+        when(locationMock.getColumnNumber()).thenReturn(columnNumber);
+
+        XMLStreamException saxParseException = new XMLStreamException(
+                xmlStreamExceptionMessage,
+                locationMock);
+        InvalidPain001XmlException exception = new InvalidPain001XmlException(
+                PAIN001_XML_IS_MALFORMED,
+                saxParseException);
+
+        // when
+        ResponseEntity<ErrorResponse> responseResponseEntity = exceptionHandler.invalidPain001xml(exception);
+
+        // then
+        assertThat(responseResponseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody()).isNotNull();
+        assertThat(responseResponseEntity.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody().message())
+                .contains("Line %d".formatted(lineNumber))
+                .contains("column %d".formatted(columnNumber))
+                .contains(responseMessage);
+    }
+
+    @Test
     public void shouldReturnNotFoundWhenWrongPathWasCalled() {
         // given
         String resourcePath = "createpayments/pain001";
@@ -176,8 +272,9 @@ class ControllerExceptionHandlerTest {
         assertThat(responseResponseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(responseResponseEntity.getBody()).isNotNull();
         assertThat(responseResponseEntity.getBody().httpStatus()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(responseResponseEntity.getBody().message()).contains(resourcePath);
-        assertThat(responseResponseEntity.getBody().message()).contains(NO_STATIC_RESOURCE);
+        assertThat(responseResponseEntity.getBody().message())
+                .contains(resourcePath)
+                .contains(NO_STATIC_RESOURCE);
     }
 
     @Test

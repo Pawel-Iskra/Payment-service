@@ -100,10 +100,11 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> unsupportedMediatype(HttpMediaTypeNotSupportedException exception) {
+        String responseMessage = exception.getBody() != null ? exception.getBody().getDetail() : exception.getMessage();
         return ResponseEntity
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, exception.getMessage()));
+                .body(new ErrorResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, responseMessage));
     }
 
     @ExceptionHandler
@@ -125,10 +126,11 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> mediaTypeNotAcceptable(HttpMediaTypeNotAcceptableException exception) {
+        String responseMessage = exception.getBody() != null ? exception.getBody().getDetail() : exception.getMessage();
         return ResponseEntity
                 .status(HttpStatus.NOT_ACCEPTABLE)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponse(HttpStatus.NOT_ACCEPTABLE, exception.getBody().getDetail()));
+                .body(new ErrorResponse(HttpStatus.NOT_ACCEPTABLE, responseMessage));
     }
 
     @ExceptionHandler
