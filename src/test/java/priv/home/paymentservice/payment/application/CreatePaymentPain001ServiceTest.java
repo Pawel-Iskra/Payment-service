@@ -60,7 +60,7 @@ class CreatePaymentPain001ServiceTest {
     public void shouldOrchestratePain001CreationFlow() {
         // given
         UUID paymentId = generateRandomUuid();
-        byte[] inputXmlPain001Bytes = "<Document/>".getBytes(StandardCharsets.UTF_8);
+        byte[] exampleInputBytes = "<Document/>".getBytes(StandardCharsets.UTF_8);
         Document pain001Document = mock(Document.class);
         Pain001PaymentData pain001PaymentData = getCorrectPaymentData();
         CreatePaymentResult createPaymentResult = getSuccessfulPaymentCreationResponse(paymentId);
@@ -81,7 +81,7 @@ class CreatePaymentPain001ServiceTest {
 
         // when
         CreatePain001Result createPain001Result = createPaymentPain001Service
-                .createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, inputXmlPain001Bytes);
+                .createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, exampleInputBytes);
 
         // then
         verify(pain001XmlParser, times(1))
