@@ -12,7 +12,6 @@ class OutboxEventPublisherPropertiesValidationTest {
     private static final String PREFIX_PUBLISHER = "payment-service.outbox.publisher.";
     private static final String PREFIX_PUBLISHER_RETRY = "payment-service.outbox.publisher.retry.";
     private static final String BATCH_SIZE = "batch-size";
-    private static final String SCHEDULER_INTERVAL = "scheduler-interval";
     private static final String MAX_ATTEMPT = "max-attempt";
     private static final String MULTIPLIER = "multiplier";
     private static final String INITIAL_BACKOFF = "initial-backoff";
@@ -27,7 +26,6 @@ class OutboxEventPublisherPropertiesValidationTest {
     public void shouldCreateBeanAndStartSuccessfully() {
         contextRunner.withPropertyValues(
                         PREFIX_PUBLISHER + BATCH_SIZE + "=5",
-                        PREFIX_PUBLISHER + SCHEDULER_INTERVAL + "=PT2M",
                         PREFIX_PUBLISHER_RETRY + MAX_ATTEMPT + "=6",
                         PREFIX_PUBLISHER_RETRY + MULTIPLIER + "=2",
                         PREFIX_PUBLISHER_RETRY + INITIAL_BACKOFF + "=PT2M",
@@ -42,7 +40,6 @@ class OutboxEventPublisherPropertiesValidationTest {
     public void shouldRejectZeroBatchSize() {
         contextRunner.withPropertyValues(
                         PREFIX_PUBLISHER + BATCH_SIZE + "=0",
-                        PREFIX_PUBLISHER + SCHEDULER_INTERVAL + "=PT2M",
                         PREFIX_PUBLISHER_RETRY + MAX_ATTEMPT + "=6",
                         PREFIX_PUBLISHER_RETRY + MULTIPLIER + "=2",
                         PREFIX_PUBLISHER_RETRY + INITIAL_BACKOFF + "=PT2M",
@@ -58,7 +55,6 @@ class OutboxEventPublisherPropertiesValidationTest {
     public void shouldRejectZeroMaxAttempt() {
         contextRunner.withPropertyValues(
                         PREFIX_PUBLISHER + BATCH_SIZE + "=5",
-                        PREFIX_PUBLISHER + SCHEDULER_INTERVAL + "=PT2M",
                         PREFIX_PUBLISHER_RETRY + MAX_ATTEMPT + "=0",
                         PREFIX_PUBLISHER_RETRY + MULTIPLIER + "=2",
                         PREFIX_PUBLISHER_RETRY + INITIAL_BACKOFF + "=PT2M",
@@ -74,7 +70,6 @@ class OutboxEventPublisherPropertiesValidationTest {
     public void shouldRejectZeroMultiplier() {
         contextRunner.withPropertyValues(
                         PREFIX_PUBLISHER + BATCH_SIZE + "=5",
-                        PREFIX_PUBLISHER + SCHEDULER_INTERVAL + "=PT2M",
                         PREFIX_PUBLISHER_RETRY + MAX_ATTEMPT + "=6",
                         PREFIX_PUBLISHER_RETRY + MULTIPLIER + "=0",
                         PREFIX_PUBLISHER_RETRY + INITIAL_BACKOFF + "=PT2M",

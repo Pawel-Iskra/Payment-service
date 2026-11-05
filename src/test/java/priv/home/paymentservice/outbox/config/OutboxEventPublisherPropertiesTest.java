@@ -17,7 +17,6 @@ class OutboxEventPublisherPropertiesTest {
     private static final String PREFIX_PUBLISHER = "payment-service.outbox.publisher";
     private static final String PREFIX_PUBLISHER_RETRY = "payment-service.outbox.publisher.retry";
     private static final String BATCH_SIZE = PREFIX_PUBLISHER + ".batch-size";
-    private static final String SCHEDULER_INTERVAL = PREFIX_PUBLISHER + ".scheduler-interval";
     private static final String MAX_ATTEMPT = PREFIX_PUBLISHER_RETRY + ".max-attempt";
     private static final String MULTIPLIER = PREFIX_PUBLISHER_RETRY + ".multiplier";
     private static final String INITIAL_BACKOFF = PREFIX_PUBLISHER_RETRY + ".initial-backoff";
@@ -35,7 +34,6 @@ class OutboxEventPublisherPropertiesTest {
         // given
         MapConfigurationPropertySource propertiesSource = new MapConfigurationPropertySource(Map.of(
                 BATCH_SIZE, "5",
-                SCHEDULER_INTERVAL, "PT2M",
                 MAX_ATTEMPT, "6",
                 MULTIPLIER, "2",
                 INITIAL_BACKOFF, "PT2M",
@@ -49,7 +47,6 @@ class OutboxEventPublisherPropertiesTest {
         assertThat(propertiesBindResult.isBound()).isTrue();
         assertThat(propertiesBindResult.get()).satisfies(properties -> {
             assertThat(properties.batchSize()).isEqualTo(5);
-            assertThat(properties.schedulerInterval()).isEqualTo(Duration.ofMinutes(2));
             assertThat(properties.retry().maxAttempt()).isEqualTo(6);
             assertThat(properties.retry().multiplier()).isEqualTo(2);
             assertThat(properties.retry().initialBackoff()).isEqualTo(Duration.ofMinutes(2));
@@ -62,7 +59,6 @@ class OutboxEventPublisherPropertiesTest {
         // given
         MapConfigurationPropertySource propertiesSource = new MapConfigurationPropertySource(Map.of(
                 BATCH_SIZE, "2",
-                SCHEDULER_INTERVAL, "PT2M",
                 MAX_ATTEMPT, "6",
                 MULTIPLIER, "2",
                 INITIAL_BACKOFF, "PT0M",
@@ -81,7 +77,6 @@ class OutboxEventPublisherPropertiesTest {
         // given
         MapConfigurationPropertySource propertiesSource = new MapConfigurationPropertySource(Map.of(
                 BATCH_SIZE, "2",
-                SCHEDULER_INTERVAL, "PT2M",
                 MAX_ATTEMPT, "6",
                 MULTIPLIER, "2",
                 INITIAL_BACKOFF, "PT2M",
@@ -100,7 +95,6 @@ class OutboxEventPublisherPropertiesTest {
         // given
         MapConfigurationPropertySource propertiesSource = new MapConfigurationPropertySource(Map.of(
                 BATCH_SIZE, "2",
-                SCHEDULER_INTERVAL, "PT2M",
                 MAX_ATTEMPT, "6",
                 MULTIPLIER, "2",
                 INITIAL_BACKOFF, "PT12M",
