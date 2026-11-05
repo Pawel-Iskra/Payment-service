@@ -41,8 +41,8 @@ class ControllerExceptionHandlerTest {
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
     private static final String UNEXPECTED_ERROR_OCCURRED = "Unexpected error occurred";
     private static final String HEADER_IDEMPOTENCY_KEY_NOT_PRESENT = "Required header 'idempotency-key' is not present";
-    private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Field 'amount' must be greater than 0";
-    private static final String CURRENCY_MUST_MATCH_PATTERN = "Field 'currency' must match the pattern [A-Z]{3}";
+    private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
+    private static final String CURRENCY_MUST_MATCH_PATTERN = "Currency code must consist of exactly 3 uppercase letters";
     private static final String UNRECOGNIZED_PROPERTY = "Unrecognized property";
     private static final String AMOUNT = "amount";
     private static final String CURRENCY = "currency";
