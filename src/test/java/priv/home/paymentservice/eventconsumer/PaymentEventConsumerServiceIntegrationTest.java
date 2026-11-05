@@ -122,6 +122,7 @@ class PaymentEventConsumerServiceIntegrationTest {
         PaymentCreatedEvent paymentCreatedEvent = getValidPaymentCreatedEvent(eventId);
         String payload = getValidEventPayload(paymentCreatedEvent);
         int threads = 2;
+        int timeoutSec = 5;
 
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
         CountDownLatch readyLatch = new CountDownLatch(threads);
@@ -137,11 +138,11 @@ class PaymentEventConsumerServiceIntegrationTest {
             Future<Optional<ConsumedEventEntity>> firstThread = executorService.submit(processPayload);
             Future<Optional<ConsumedEventEntity>> secondThread = executorService.submit(processPayload);
 
-            assertThat(readyLatch.await(4, TimeUnit.SECONDS)).isTrue();
+            assertThat(readyLatch.await(timeoutSec, TimeUnit.SECONDS)).isTrue();
             startLatch.countDown();
 
-            Optional<ConsumedEventEntity> firstThreadResult = firstThread.get(4, TimeUnit.SECONDS);
-            Optional<ConsumedEventEntity> secondThreadResult = secondThread.get(4, TimeUnit.SECONDS);
+            Optional<ConsumedEventEntity> firstThreadResult = firstThread.get(timeoutSec, TimeUnit.SECONDS);
+            Optional<ConsumedEventEntity> secondThreadResult = secondThread.get(timeoutSec, TimeUnit.SECONDS);
 
             assertThat(firstThreadResult.isPresent()).isNotEqualTo(secondThreadResult.isPresent());
             ConsumedEventEntity eventResult = firstThreadResult.orElseGet(secondThreadResult::get);

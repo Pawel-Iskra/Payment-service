@@ -206,9 +206,10 @@
 
     <xs:simpleType name="ActiveOrHistoricCurrencyAndAmount_SimpleType">
         <xs:restriction base="xs:decimal">
-            <xs:fractionDigits value="5"/>
-            <xs:totalDigits value="18"/>
-            <xs:minInclusive value="0"/>
+            <xs:fractionDigits value="2"/> <!-- intentionally changed to 2 -->
+            <xs:totalDigits value="12"/> <!-- intentionally changed to 12 -->
+            <xs:minExclusive value="0"/>
+            <xs:maxInclusive value="9999999999.99" /> <!-- intentionally added maxInclusive -->
         </xs:restriction>
     </xs:simpleType>
 

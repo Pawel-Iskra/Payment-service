@@ -16,6 +16,7 @@ import priv.home.paymentservice.payment.application.CreatePaymentPain001Service;
 import priv.home.paymentservice.payment.application.CreatePaymentResult;
 import priv.home.paymentservice.payment.application.PaymentService;
 import priv.home.paymentservice.payment.iso20022.Pain001TestData;
+import priv.home.paymentservice.payment.iso20022.pain001.Pain001XmlErrorMessageExtractor;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 
 import javax.xml.datatype.DatatypeConfigurationException;
@@ -64,6 +65,8 @@ public class PaymentControllerWebMvcTest {
     private PaymentService paymentService;
     @MockitoBean
     private CreatePaymentPain001Service createPaymentPain001Service;
+    @MockitoBean
+    private Pain001XmlErrorMessageExtractor pain001XmlErrorMessageExtractor;
 
 
     @Test

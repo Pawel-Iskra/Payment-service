@@ -128,28 +128,44 @@ class PaymentStorageContainerLiquibaseTest {
     }
 
     @Test
-    public void testRaceConditionForInsertOfTheSamePaymentRequest() throws ExecutionException, InterruptedException {
+    public void testRaceConditionForInsertOfTheSamePaymentRequest() throws ExecutionException, InterruptedException, TimeoutException {
         // given
-        UUID paymentId = generateUuid();
-        PaymentEntity payment = getValidPaymentEntity(IDEMPOTENCY_KEY_SECOND, paymentId);
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        CountDownLatch startThreadsForInsert = new CountDownLatch(1);
+        int threads = 2;
+        int timeoutSec = 5;
+        UUID paymentIdFirst = generateUuid();
+        UUID paymentIdSecond = generateUuid();
+        PaymentEntity paymentFirst = getValidPaymentEntity(IDEMPOTENCY_KEY_SECOND, paymentIdFirst);
+        PaymentEntity paymentSecond = getValidPaymentEntity(IDEMPOTENCY_KEY_SECOND, paymentIdSecond);
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        CountDownLatch readyLatch = new CountDownLatch(threads);
+        CountDownLatch startLatch = new CountDownLatch(1);
 
-        Callable<Optional<PaymentEntity>> insertPayment = () -> {
-            startThreadsForInsert.await();
-            return paymentStorageJpa.insertPaymentIfAbsent(payment);
+        Callable<Optional<PaymentEntity>> insertPaymentOne = () -> {
+            readyLatch.countDown();
+            startLatch.await();
+            return paymentStorageJpa.insertPaymentIfAbsent(paymentFirst);
         };
-        Future<Optional<PaymentEntity>> first = executor.submit(insertPayment);
-        Future<Optional<PaymentEntity>> second = executor.submit(insertPayment);
 
-        // when
-        startThreadsForInsert.countDown();
+        Callable<Optional<PaymentEntity>> insertPaymentTwo = () -> {
+            readyLatch.countDown();
+            startLatch.await();
+            return paymentStorageJpa.insertPaymentIfAbsent(paymentSecond);
+        };
 
-        // then
-        Optional<PaymentEntity> firstThreadResult = first.get();
-        Optional<PaymentEntity> secondThreadResult = second.get();
-        executor.shutdown();
-        assertThat(firstThreadResult.isPresent()).isNotEqualTo(secondThreadResult.isPresent());
+        // when + then
+        try {
+            Future<Optional<PaymentEntity>> first = executor.submit(insertPaymentOne);
+            Future<Optional<PaymentEntity>> second = executor.submit(insertPaymentTwo);
+            assertThat(readyLatch.await(timeoutSec, TimeUnit.SECONDS)).isTrue();
+            startLatch.countDown();
+
+            Optional<PaymentEntity> firstThreadResult = first.get(timeoutSec, TimeUnit.SECONDS);
+            Optional<PaymentEntity> secondThreadResult = second.get(timeoutSec, TimeUnit.SECONDS);
+            assertThat(firstThreadResult.isPresent()).isNotEqualTo(secondThreadResult.isPresent());
+        } finally {
+            startLatch.countDown();
+            executor.shutdownNow();
+        }
 
         Integer countRecords = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment", Integer.class);
         assertThat(countRecords).isOne();

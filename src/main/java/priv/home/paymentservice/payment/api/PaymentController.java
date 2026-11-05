@@ -69,9 +69,9 @@ public class PaymentController {
             @Valid @RequestBody CreatePaymentRequest createPaymentRequest)
     {
         CreatePaymentResult createPaymentResult = paymentService.createPayment(idempotencyKey, createPaymentRequest);
-        URI location = getLocation(createPaymentResult.getPaymentId());
+        URI location = getLocation(createPaymentResult.paymentId());
 
-        if (createPaymentResult.isWasAlreadyInDb()) {
+        if (createPaymentResult.wasAlreadyInDb()) {
             return ResponseEntity.ok()
                     .location(location)
                     .body(buildPaymentResponseFromCreatePaymentResult(createPaymentResult));
@@ -106,10 +106,10 @@ public class PaymentController {
     //TODO: ResponseMapper, method for each case
     private PaymentResponse buildPaymentResponseFromCreatePaymentResult(CreatePaymentResult createPaymentResult) {
         return PaymentResponse.builder()
-                .paymentId(createPaymentResult.getPaymentId())
-                .amount(createPaymentResult.getAmount())
-                .currency(createPaymentResult.getCurrency())
-                .paymentStatus(createPaymentResult.getPaymentStatus())
+                .paymentId(createPaymentResult.paymentId())
+                .amount(createPaymentResult.amount())
+                .currency(createPaymentResult.currency())
+                .paymentStatus(createPaymentResult.paymentStatus())
                 .build();
     }
 }

@@ -13,12 +13,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
-import priv.home.paymentservice.payment.persistence.PaymentEntity;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
-import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.payment.model.PaymentStatus;
+import priv.home.paymentservice.payment.persistence.PaymentEntity;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
@@ -104,7 +104,7 @@ public class PaymentServiceIntegrationTest {
         assertThat(paymentFromDbOptional).isNotEmpty();
         PaymentEntity paymentFromDb = paymentFromDbOptional.get();
 
-        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultCreatePaymentResult.getPaymentId());
+        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultCreatePaymentResult.paymentId());
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
         String eventPayload = eventPayloadFromDbAsList.getFirst();
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
@@ -123,12 +123,12 @@ public class PaymentServiceIntegrationTest {
         CreatePaymentResult resultSecondInsert = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
 
         // then
-        assertThat(resultFirstInsert.getPaymentId()).isEqualTo(resultSecondInsert.getPaymentId());
-        assertThat(resultFirstInsert.getAmount()).isEqualTo(resultSecondInsert.getAmount());
-        assertThat(resultFirstInsert.getCurrency()).isEqualTo(resultSecondInsert.getCurrency());
-        assertThat(resultFirstInsert.getPaymentStatus()).isEqualTo(resultSecondInsert.getPaymentStatus());
-        assertThat(resultFirstInsert.isWasAlreadyInDb()).isFalse();
-        assertThat(resultSecondInsert.isWasAlreadyInDb()).isTrue();
+        assertThat(resultFirstInsert.paymentId()).isEqualTo(resultSecondInsert.paymentId());
+        assertThat(resultFirstInsert.amount()).isEqualTo(resultSecondInsert.amount());
+        assertThat(resultFirstInsert.currency()).isEqualTo(resultSecondInsert.currency());
+        assertThat(resultFirstInsert.paymentStatus()).isEqualTo(resultSecondInsert.paymentStatus());
+        assertThat(resultFirstInsert.wasAlreadyInDb()).isFalse();
+        assertThat(resultSecondInsert.wasAlreadyInDb()).isTrue();
 
         Integer countEventRecords = jdbcTemplate.queryForObject(SELECT_COUNT_ALL_OUTBOX_EVENT_SQL, Integer.class);
         Integer countPaymentRecords = jdbcTemplate.queryForObject(SELECT_COUNT_ALL_PAYMENT_SQL, Integer.class);
@@ -139,7 +139,7 @@ public class PaymentServiceIntegrationTest {
         assertThat(paymentFromDbOptional).isNotEmpty();
         PaymentEntity paymentFromDb = paymentFromDbOptional.get();
 
-        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultFirstInsert.getPaymentId());
+        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultFirstInsert.paymentId());
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
         String eventPayload = eventPayloadFromDbAsList.getFirst();
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
@@ -149,15 +149,19 @@ public class PaymentServiceIntegrationTest {
     }
 
     @Test
-    public void shouldInsertOnePaymentToDbWhenRaceCondition() throws ExecutionException, InterruptedException {
+    public void shouldInsertOnePaymentToDbWhenRaceCondition() throws ExecutionException, InterruptedException, TimeoutException {
         // given
+        int threads = 2;
+        int timeoutSec = 5;
         UUID paymentId;
         CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        CountDownLatch startThreadsForInsert = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        CountDownLatch readyLatch = new CountDownLatch(threads);
+        CountDownLatch startLatch = new CountDownLatch(1);
 
         Callable<CreatePaymentResult> insertPayment = () -> {
-            startThreadsForInsert.await();
+            readyLatch.countDown();
+            startLatch.await();
             return paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
         };
 
@@ -165,14 +169,16 @@ public class PaymentServiceIntegrationTest {
         try {
             Future<CreatePaymentResult> first = executor.submit(insertPayment);
             Future<CreatePaymentResult> second = executor.submit(insertPayment);
-            startThreadsForInsert.countDown();
 
-            CreatePaymentResult firstThreadResult = first.get();
-            CreatePaymentResult secondThreadResult = second.get();
+            assertThat(readyLatch.await(timeoutSec, TimeUnit.SECONDS)).isTrue();
+            startLatch.countDown();
 
-            assertThat(firstThreadResult.getPaymentId()).isEqualTo(secondThreadResult.getPaymentId());
-            assertThat(firstThreadResult.isWasAlreadyInDb()).isNotEqualTo(secondThreadResult.isWasAlreadyInDb());
-            paymentId = firstThreadResult.getPaymentId();
+            CreatePaymentResult firstThreadResult = first.get(timeoutSec, TimeUnit.SECONDS);
+            CreatePaymentResult secondThreadResult = second.get(timeoutSec, TimeUnit.SECONDS);
+
+            assertThat(firstThreadResult.paymentId()).isEqualTo(secondThreadResult.paymentId());
+            assertThat(firstThreadResult.wasAlreadyInDb()).isNotEqualTo(secondThreadResult.wasAlreadyInDb());
+            paymentId = firstThreadResult.paymentId();
         } finally {
             executor.shutdownNow();
         }

@@ -6,15 +6,17 @@ import iso.std.iso._20022.tech.xsd.pain_001_001.Document;
 import iso.std.iso._20022.tech.xsd.pain_001_001.PaymentInstruction44;
 import jakarta.xml.bind.JAXBException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.xml.sax.SAXException;
 import priv.home.paymentservice.payment.iso20022.Pain001TestData;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
+@ExtendWith(MockitoExtension.class)
 class Pain001XmlParserTest {
 
     // expected values from pain001-single-payment.xml
@@ -27,14 +29,18 @@ class Pain001XmlParserTest {
     private static final String PAYMENT_CURRENCY = "EUR";
     private static final String CREDITOR_NAME = "Example Creditor GmbH";
     private static final String CREDITOR_ACCOUNT_ID = "DE44500105175407324931";
+    private static final String INPUT_STREAM_IS_NULL = "Input stream of XML is null";
     private static final String PAIN001_IS_MALFORMED_OR_DOES_NOT_MATCH =
             "Pain.001 XML is malformed or does not match the supported profile";
 
 
+    Pain001XmlParserTest() throws JAXBException, SAXException {}
+    private final Pain001XmlParser pain001XmlParser = new Pain001XmlParser();
+
+
     @Test
-    public void shouldParseCorrectPain001Xml() throws SAXException, JAXBException {
+    public void shouldParseCorrectPain001Xml() {
         // given
-        Pain001XmlParser pain001XmlParser = new Pain001XmlParser();
         InputStream xmlInputStream = new ByteArrayInputStream(
                 Pain001TestData.getPain001SinglePaymentCorrectXmlString().getBytes());
         // when
@@ -75,9 +81,8 @@ class Pain001XmlParserTest {
     }
 
     @Test
-    public void shouldRejectNotCorrectXmlStructure() throws JAXBException, SAXException {
+    public void shouldRejectNotCorrectXmlStructure() {
         // given
-        Pain001XmlParser pain001XmlParser = new Pain001XmlParser();
         InputStream xmlInputStream = new ByteArrayInputStream(
                 Pain001TestData.getPain001SinglePaymentNotCorrectStructureXmlString().getBytes());
 
@@ -88,9 +93,8 @@ class Pain001XmlParserTest {
     }
 
     @Test
-    public void shouldRejectWhenNotValidValuesPain001Xml() throws JAXBException, SAXException {
+    public void shouldRejectWhenNotValidValuesPain001Xml() {
         // given
-        Pain001XmlParser pain001XmlParser = new Pain001XmlParser();
         InputStream xmlInputStream = new ByteArrayInputStream(
                 Pain001TestData.getPain001SinglePaymentWithTransactionCountAsTwoXmlString().getBytes());
 
@@ -101,9 +105,8 @@ class Pain001XmlParserTest {
     }
 
     @Test
-    public void shouldRejectWhenTwoTransactionBlocksInPain001Xml() throws JAXBException, SAXException {
+    public void shouldRejectWhenTwoTransactionBlocksInPain001Xml() {
         // given
-        Pain001XmlParser pain001XmlParser = new Pain001XmlParser();
         InputStream xmlInputStream = new ByteArrayInputStream(
                 Pain001TestData.getPain001SinglePaymentWithTwoTransactionBlocksXmlString().getBytes());
 
@@ -111,6 +114,27 @@ class Pain001XmlParserTest {
         assertThatThrownBy(() -> pain001XmlParser.parse(xmlInputStream))
                 .isInstanceOf(InvalidPain001XmlException.class)
                 .hasStackTraceContaining(PAIN001_IS_MALFORMED_OR_DOES_NOT_MATCH);
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenInputStreamIsNull() {
+        // given
+        InputStream xmlInputStream = null;
+
+        // when + then
+        assertThatThrownBy(() -> pain001XmlParser.parse(xmlInputStream))
+                .isInstanceOf(InvalidPain001XmlException.class)
+                .hasStackTraceContaining(INPUT_STREAM_IS_NULL);
+    }
+
+    @Test
+    public void shouldNotThrowExceptionWhenCloseXmlReaderException() {
+        // given
+        InputStream xmlInputStream = new ByteArrayInputStream(
+                Pain001TestData.getPain001SinglePaymentCorrectXmlString().getBytes());
+
+        // when + then
+        assertThatNoException().isThrownBy(() -> pain001XmlParser.parse(xmlInputStream));
     }
 
 }

@@ -78,7 +78,7 @@ class PaymentEventReleaserServiceIntegrationTest {
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     public void shouldPublishEventsAndUpdateEntities(CapturedOutput capturedOutput) {
         // given -> in db is inserted 7 records with valid values for publishing
-        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now();
+        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now().minusSeconds(1);
         List<UUID> eventIdFirstPack = EVENTS_VALID_FOR_PUBLISH_IN_DB_EVENT_IDS.stream()
                 .limit(BATCH_SIZE)
                 .map(UUID::fromString)
@@ -115,7 +115,7 @@ class PaymentEventReleaserServiceIntegrationTest {
                 .contains(AMOUNT_EVENTS_PUBLISHED_AND_ACKNOWLEDGED.formatted(BATCH_SIZE))
                 .contains(AMOUNT_EVENTS_TO_PUBLISH.formatted(1))
                 .contains(AMOUNT_EVENTS_PUBLISHED_AND_ACKNOWLEDGED.formatted(1));
-        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now();
+        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now().plusSeconds(1);
         List<OutboxEventEntity> eventEntitiesFromDb = outboxStorageJpa.findAll();
         assertThat(eventEntitiesFromDb)
                 .hasSize(EVENTS_VALID_FOR_PUBLISH_IN_DB_EVENT_IDS.size())
@@ -135,6 +135,7 @@ class PaymentEventReleaserServiceIntegrationTest {
         // given: 5 events in DB, but only 2 are eligible for publishing:
         //        - one reaches the maximum attempt count;
         //        - one has a retry scheduled with exponential backoff.
+        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now().minusSeconds(1);
         UUID eventIdReachingMaxAttempts = UUID.fromString("86f1a6e1-85f7-444b-a18f-720c580beda4");
         UUID eventIdAlreadyPublished = UUID.fromString("6562d66c-6a09-434f-b252-12942d714092");
         UUID eventIdAlreadyFailed = UUID.fromString("9701c56b-ddaa-4ff6-82c3-18f1b73059be");
@@ -142,7 +143,6 @@ class PaymentEventReleaserServiceIntegrationTest {
         UUID eventIdEligibleForRetry = UUID.fromString("a7eb2b0c-4e7b-4217-a31c-24b0df5becca");
         List<UUID> idsOfEventsShouldNotBeChanged = List.of(eventIdAlreadyPublished, eventIdAlreadyFailed, eventIdRetryInFuture);
         int fifthAttemptCountDone = 5;
-        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now();
         List<UUID> eventIdFirstPack = List.of(eventIdReachingMaxAttempts, eventIdEligibleForRetry);
         List<PublishResult> publishResultsAsNotPublished = getPublishResultAsNotPublished(eventIdFirstPack);
         ArgumentCaptor<Collection<OutboxEventToPublish>> argumentCaptor = ArgumentCaptor.captor();
@@ -167,14 +167,14 @@ class PaymentEventReleaserServiceIntegrationTest {
                 .contains(AMOUNT_EVENTS_TO_PUBLISH.formatted(eventIdFirstPack.size()))
                 .contains(AMOUNT_EVENTS_PUBLISHED_AND_ACKNOWLEDGED.formatted(0));
         List<OutboxEventEntity> allEventEntityFromDb = outboxStorageJpa.findAll();
-        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now();
+        OffsetDateTime timeAfterPublishEnd = OffsetDateTime.now().plusSeconds(1);
         assertThat(allEventEntityFromDb)
                 .filteredOn(eventEntity -> eventIdReachingMaxAttempts.equals(eventEntity.getEventId()))
                 .singleElement()
                 .satisfies(eventEntity -> {
                     assertThat(eventEntity.getPublishedAt()).isNull();
                     assertThat(eventEntity.getFailedAt())
-                            .isAfter(timeBeforePublishStart)
+                            .isAfter(timeBeforePublishStart)// TODO:private final Clock clock;
                             .isBefore(timeAfterPublishEnd);
                     assertThat(eventEntity.getAttemptCount()).isEqualTo((short) MAX_ATTEMPT);
                 });

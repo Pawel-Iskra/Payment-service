@@ -83,6 +83,13 @@ public class Pain001TestData {
         return PAIN001_SINGLE_PAYMENT_CORRECT_XML;
     }
 
+    public static String getPain001SinglePaymentCorrectXmlString(String amount, String currency) {
+        String currencyReplacement = "Ccy=\"" + currency + "\"";
+        return PAIN001_SINGLE_PAYMENT_CORRECT_XML
+                .replace("Ccy=\"EUR\"", currencyReplacement)
+                .replace("125.50", amount);
+    }
+
     public static String getPain001SinglePaymentNotCorrectStructureXmlString() {
         return PAIN001_SINGLE_PAYMENT_CORRECT_XML
                 .replace("<CstmrCdtTrfInitn>", "");

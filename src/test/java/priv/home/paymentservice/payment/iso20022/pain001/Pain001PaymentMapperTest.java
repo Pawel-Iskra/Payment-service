@@ -10,7 +10,9 @@ import org.xml.sax.SAXException;
 import priv.home.paymentservice.payment.iso20022.Pain001TestData;
 
 import javax.xml.XMLConstants;
+import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeConstants;
+import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
@@ -18,6 +20,7 @@ import javax.xml.validation.SchemaFactory;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,7 +64,20 @@ class Pain001PaymentMapperTest {
     }
 
     @Test
-    public void shouldThrowExceptionWhenRequiredFieldNotPresent() throws JAXBException, SAXException {
+    public void shouldThrowExceptionWhenGroupHeaderIsNotPresent() throws JAXBException, SAXException {
+        // given
+        Document pain001Document = preparePain001Document(Pain001TestData.getPain001SinglePaymentCorrectXmlString());
+        pain001Document.getCstmrCdtTrfInitn()
+                .setGrpHdr(null);
+
+        // when + then
+        assertThatThrownBy(() -> pain001PaymentMapper.mapFromRequestPain001Document(pain001Document))
+                .isInstanceOf(MappingPain001ToDomainException.class)
+                .hasMessageContaining("Group header is required");
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenEndToEndIdNotPresent() throws JAXBException, SAXException {
         // given
         Document pain001Document = preparePain001Document(Pain001TestData.getPain001SinglePaymentCorrectXmlString());
         pain001Document.getCstmrCdtTrfInitn()
@@ -73,6 +89,23 @@ class Pain001PaymentMapperTest {
         assertThatThrownBy(() -> pain001PaymentMapper.mapFromRequestPain001Document(pain001Document))
                 .isInstanceOf(MappingPain001ToDomainException.class)
                 .hasMessageContaining("EndToEnd id is required");
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenCreationDateTimeHasNoOffset() throws JAXBException, SAXException, DatatypeConfigurationException {
+        // given
+        Document pain001Document = preparePain001Document(Pain001TestData.getPain001SinglePaymentCorrectXmlString());
+        XMLGregorianCalendar creationDateTimeNoOffset = DatatypeFactory
+                .newInstance()
+                .newXMLGregorianCalendar(LocalDateTime.now().toString());
+        pain001Document.getCstmrCdtTrfInitn()
+                .getGrpHdr()
+                .setCreDtTm(creationDateTimeNoOffset);
+
+        // when + then
+        assertThatThrownBy(() -> pain001PaymentMapper.mapFromRequestPain001Document(pain001Document))
+                .isInstanceOf(MappingPain001ToDomainException.class)
+                .hasMessageContaining("Creation date time must contain offset");
     }
 
 

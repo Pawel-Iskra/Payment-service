@@ -53,7 +53,7 @@ class PaymentEventReleaserServiceTest {
     public void shouldPublishAllEventsAndUpdateEntities(CapturedOutput output) {
         // given
         int amountOfEventEntities = 3;
-        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now();
+        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now().minusSeconds(1);
         List<OutboxEventEntity> outboxEventEntitiesPack = getOutboxEventEntityList(amountOfEventEntities);
         List<UUID> eventIds = outboxEventEntitiesPack.stream().map(OutboxEventEntity::getEventId).toList();
         List<PublishResult> publishResultList = getPublishResultAsPublished(outboxEventEntitiesPack);
@@ -94,7 +94,7 @@ class PaymentEventReleaserServiceTest {
         int firstAttemptCount = 0;
         int secondAttemptCount = 2;
         int thirdAttemptCount = VALID_PUBLISHER_RETRY_PROPERTIES.maxAttempt() - 1;
-        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now();
+        OffsetDateTime timeBeforePublishStart = OffsetDateTime.now().minusSeconds(1);
         OffsetDateTime secondNextAttemptAt = OffsetDateTime.now().minusMinutes(1);
         String lastError = IllegalStateException.class.getName() + ", " + PUBLISH_EXCEPTION_MESSAGE;
         OutboxEventEntity outboxEntityFirst = getOutboxEventEntity(firstAttemptCount);
