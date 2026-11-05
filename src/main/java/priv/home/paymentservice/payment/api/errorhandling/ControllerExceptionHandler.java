@@ -173,7 +173,8 @@ public class ControllerExceptionHandler {
         if (endMessage == -1) {
             return exceptionMessage;
         }
-        return exceptionMessage.substring(startMessage, endMessage)
+        return exceptionMessage
+                .substring(startMessage, endMessage)
                 .replace("\"", "'");
     }
 }
