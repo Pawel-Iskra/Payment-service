@@ -6,6 +6,8 @@ import iso.std.iso._20022.tech.xsd.pain_002_001.OriginalGroupHeader22;
 import iso.std.iso._20022.tech.xsd.pain_002_001.OriginalPaymentInstruction51;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -31,6 +33,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -213,6 +216,74 @@ class CreatePaymentPain001ServiceIntegrationTest {
         assertThat(outboxStorageJpa.findAll()).isEmpty();
     }
 
-    // TODO: test for concurrent payment creation
+    @ParameterizedTest
+    @CsvSource({
+            "100.50, PLN, 100.50, PLN",
+            "250.50, EUR, 37.25, USD" })
+    public void shouldAddOnePaymentAndHandleConcurrentThreadsWhileRaceConditionCase(
+            String amountOne, String currencyOne,
+            String amountTwo, String currencyTwo) throws InterruptedException, ExecutionException, TimeoutException {
+        // given
+        int threads = 2;
+        int timeoutSec = 5;
+        UUID paymentIdFromCreatePaymentResult;
+        String pain001XmlStringOne = Pain001TestData.getPain001SinglePaymentCorrectXmlString(amountOne, currencyOne);
+        String pain001XmlStringTwo = Pain001TestData.getPain001SinglePaymentCorrectXmlString(amountTwo, currencyTwo);
+        byte[] pain001XmlStringBytesOne = pain001XmlStringOne.getBytes(StandardCharsets.UTF_8);
+        byte[] pain001XmlStringBytesTwo = pain001XmlStringTwo.getBytes(StandardCharsets.UTF_8);
+        CountDownLatch readyLatch = new CountDownLatch(threads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+        Callable<CreatePain001Result> createPaymentTaskOne = () -> {
+            readyLatch.countDown();
+            startLatch.await();
+            return createPaymentPain001Service.createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytesOne);
+        };
+        Callable<CreatePain001Result> createPaymentTaskTwo = () -> {
+            readyLatch.countDown();
+            startLatch.await();
+            return createPaymentPain001Service.createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytesTwo);
+        };
+
+        // when + then
+        try {
+            Future<CreatePain001Result> firstThread = executorService.submit(createPaymentTaskOne);
+            Future<CreatePain001Result> secondThread = executorService.submit(createPaymentTaskTwo);
+
+            assertThat(readyLatch.await(timeoutSec, TimeUnit.SECONDS)).isTrue();
+            startLatch.countDown();
+
+            CreatePain001Result firstThreadResult = firstThread.get(timeoutSec, TimeUnit.SECONDS);
+            CreatePain001Result secondThreadResult = secondThread.get(timeoutSec, TimeUnit.SECONDS);
+
+            assertThat(List.of(
+                    firstThreadResult.wasAlreadyInDb(),
+                    secondThreadResult.wasAlreadyInDb()
+            )).containsExactlyInAnyOrder(false, true);
+            assertThat(firstThreadResult.paymentId()).isEqualTo(secondThreadResult.paymentId());
+            assertThat(firstThreadResult.createPain001PaymentStatusReportDocument()).isNotNull();
+            assertThat(secondThreadResult.createPain001PaymentStatusReportDocument()).isNotNull();
+            paymentIdFromCreatePaymentResult = firstThreadResult.paymentId();
+        } finally {
+            startLatch.countDown();
+            executorService.shutdownNow();
+        }
+
+        List<PaymentEntity> paymentListFromDb = paymentStorageJpa.findAll();
+        List<OutboxEventEntity> eventEntityListFromDb = outboxStorageJpa.findAll();
+        assertThat(paymentListFromDb)
+                .isNotEmpty()
+                .singleElement()
+                .satisfies(paymentEntity -> {
+                    assertThat(paymentEntity.getPaymentId()).isEqualTo(paymentIdFromCreatePaymentResult);
+                    assertThat(paymentEntity.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_VALUE);
+                });
+        assertThat(eventEntityListFromDb)
+                .isNotEmpty()
+                .singleElement()
+                .satisfies(eventEntity -> {
+                    assertThat(eventEntity.getPaymentId()).isEqualTo(paymentIdFromCreatePaymentResult);
+                });
+    }
 
 }

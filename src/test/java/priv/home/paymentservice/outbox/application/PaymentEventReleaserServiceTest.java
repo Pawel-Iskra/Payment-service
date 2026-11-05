@@ -129,7 +129,7 @@ class PaymentEventReleaserServiceTest {
                 .satisfies(eventEntity -> {
                     assertThat(eventEntity.getPublishedAt()).isNull();
                     assertThat(eventEntity.getNextAttemptAt())
-                            .isAfter(timeBeforePublishStart.plus(calculateBackoff(firstAttemptCount)))// TODO:
+                            .isAfter(timeBeforePublishStart.plus(calculateBackoff(firstAttemptCount)))
                             .isBefore(timeAfterPublishEnd.plus(calculateBackoff(firstAttemptCount)));
                     assertThat(eventEntity.getAttemptCount()).isEqualTo((short) (firstAttemptCount + 1));
                     assertThat(eventEntity.getLastError())
