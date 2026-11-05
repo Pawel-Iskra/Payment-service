@@ -142,9 +142,9 @@ class PaymentServiceTest {
 
         // then
         assertThat(paymentResponseOptional).isNotEmpty();
-        assertThat(paymentResponseOptional.get().getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
-        assertThat(paymentResponseOptional.get().getCurrency()).isEqualTo(validPayment.getCurrency());
-        assertThat(paymentResponseOptional.get().getAmount()).isEqualTo(validPayment.getAmount());
+        assertThat(paymentResponseOptional.get().paymentStatus()).isEqualTo(PaymentStatus.CREATED);
+        assertThat(paymentResponseOptional.get().currency()).isEqualTo(validPayment.getCurrency());
+        assertThat(paymentResponseOptional.get().amount()).isEqualTo(validPayment.getAmount());
     }
 
     @Test
