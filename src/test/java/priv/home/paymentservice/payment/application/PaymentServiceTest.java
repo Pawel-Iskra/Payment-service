@@ -94,8 +94,8 @@ class PaymentServiceTest {
         CreatePaymentResult createPaymentResult = underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
-        assertThat(createPaymentResult.getAmount()).isEqualTo(createPaymentRequest.amount());
-        assertThat(createPaymentResult.getCurrency()).isEqualTo(createPaymentRequest.currency());
+        assertThat(createPaymentResult.amount()).isEqualTo(createPaymentRequest.amount());
+        assertThat(createPaymentResult.currency()).isEqualTo(createPaymentRequest.currency());
     }
 
     @Test
@@ -111,7 +111,7 @@ class PaymentServiceTest {
         CreatePaymentResult paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
-        assertThat(paymentResponseResult.getPaymentId()).isNotNull();
+        assertThat(paymentResponseResult.paymentId()).isNotNull();
     }
 
     @Test
@@ -127,7 +127,7 @@ class PaymentServiceTest {
         CreatePaymentResult paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
-        assertThat(paymentResponseResult.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
+        assertThat(paymentResponseResult.paymentStatus()).isEqualTo(PaymentStatus.CREATED);
     }
 
     @Test
@@ -208,8 +208,8 @@ class PaymentServiceTest {
 
         // then
         verifyNoInteractions(outboxStorageJpa);
-        assertThat(createPaymentResultResult.getPaymentId()).isEqualTo(payment.getPaymentId());
-        assertThat(createPaymentResultResult.isWasAlreadyInDb()).isTrue();
+        assertThat(createPaymentResultResult.paymentId()).isEqualTo(payment.getPaymentId());
+        assertThat(createPaymentResultResult.wasAlreadyInDb()).isTrue();
     }
 
 

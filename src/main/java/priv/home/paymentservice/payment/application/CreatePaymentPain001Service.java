@@ -29,8 +29,8 @@ public class CreatePaymentPain001Service {
                 new CreatePaymentRequest(pain001PaymentData.amount(), pain001PaymentData.currency()));
 
         return CreatePain001Result.builder()
-                .paymentId(createPaymentResult.getPaymentId())
-                .wasAlreadyInDb(createPaymentResult.isWasAlreadyInDb())
+                .paymentId(createPaymentResult.paymentId())
+                .wasAlreadyInDb(createPaymentResult.wasAlreadyInDb())
                 .createPain001PaymentStatusReportDocument(pain002ResponseMapper
                         .buildCustomerPaymentStatusReport(pain001PaymentData))
                 .build();

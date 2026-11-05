@@ -104,7 +104,7 @@ public class PaymentServiceIntegrationTest {
         assertThat(paymentFromDbOptional).isNotEmpty();
         PaymentEntity paymentFromDb = paymentFromDbOptional.get();
 
-        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultCreatePaymentResult.getPaymentId());
+        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultCreatePaymentResult.paymentId());
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
         String eventPayload = eventPayloadFromDbAsList.getFirst();
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
@@ -123,12 +123,12 @@ public class PaymentServiceIntegrationTest {
         CreatePaymentResult resultSecondInsert = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
 
         // then
-        assertThat(resultFirstInsert.getPaymentId()).isEqualTo(resultSecondInsert.getPaymentId());
-        assertThat(resultFirstInsert.getAmount()).isEqualTo(resultSecondInsert.getAmount());
-        assertThat(resultFirstInsert.getCurrency()).isEqualTo(resultSecondInsert.getCurrency());
-        assertThat(resultFirstInsert.getPaymentStatus()).isEqualTo(resultSecondInsert.getPaymentStatus());
-        assertThat(resultFirstInsert.isWasAlreadyInDb()).isFalse();
-        assertThat(resultSecondInsert.isWasAlreadyInDb()).isTrue();
+        assertThat(resultFirstInsert.paymentId()).isEqualTo(resultSecondInsert.paymentId());
+        assertThat(resultFirstInsert.amount()).isEqualTo(resultSecondInsert.amount());
+        assertThat(resultFirstInsert.currency()).isEqualTo(resultSecondInsert.currency());
+        assertThat(resultFirstInsert.paymentStatus()).isEqualTo(resultSecondInsert.paymentStatus());
+        assertThat(resultFirstInsert.wasAlreadyInDb()).isFalse();
+        assertThat(resultSecondInsert.wasAlreadyInDb()).isTrue();
 
         Integer countEventRecords = jdbcTemplate.queryForObject(SELECT_COUNT_ALL_OUTBOX_EVENT_SQL, Integer.class);
         Integer countPaymentRecords = jdbcTemplate.queryForObject(SELECT_COUNT_ALL_PAYMENT_SQL, Integer.class);
@@ -139,7 +139,7 @@ public class PaymentServiceIntegrationTest {
         assertThat(paymentFromDbOptional).isNotEmpty();
         PaymentEntity paymentFromDb = paymentFromDbOptional.get();
 
-        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultFirstInsert.getPaymentId());
+        List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultFirstInsert.paymentId());
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
         String eventPayload = eventPayloadFromDbAsList.getFirst();
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
@@ -170,9 +170,9 @@ public class PaymentServiceIntegrationTest {
             CreatePaymentResult firstThreadResult = first.get();
             CreatePaymentResult secondThreadResult = second.get();
 
-            assertThat(firstThreadResult.getPaymentId()).isEqualTo(secondThreadResult.getPaymentId());
-            assertThat(firstThreadResult.isWasAlreadyInDb()).isNotEqualTo(secondThreadResult.isWasAlreadyInDb());
-            paymentId = firstThreadResult.getPaymentId();
+            assertThat(firstThreadResult.paymentId()).isEqualTo(secondThreadResult.paymentId());
+            assertThat(firstThreadResult.wasAlreadyInDb()).isNotEqualTo(secondThreadResult.wasAlreadyInDb());
+            paymentId = firstThreadResult.paymentId();
         } finally {
             executor.shutdownNow();
         }
