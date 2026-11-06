@@ -39,6 +39,10 @@ public class ControllerExceptionHandler {
     private static final String UNRECOGNIZED_PROPERTY = "Unrecognized property";
     private static final String INTERNAL_SERVER_ERROR = "Internal server error (500). ";
     private static final String INVALID_JSON_REQUEST = "Invalid JSON request";
+    private static final String CURRENCY_MUST_RESPECT_PATTERN = "Currency code must consist of exactly 3 uppercase letters";
+    private static final String CURRENCY_IS_REQUIRED = "Currency is required";
+    private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
+    private static final String AMOUNT_MUST_NOT_EXCEED = "Amount must not exceed 9999999999.99 and must have at most 2 decimal places";
 
     private final Pain001XmlErrorMessageExtractor pain001XmlErrorMessageExtractor;
 
@@ -97,6 +101,16 @@ public class ControllerExceptionHandler {
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> invalidPain001xml(InvalidPain001XmlException exception) {
         String errorMessage = pain001XmlErrorMessageExtractor.extractMessageFromPain001XmlParseException(exception);
+        // TODO: responseMessages for incorrect amount/currency must be sam for Json and Xml - to be upgraded
+        if (errorMessage.contains("minExclusive")) {
+            errorMessage = AMOUNT_MUST_BE_GREATER_THAN_ZERO;
+        }
+        if (errorMessage.contains("fractionDigits") || errorMessage.contains("fraction digits") || errorMessage.contains("maxInclusive")) {
+            errorMessage = AMOUNT_MUST_NOT_EXCEED;
+        }
+        if (errorMessage.contains("[A-Z]{3,3}")) {
+            errorMessage = CURRENCY_MUST_RESPECT_PATTERN;
+        }
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)

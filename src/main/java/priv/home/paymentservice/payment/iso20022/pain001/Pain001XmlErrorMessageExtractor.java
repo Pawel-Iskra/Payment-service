@@ -27,8 +27,7 @@ public class Pain001XmlErrorMessageExtractor {
             int lineNumber = saxException.getLineNumber();
             int columnNumber = saxException.getColumnNumber();
             String message = saxException.getMessage()
-                    .replace(PAIN001_NAMESPACE, "")
-                    .replaceAll("[{}]", "")
+                    .replaceAll("\\{\"urn:iso:std:iso:20022:tech:xsd:pain\\.001\\.001\\.12\":([^}]+)}", "$1")
                     .replaceAll(REGEX_TO_REMOVE_CVC_FROM_SAX_EXCEPTION, "");
             responseMessage = RESPONSE_MESSAGE_FORMAT.formatted(
                     lineNumber,
