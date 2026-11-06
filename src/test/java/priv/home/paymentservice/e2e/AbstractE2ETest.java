@@ -1,5 +1,6 @@
 package priv.home.paymentservice.e2e;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
@@ -61,7 +62,14 @@ public abstract class AbstractE2ETest {
 
         registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
 
-        registry.add("payment-service.payment-event-publisher.scheduler.publish", () -> "*/2 * * * * *");
+        registry.add("payment-service.payment-event-publisher.scheduler.publish", () -> "*/3 * * * * *");
+    }
+
+    @BeforeEach
+    protected void cleanTables(){
+        jdbcTemplate.update("DELETE FROM consumed_event");
+        jdbcTemplate.update("DELETE FROM outbox_event");
+        jdbcTemplate.update("DELETE FROM payment");
     }
 
 }

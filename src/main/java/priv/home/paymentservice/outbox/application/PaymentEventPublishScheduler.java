@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 ) // controls bean creation by boolean property value in .properties
 public class PaymentEventPublishScheduler {
 
-
     private final PaymentEventReleaserService paymentEventReleaserService;
 
 

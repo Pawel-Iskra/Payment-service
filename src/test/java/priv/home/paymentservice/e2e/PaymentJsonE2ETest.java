@@ -2,13 +2,19 @@ package priv.home.paymentservice.e2e;
 
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.*;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.messaging.event.PaymentEventType;
 import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
+import priv.home.paymentservice.payment.api.errorhandling.ErrorResponse;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 import priv.home.paymentservice.payment.persistence.PaymentEntity;
 
@@ -18,17 +24,31 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class PaymentJsonE2ETest extends AbstractE2ETest {
 
-    private static final String IDEMPOTENCY_KEY_NAME = "idempotency-key";
+    private static final String IDEMPOTENCY_KEY = "idempotency-key";
+    private static final String IDEMPOTENCY_KEY_IS_REQUIRED = "Required header 'idempotency-key' is not present";
+    private static final String IDEMPOTENCY_KEY_MUST_NOT_BE_BLANK = "Idempotency-key must not be blank";
+    private static final String CURRENCY_MUST_RESPECT_PATTERN = "Currency code must consist of exactly 3 uppercase letters";
+    private static final String CURRENCY_IS_REQUIRED = "Currency is required";
+    private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
+    private static final String AMOUNT_MUST_NOT_EXCEED =
+            "Amount must not exceed 9999999999.99 and must have at most 2 decimal places";
     private static final String API_PATH = "/payments";
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("payment-service.payment-event-publisher.scheduler.enabled", () -> false);
+        // disable event-publisher scheduler in this test class
+    }
 
 
     @Test
-    public void shouldCreatePaymentThroughJsonEndpoint() {
+    public void shouldCreatePaymentThroughJsonEndpointAndAddPaymentAndEventToDb() {
         // given
         OffsetDateTime timeBeforePaymentCreate = OffsetDateTime.now().minusSeconds(1);
         int newlyCreatedEventAttemptCount = 0;
@@ -78,21 +98,150 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
                     assertThat(eventEntity.getPublishedAt()).isNull();
                     assertThat(eventEntity.getNextAttemptAt()).isNotNull();
                     assertThat(eventEntity.getNextAttemptAt())
-                            .isAfter(timeBeforePaymentCreate)
+                            .isAfterOrEqualTo(eventEntity.getCreatedAt())
                             .isBefore(timeAfterPaymentCreate.plus(calculateBackoff(newlyCreatedEventAttemptCount)));
                     assertThat(eventEntity.getEventType()).isEqualTo(PaymentEventType.PAYMENT_CREATED_EVENT.name());
                     assertThat(eventEntity.getAttemptCount()).isZero();
                     assertThat(eventEntity.getPayload()).isNotNull();
-                    PaymentCreatedEvent paymentCreatedEvent = getPaymentCreatedEventFromPayment(
-                            eventEntity.getEventId(), idempotencyKey, paymentFromDb);
-//                    assertThat(objectMapper.readValue(eventEntity.getPayload(), PaymentCreatedEvent.class))
-//                            .isEqualTo(paymentCreatedEvent); // tODO: field by field
+                    PaymentCreatedEvent paymentCreatedEventFromPayment = getPaymentCreatedEventFromPayment(
+                            eventEntity.getEventId(), paymentFromDb);
+                    PaymentCreatedEvent paymentCreatedEventFromEntityPayload = objectMapper
+                            .readValue(eventEntity.getPayload(), PaymentCreatedEvent.class);
+                    assertThat(paymentCreatedEventFromPayment).isEqualTo(paymentCreatedEventFromEntityPayload);
                 });
     }
 
-    // TODO: separate test to send http request -> check KafkaEvent
-    //  by KafkaConsumer without again checking db
+    @Test
+    public void shouldReturnExistingPaymentForDuplicateIdempotencyKey() {
+        // given
+        BigDecimal amount = new BigDecimal("1500.50");
+        String currency = "USD";
+        String idempotencyKey = "abcd-1234";
+        CreatePaymentRequest paymentRequest = getCreatePaymentRequest(amount, currency);
+        HttpHeaders requestHeaders = getRequestHeaders(MediaType.APPLICATION_JSON, idempotencyKey);
+        HttpEntity<CreatePaymentRequest> httpRequest = new HttpEntity<>(paymentRequest, requestHeaders);
 
+        // when
+        ResponseEntity<PaymentResponse> responseFirst = testRestTemplate.postForEntity(
+                API_PATH,
+                httpRequest,
+                PaymentResponse.class);
+        ResponseEntity<PaymentResponse> responseSecond = testRestTemplate.postForEntity(
+                API_PATH,
+                httpRequest,
+                PaymentResponse.class);
+
+        // then
+        assertThat(responseSecond.getBody()).isNotNull();
+        assertThat(responseFirst.getBody()).isNotNull();
+        assertThat(responseFirst.getBody().paymentId()).isEqualTo(responseSecond.getBody().paymentId());
+        assertThat(responseFirst.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(responseSecond.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(paymentStorageJpa.findAll()).hasSize(1);
+        assertThat(outboxStorageJpa.findAll()).hasSize(1);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidAmounts")
+    public void shouldReturnBadRequestWhenAmountIsNotCorrect(BigDecimal amount) {
+        // given
+        String idempotencyKey = "abcd-1234";
+        CreatePaymentRequest paymentRequest = getCreatePaymentRequest(amount, "PLN");
+        HttpHeaders requestHeaders = getRequestHeaders(MediaType.APPLICATION_JSON, idempotencyKey);
+        HttpEntity<CreatePaymentRequest> httpRequest = new HttpEntity<>(paymentRequest, requestHeaders);
+        // when
+        ResponseEntity<ErrorResponse> response = testRestTemplate.postForEntity(
+                API_PATH,
+                httpRequest,
+                ErrorResponse.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().message())
+                .isIn(AMOUNT_MUST_BE_GREATER_THAN_ZERO, AMOUNT_MUST_NOT_EXCEED);
+        assertThat(paymentStorageJpa.findAll()).isEmpty();
+        assertThat(outboxStorageJpa.findAll()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"USDD", "usd", "E", "EU", "", " ", " EU", "UD1"})
+    public void shouldReturnBadRequestWhenCurrencyIsNotCorrect(String currency) {
+        // given
+        String idempotencyKey = "abcd-1234";
+        BigDecimal requestAmount = new BigDecimal("123.45");
+        CreatePaymentRequest paymentRequest = getCreatePaymentRequest(requestAmount, currency);
+        HttpHeaders requestHeaders = getRequestHeaders(MediaType.APPLICATION_JSON, idempotencyKey);
+        HttpEntity<CreatePaymentRequest> httpRequest = new HttpEntity<>(paymentRequest, requestHeaders);
+        // when
+        ResponseEntity<ErrorResponse> response = testRestTemplate.postForEntity(
+                API_PATH,
+                httpRequest,
+                ErrorResponse.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().message())
+                .containsAnyOf(CURRENCY_IS_REQUIRED, CURRENCY_MUST_RESPECT_PATTERN);
+        assertThat(paymentStorageJpa.findAll()).isEmpty();
+        assertThat(outboxStorageJpa.findAll()).isEmpty();
+    }
+
+    @Test
+    public void shouldReturnBadRequestWhenHeaderIsMissing() {
+        // given
+        CreatePaymentRequest paymentRequest = getCreatePaymentRequest(new BigDecimal("123.45"), "PLN");
+        HttpHeaders requestHeaders = getRequestHeaders(MediaType.APPLICATION_JSON, "abc-123");
+        requestHeaders.remove(IDEMPOTENCY_KEY);
+        HttpEntity<CreatePaymentRequest> httpRequest = new HttpEntity<>(paymentRequest, requestHeaders);
+        // when
+        ResponseEntity<ErrorResponse> response = testRestTemplate.postForEntity(
+                API_PATH,
+                httpRequest,
+                ErrorResponse.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().message()).isEqualTo(IDEMPOTENCY_KEY_IS_REQUIRED);
+        assertThat(paymentStorageJpa.findAll()).isEmpty();
+        assertThat(outboxStorageJpa.findAll()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "\t",})
+    public void shouldReturnBadRequestWhenHeaderIsBlank(String idempotencyKey) {
+        // given
+        CreatePaymentRequest paymentRequest = getCreatePaymentRequest(new BigDecimal("123.45"), "PLN");
+        HttpHeaders requestHeaders = getRequestHeaders(MediaType.APPLICATION_JSON, idempotencyKey);
+        HttpEntity<CreatePaymentRequest> httpRequest = new HttpEntity<>(paymentRequest, requestHeaders);
+        // when
+        ResponseEntity<ErrorResponse> response = testRestTemplate.postForEntity(
+                API_PATH,
+                httpRequest,
+                ErrorResponse.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().message()).isEqualTo(IDEMPOTENCY_KEY_MUST_NOT_BE_BLANK);
+        assertThat(paymentStorageJpa.findAll()).isEmpty();
+        assertThat(outboxStorageJpa.findAll()).isEmpty();
+    }
+
+
+    private static Stream<BigDecimal> invalidAmounts() {
+        return Stream.of(
+                new BigDecimal("0.0"),
+                new BigDecimal("-19"),
+                new BigDecimal("123.456"),
+                new BigDecimal("112233445566.00"));
+    }
 
     private CreatePaymentRequest getCreatePaymentRequest(BigDecimal amount, String currency) {
         return CreatePaymentRequest.builder()
@@ -104,7 +253,7 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
     private HttpHeaders getRequestHeaders(MediaType mediaType, String idempotencyKey) {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(mediaType);
-        httpHeaders.set(IDEMPOTENCY_KEY_NAME, idempotencyKey);
+        httpHeaders.set(IDEMPOTENCY_KEY, idempotencyKey);
         return httpHeaders;
     }
 
@@ -116,14 +265,14 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
                 retryProperties.maxBackoff() : calculatedBackoff;
     }
 
-    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(UUID eventId, String idempotencyKey, PaymentEntity paymentToPublish) {
+    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(UUID eventId, PaymentEntity paymentToPublish) {
         return PaymentCreatedEvent.builder()
                 .paymentId(paymentToPublish.getPaymentId())
                 .eventId(eventId)
                 .amount(paymentToPublish.getAmount())
                 .currency(paymentToPublish.getCurrency())
                 .paymentStatus(paymentToPublish.getPaymentStatus())
-                .idempotencyKey(idempotencyKey)
+                .idempotencyKey(paymentToPublish.getIdempotencyKey())
                 .build();
     }
 }

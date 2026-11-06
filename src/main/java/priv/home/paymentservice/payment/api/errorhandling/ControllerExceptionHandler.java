@@ -3,6 +3,7 @@ package priv.home.paymentservice.payment.api.errorhandling;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException;
@@ -23,6 +25,8 @@ import priv.home.paymentservice.payment.iso20022.pain001.MappingPain001ToDomainE
 import priv.home.paymentservice.payment.iso20022.pain001.Pain001XmlErrorMessageExtractor;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -31,7 +35,7 @@ import java.util.List;
 public class ControllerExceptionHandler {
 
     private static final String UNEXPECTED_ERROR_OCCURRED = "Unexpected error occurred";
-    private static final String HEADER_IDEMPOTENCY_KEY_NOT_PRESENT = "Required header 'idempotency-key' is not present";
+    private static final String IDEMPOTENCY_KEY_IS_REQUIRED = "Required header 'idempotency-key' is not present";
     private static final String UNRECOGNIZED_PROPERTY = "Unrecognized property";
     private static final String INTERNAL_SERVER_ERROR = "Internal server error (500). ";
     private static final String INVALID_JSON_REQUEST = "Invalid JSON request";
@@ -52,7 +56,16 @@ public class ControllerExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponse(HttpStatus.BAD_REQUEST, HEADER_IDEMPOTENCY_KEY_NOT_PRESENT));
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST, IDEMPOTENCY_KEY_IS_REQUIRED));
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> constraintValidationException(HandlerMethodValidationException exception) {
+        String responseMessage = getMethodViolationMessageResponse(exception);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST, responseMessage));
     }
 
     @ExceptionHandler
@@ -176,5 +189,13 @@ public class ControllerExceptionHandler {
         return exceptionMessage
                 .substring(startMessage, endMessage)
                 .replace("\"", "'");
+    }
+
+    private String getMethodViolationMessageResponse(HandlerMethodValidationException exception) {
+        return exception.getParameterValidationResults().stream()
+                .flatMap(validationResult -> validationResult.getResolvableErrors().stream())
+                .map(MessageSourceResolvable::getDefaultMessage)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining(","));
     }
 }
