@@ -236,10 +236,10 @@ class PaymentServiceTest {
         // then
         PaymentCreatedEvent capturedEvent = eventCaptor.getValue();
         verify(outboxStorageJpa, times(1)).save(any(OutboxEventEntity.class));
-        assertThat(capturedEvent.getPaymentId()).isEqualTo(payment.getPaymentId());
-        assertThat(capturedEvent.getAmount()).isEqualByComparingTo(payment.getAmount());
-        assertThat(capturedEvent.getCurrency()).isEqualTo(payment.getCurrency());
-        assertThat(capturedEvent.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY);
+        assertThat(capturedEvent.paymentId()).isEqualTo(payment.getPaymentId());
+        assertThat(capturedEvent.amount()).isEqualByComparingTo(payment.getAmount());
+        assertThat(capturedEvent.currency()).isEqualTo(payment.getCurrency());
+        assertThat(capturedEvent.idempotencyKey()).isEqualTo(IDEMPOTENCY_KEY);
     }
 
 

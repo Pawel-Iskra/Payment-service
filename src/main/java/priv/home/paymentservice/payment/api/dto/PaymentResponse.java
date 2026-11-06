@@ -9,10 +9,8 @@ import java.util.UUID;
 
 @Builder
 public record PaymentResponse(
-
         UUID paymentId,
         BigDecimal amount,
         String currency,
         PaymentStatus paymentStatus) {
-
 }
