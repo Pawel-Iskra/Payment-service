@@ -14,6 +14,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import priv.home.paymentservice.eventconsumer.persistence.ConsumedEventStorageJpa;
 import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 import priv.home.paymentservice.payment.persistence.PaymentStorageJpa;
@@ -39,7 +40,10 @@ public abstract class AbstractE2ETest {
     @Autowired
     protected OutboxStorageJpa outboxStorageJpa;
     @Autowired
+    protected ConsumedEventStorageJpa consumedEventStorageJpa;
+    @Autowired
     protected OutboxEventPublisherProperties publisherProperties;
+
 
     @LocalServerPort
     protected int port;
@@ -66,10 +70,11 @@ public abstract class AbstractE2ETest {
     }
 
     @BeforeEach
-    protected void cleanTables(){
+    protected void cleanTables() {
         jdbcTemplate.update("DELETE FROM consumed_event");
         jdbcTemplate.update("DELETE FROM outbox_event");
         jdbcTemplate.update("DELETE FROM payment");
     }
 
+    // TODO: possible extension KafkaTestConsumer
 }

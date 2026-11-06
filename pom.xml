@@ -35,7 +35,7 @@
     <properties>
         <java.version>25</java.version>
         <testcontainers.version>2.0.5</testcontainers.version>
-        <jacoco.coverage>0.90</jacoco.coverage>
+        <jacoco.coverage>0.92</jacoco.coverage>
         <common.package>priv/home/paymentservice</common.package>
     </properties>
 
@@ -104,6 +104,11 @@
         <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
             <artifactId>httpclient5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- for E2E tests  -->

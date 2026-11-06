@@ -244,15 +244,8 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
     }
 
     private static Stream<String> invalidIdempotencyKeys() {
-        return Stream.of("",
-                " ",
-                "\t",
-                "123",
-                "a",
-                "1ddfg",
-                "-011",
-                "4&5",
-                "d-124%",
+        return Stream.of("", " ", "\t", "123",
+                "a", "1ddfg", "-011", "4&5", "d-124%",
                 getRandomString(129));
     }
 
