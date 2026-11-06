@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -32,12 +33,11 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
 
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
     private static final String IDEMPOTENCY_KEY_IS_REQUIRED = "Required header 'idempotency-key' is not present";
-    private static final String IDEMPOTENCY_KEY_MUST_NOT_BE_BLANK = "Idempotency-key must not be blank";
+    private static final String IDEMPOTENCY_KEY_PATTERN_CONSTRAINT = "idempotency-key must start with a letter and contain 2-128 allowed characters";
     private static final String CURRENCY_MUST_RESPECT_PATTERN = "Currency code must consist of exactly 3 uppercase letters";
     private static final String CURRENCY_IS_REQUIRED = "Currency is required";
     private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
-    private static final String AMOUNT_MUST_NOT_EXCEED =
-            "Amount must not exceed 9999999999.99 and must have at most 2 decimal places";
+    private static final String AMOUNT_MUST_NOT_EXCEED = "Amount must not exceed 9999999999.99 and must have at most 2 decimal places";
     private static final String API_PATH = "/payments";
 
     @DynamicPropertySource
@@ -213,8 +213,8 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", " ", "\t",})
-    public void shouldReturnBadRequestWhenHeaderIsBlank(String idempotencyKey) {
+    @MethodSource("invalidIdempotencyKeys")
+    public void shouldReturnBadRequestWhenHeaderIsNotCorrect(String idempotencyKey) {
         // given
         CreatePaymentRequest paymentRequest = getCreatePaymentRequest(new BigDecimal("123.45"), "PLN");
         HttpHeaders requestHeaders = getRequestHeaders(MediaType.APPLICATION_JSON, idempotencyKey);
@@ -229,7 +229,7 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().message()).isEqualTo(IDEMPOTENCY_KEY_MUST_NOT_BE_BLANK);
+        assertThat(response.getBody().message()).contains(IDEMPOTENCY_KEY_PATTERN_CONSTRAINT);
         assertThat(paymentStorageJpa.findAll()).isEmpty();
         assertThat(outboxStorageJpa.findAll()).isEmpty();
     }
@@ -241,6 +241,27 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
                 new BigDecimal("-19"),
                 new BigDecimal("123.456"),
                 new BigDecimal("112233445566.00"));
+    }
+
+    private static Stream<String> invalidIdempotencyKeys() {
+        return Stream.of("",
+                " ",
+                "\t",
+                "123",
+                "a",
+                "1ddfg",
+                "-011",
+                "4&5",
+                "d-124%",
+                getRandomString(129));
+    }
+
+    private static String getRandomString(int length) {
+        StringBuilder stringBuilder = new StringBuilder();
+        new Random()
+                .ints(length, 'a', 'z' + 1)
+                .forEach(stringBuilder::appendCodePoint);
+        return stringBuilder.toString();
     }
 
     private CreatePaymentRequest getCreatePaymentRequest(BigDecimal amount, String currency) {

@@ -16,9 +16,14 @@ paths:
       - name: idempotency-key
         in: header
         required: true
-        description: key for idempotent payment creation
+        description: Unique key identifying the payment creation request allows idempotent payment creation.
+                     Must start with a letter and contain 2-128 allowed characters.
         schema:
           type: string
+          minLength: 2
+          maxLength: 128
+          pattern: ^[a-zA-Z][a-zA-Z0-9._:-]{1,127}$
+          example: payment-1234
       requestBody:
         description: Payment initiation message using JSON format input.
         content:
@@ -125,9 +130,14 @@ paths:
       - name: idempotency-key
         in: header
         required: true
-        description: key for idempotent payment creation
+        description: Unique key identifying the payment creation request allows idempotent payment creation. 
+                     Must start with a letter and contain 2-128 allowed characters.
         schema:
           type: string
+          minLength: 2
+          maxLength: 128
+          pattern: ^[a-zA-Z][a-zA-Z0-9._:-]{1,127}$
+          example: payment-1234
       requestBody:
         description: Payment initiation message using the Payment Service limited profile based on ISO 20022 pain.001.001.12. Only the elements and fields defined by this profile are supported.
         content:

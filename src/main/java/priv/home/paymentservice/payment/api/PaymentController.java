@@ -3,7 +3,6 @@ package priv.home.paymentservice.payment.api;
 import iso.std.iso._20022.tech.xsd.pain_002_001.Document;
 import iso.std.iso._20022.tech.xsd.pain_002_001.ObjectFactory;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.xml.bind.JAXBElement;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
+import priv.home.paymentservice.payment.api.validation.ValidIdempotencyKey;
 import priv.home.paymentservice.payment.application.CreatePain001Result;
 import priv.home.paymentservice.payment.application.CreatePaymentPain001Service;
 import priv.home.paymentservice.payment.application.CreatePaymentResult;
@@ -34,7 +34,6 @@ import java.util.UUID;
 public class PaymentController {
 
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
-    private static final String IDEMPOTENCY_KEY_MUST_NOT_BE_BLANK = "Idempotency-key must not be blank";
 
     private final PaymentService paymentService;
     private final CreatePaymentPain001Service createPaymentPain001Service;
@@ -45,9 +44,9 @@ public class PaymentController {
             consumes = MediaType.APPLICATION_XML_VALUE,
             produces = MediaType.APPLICATION_XML_VALUE)
     public ResponseEntity<JAXBElement<Document>> createPaymentFromPain001(
-            @RequestHeader(name = IDEMPOTENCY_KEY) @NotBlank(message = IDEMPOTENCY_KEY_MUST_NOT_BE_BLANK)
-            String idempotencyKey,
-            @RequestBody byte[] xmlPain001Bytes) {
+            @RequestHeader(name = IDEMPOTENCY_KEY) @ValidIdempotencyKey String idempotencyKey,
+            @RequestBody byte[] xmlPain001Bytes)
+    {
         CreatePain001Result createPain001Result = createPaymentPain001Service
                 .createPaymentFromPain001Xml(idempotencyKey, xmlPain001Bytes);
         JAXBElement<Document> responsePain002XmlDocument = new ObjectFactory()
@@ -67,9 +66,9 @@ public class PaymentController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PaymentResponse> createPayment(
-            @RequestHeader(name = IDEMPOTENCY_KEY) @NotBlank(message = IDEMPOTENCY_KEY_MUST_NOT_BE_BLANK)
-            String idempotencyKey,
-            @Valid @RequestBody CreatePaymentRequest createPaymentRequest) {
+            @RequestHeader(name = IDEMPOTENCY_KEY) @ValidIdempotencyKey String idempotencyKey,
+            @Valid @RequestBody CreatePaymentRequest createPaymentRequest)
+    {
         CreatePaymentResult createPaymentResult = paymentService.createPayment(idempotencyKey, createPaymentRequest);
         URI location = getLocation(createPaymentResult.paymentId());
 
@@ -85,7 +84,8 @@ public class PaymentController {
     @GetMapping(
             value = "/{id}",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<PaymentResponse> retrievePayment(@PathVariable("id") UUID paymentId) {
+    public ResponseEntity<PaymentResponse> retrievePayment(@PathVariable("id") UUID paymentId)
+    {
         Optional<PaymentResponse> paymentResponseOptional =
                 paymentService.retrieveSinglePaymentByPaymentId(paymentId);
         if (paymentResponseOptional.isPresent()) {
