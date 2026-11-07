@@ -174,7 +174,7 @@ class PaymentEventReleaserServiceIntegrationTest {
                 .satisfies(eventEntity -> {
                     assertThat(eventEntity.getPublishedAt()).isNull();
                     assertThat(eventEntity.getFailedAt())
-                            .isAfter(timeBeforePublishStart)// TODO:private final Clock clock;
+                            .isAfter(timeBeforePublishStart)
                             .isBefore(timeAfterPublishEnd);
                     assertThat(eventEntity.getAttemptCount()).isEqualTo((short) MAX_ATTEMPT);
                 });

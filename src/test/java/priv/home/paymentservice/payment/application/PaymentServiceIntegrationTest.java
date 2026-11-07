@@ -110,7 +110,7 @@ public class PaymentServiceIntegrationTest {
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
 
         compareValuesInPaymentAndInPaymentCreatedEvent(paymentFromDb, eventFromPayload);
-        assertThat(eventFromPayload.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
+        assertThat(eventFromPayload.idempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
     }
 
     @Test
@@ -145,7 +145,7 @@ public class PaymentServiceIntegrationTest {
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
 
         compareValuesInPaymentAndInPaymentCreatedEvent(paymentFromDb, eventFromPayload);
-        assertThat(eventFromPayload.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
+        assertThat(eventFromPayload.idempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
     }
 
     @Test
@@ -198,7 +198,7 @@ public class PaymentServiceIntegrationTest {
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
 
         compareValuesInPaymentAndInPaymentCreatedEvent(paymentFromDb, eventFromPayload);
-        assertThat(eventFromPayload.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
+        assertThat(eventFromPayload.idempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
     }
 
     @Test
@@ -222,10 +222,10 @@ public class PaymentServiceIntegrationTest {
 
 
     private void compareValuesInPaymentAndInPaymentCreatedEvent(PaymentEntity payment, PaymentCreatedEvent paymentCreatedEvent) {
-        assertThat(payment.getPaymentId()).isEqualTo(paymentCreatedEvent.getPaymentId());
-        assertThat(payment.getCurrency()).isEqualTo(paymentCreatedEvent.getCurrency());
-        assertThat(payment.getAmount()).isEqualTo(paymentCreatedEvent.getAmount());
-        assertThat(payment.getPaymentStatus()).isEqualTo(paymentCreatedEvent.getPaymentStatus());
+        assertThat(payment.getPaymentId()).isEqualTo(paymentCreatedEvent.paymentId());
+        assertThat(payment.getCurrency()).isEqualTo(paymentCreatedEvent.currency());
+        assertThat(payment.getAmount()).isEqualTo(paymentCreatedEvent.amount());
+        assertThat(payment.getPaymentStatus()).isEqualTo(paymentCreatedEvent.paymentStatus());
     }
 
     private List<String> retrieveEventPayloadByPaymentId(UUID paymentId) {

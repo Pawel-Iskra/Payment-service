@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
+import priv.home.paymentservice.payment.api.validation.ValidIdempotencyKey;
 import priv.home.paymentservice.payment.application.CreatePain001Result;
 import priv.home.paymentservice.payment.application.CreatePaymentPain001Service;
 import priv.home.paymentservice.payment.application.CreatePaymentResult;
@@ -43,7 +44,7 @@ public class PaymentController {
             consumes = MediaType.APPLICATION_XML_VALUE,
             produces = MediaType.APPLICATION_XML_VALUE)
     public ResponseEntity<JAXBElement<Document>> createPaymentFromPain001(
-            @RequestHeader(value = IDEMPOTENCY_KEY) String idempotencyKey,
+            @RequestHeader(name = IDEMPOTENCY_KEY) @ValidIdempotencyKey String idempotencyKey,
             @RequestBody byte[] xmlPain001Bytes)
     {
         CreatePain001Result createPain001Result = createPaymentPain001Service
@@ -65,7 +66,7 @@ public class PaymentController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PaymentResponse> createPayment(
-            @RequestHeader(value = IDEMPOTENCY_KEY) String idempotencyKey,
+            @RequestHeader(name = IDEMPOTENCY_KEY) @ValidIdempotencyKey String idempotencyKey,
             @Valid @RequestBody CreatePaymentRequest createPaymentRequest)
     {
         CreatePaymentResult createPaymentResult = paymentService.createPayment(idempotencyKey, createPaymentRequest);
