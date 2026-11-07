@@ -18,7 +18,6 @@
         PostgreSQL, Kafka and ISO 20022 message handling.
     </description>
     <url>https://github.com/Pawel-Iskra/Payment-service</url>
-
     <developers>
         <developer>
             <name>Pawel Iskra</name>
@@ -111,6 +110,11 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- for E2E tests  -->
 
         <dependency>
@@ -184,8 +188,8 @@
                                         <includes>
                                             <include>limited-pain001.xsd</include>
                                             <include>limited-pain002.xsd</include>
-                                            <!--											<include>pain.001.001.12.xsd</include>-->
-                                            <!--											<include>pain.002.001.14.xsd</include>-->
+                                            <!--<include>pain.001.001.12.xsd</include>-->
+                                            <!--<include>pain.002.001.14.xsd</include>-->
                                         </includes>
                                     </fileset>
                                 </schema>
@@ -297,6 +301,37 @@
                     <excludes>
                         <exclude>**/*Entity.class</exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/*E2E*.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includes>
+                        <include>**/*E2E*.java</include>
+                    </includes>
                 </configuration>
             </plugin>
 
