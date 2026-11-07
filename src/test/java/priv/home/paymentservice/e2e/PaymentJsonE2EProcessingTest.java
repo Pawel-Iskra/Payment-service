@@ -26,13 +26,12 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 @ExtendWith(OutputCaptureExtension.class)
 public class PaymentJsonE2EProcessingTest extends AbstractE2ETest {
 
-    private static final String IDEMPOTENCY_KEY = "idempotency-key";
     private static final String API_PATH = "/payments";
-    private static final String PAYMENT_EVENT_CONSUMED = "Consumed payment event=%s";
-    private static final String EVENT_SUCCESSFULLY_PROCESSED = "Payment event successfully processed, consumedEventEntity=%s";
-    private static final String EVENT_NOT_PROCESSED = "Payment event was not processed (duplicate or already registered)";
-    private static final String EVENT_ALREADY_EXIST_IN_DB = "Event already exist in db, eventId=%s";
-
+    private static final String IDEMPOTENCY_KEY = "idempotency-key";
+    private static final String CONSUMED_PAYMENT_EVENT = "Consumed payment event=%s";
+    private static final String CONSUMED_EVENT_SUCCESSFULLY_PROCESSED = "Payment event successfully processed, consumedEventEntity=%s";
+    private static final String CONSUMED_EVENT_NOT_PROCESSED = "Payment event was not processed (duplicate or already registered)";
+    private static final String CONSUMED_EVENT_ALREADY_EXIST_IN_DB = "Event already exist in db, eventId=%s";
     // TODO: TestKafkaConsumer which consumes from broker
 
     @Test
@@ -72,7 +71,7 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2ETest {
                             .isAfter(timeBeforePaymentCreate)
                             .isBefore(timeAfterEventConsumed);
                     assertThat(capturedOutput.getOut())
-                            .contains(EVENT_SUCCESSFULLY_PROCESSED.formatted(consumedEventEntity));
+                            .contains(CONSUMED_EVENT_SUCCESSFULLY_PROCESSED.formatted(consumedEventEntity));
                 });
         Optional<OutboxEventEntity> outboxEventEntityOptional = outboxStorageJpa.findById(eventId);
         assertThat(outboxEventEntityOptional)
@@ -83,7 +82,7 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2ETest {
                             .isBefore(timeAfterEventConsumed);
                     assertThat(outboxEventEntity.getFailedAt()).isNull();
                     assertThat(capturedOutput.getOut())
-                            .contains(PAYMENT_EVENT_CONSUMED.formatted(outboxEventEntity.getPayload()));
+                            .contains(CONSUMED_PAYMENT_EVENT.formatted(outboxEventEntity.getPayload()));
                 });
     }
 
@@ -125,8 +124,8 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2ETest {
         await().atMost(Duration.ofSeconds(10))
                 .pollInterval(Duration.ofMillis(250))
                 .untilAsserted(() -> {
-                    assertThat(capturedOutput.getOut()).contains(EVENT_NOT_PROCESSED);
-                    assertThat(capturedOutput.getOut()).contains(EVENT_ALREADY_EXIST_IN_DB.formatted(eventId));
+                    assertThat(capturedOutput.getOut()).contains(CONSUMED_EVENT_NOT_PROCESSED);
+                    assertThat(capturedOutput.getOut()).contains(CONSUMED_EVENT_ALREADY_EXIST_IN_DB.formatted(eventId));
                     // the consumer is limited to only consume event and perform (or not if duplicate) simple db save
                     // so waiting for logs informing 'Event already exist in db' and 'Payment event not processed'
                     // is simulation of case when duplicate was consumed and no business operations were performed
