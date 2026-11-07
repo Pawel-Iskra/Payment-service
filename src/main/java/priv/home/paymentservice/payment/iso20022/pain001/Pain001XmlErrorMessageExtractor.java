@@ -9,47 +9,59 @@ import java.util.Optional;
 @Component
 public class Pain001XmlErrorMessageExtractor {
 
-    private static final String PAIN001_XML_MALFORMED = "Pain.001 XML is malformed or does not match the supported profile";
     private static final String PAIN001_NAMESPACE = "\"urn:iso:std:iso:20022:tech:xsd:pain.001.001.12\":";
+    private static final String PAIN001_XML_MALFORMED = "Pain.001 XML is malformed or does not match the supported profile";
     private static final String RESPONSE_MESSAGE_FORMAT = "Line %d, column %d: %s";
-    private static final String REGEX_TO_REMOVE_FROM_XML_STREAM_EXCEPTION = "ParseError[\\s\\S]*?Message:\\s*";
+    private static final String REGEX_TO_REMOVE_PART_OF_MESSAGE_FROM_XML_STREAM_EXCEPTION = "ParseError[\\s\\S]*?Message:\\s*";
+    private static final String REGEX_TO_REPLACE_NAMESPACE = "\\{\"urn:iso:std:iso:20022:tech:xsd:pain\\.001\\.001\\.12\":([^}]+)}";
     private static final String REGEX_TO_REMOVE_CVC_FROM_SAX_EXCEPTION = "cvc-[\\w.-]+:\\s*";
+    private static final String CURRENCY_MUST_RESPECT_PATTERN = "Currency code must consist of exactly 3 uppercase letters";
+    private static final String CURRENCY_IS_REQUIRED = "Currency is required";
+    private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
+    private static final String AMOUNT_MUST_NOT_EXCEED = "Amount must not exceed 9999999999.99 and must have at most 2 decimal places";
 
 
     public String extractMessageFromPain001XmlParseException(InvalidPain001XmlException pain001XmlException) {
-        String responseMessage = PAIN001_XML_MALFORMED;
+        String responseMessage = extractResponseMessageFromXmlParseException(pain001XmlException);
+        return normalizePain001XmlValidationResponseMessage(responseMessage);
+    }
+    // TODO: better would be to introduce common error enum, then map errors from JSON Bean validation and from XML XSD
+    //  validation to common error values and in ControllerExceptionHandler map them into specific response messages
+
+
+    private String extractResponseMessageFromXmlParseException(InvalidPain001XmlException pain001XmlException) {
         Optional<Throwable> parseExceptionOptional = findParseException(pain001XmlException);
         if (parseExceptionOptional.isEmpty() || parseExceptionOptional.get().getMessage() == null) {
-            return responseMessage;
+            return PAIN001_XML_MALFORMED;
         }
+
         Throwable exception = parseExceptionOptional.get();
         if (exception instanceof SAXParseException saxException) {
             int lineNumber = saxException.getLineNumber();
             int columnNumber = saxException.getColumnNumber();
             String message = saxException.getMessage()
-                    .replaceAll("\\{\"urn:iso:std:iso:20022:tech:xsd:pain\\.001\\.001\\.12\":([^}]+)}", "$1")
+                    .replaceAll(REGEX_TO_REPLACE_NAMESPACE, "$1")
                     .replaceAll(REGEX_TO_REMOVE_CVC_FROM_SAX_EXCEPTION, "");
-            responseMessage = RESPONSE_MESSAGE_FORMAT.formatted(
+            return RESPONSE_MESSAGE_FORMAT.formatted(
                     lineNumber,
                     columnNumber,
                     message);
         } else if (exception instanceof XMLStreamException xmlStreamException) {
             String message = xmlStreamException.getMessage()
-                    .replaceAll(REGEX_TO_REMOVE_FROM_XML_STREAM_EXCEPTION, "");
+                    .replaceAll(REGEX_TO_REMOVE_PART_OF_MESSAGE_FROM_XML_STREAM_EXCEPTION, "");
             if (xmlStreamException.getLocation() != null) {
                 int lineNumber = xmlStreamException.getLocation().getLineNumber();
                 int columnNumber = xmlStreamException.getLocation().getColumnNumber();
-                responseMessage = RESPONSE_MESSAGE_FORMAT.formatted(
+                return RESPONSE_MESSAGE_FORMAT.formatted(
                         lineNumber,
                         columnNumber,
                         message);
             } else {
-                responseMessage = message;
+                return message;
             }
         }
-        return responseMessage;
+        return PAIN001_XML_MALFORMED;
     }
-
 
     private Optional<Throwable> findParseException(Throwable exception) {
         Throwable currentCouseException = exception;
@@ -60,5 +72,21 @@ public class Pain001XmlErrorMessageExtractor {
             currentCouseException = currentCouseException.getCause();
         }
         return Optional.empty();
+    }
+
+    private String normalizePain001XmlValidationResponseMessage(String responseMessage) {
+        // aligning with JSON validation response messages
+        if (responseMessage.contains("minExclusive")) {
+            return AMOUNT_MUST_BE_GREATER_THAN_ZERO;
+        }
+        if (responseMessage.contains("fractionDigits")
+                || responseMessage.contains("fraction digits")
+                || responseMessage.contains("maxInclusive")) {
+            return AMOUNT_MUST_NOT_EXCEED;
+        }
+        if (responseMessage.contains("[A-Z]{3,3}")) {
+            return CURRENCY_MUST_RESPECT_PATTERN;
+        }
+        return responseMessage;
     }
 }
