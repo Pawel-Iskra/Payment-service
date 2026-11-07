@@ -14,9 +14,10 @@ public record CreatePaymentRequest(
                 message = "Amount must not exceed 9999999999.99 and must have at most 2 decimal places")
         BigDecimal amount,
 
-        @NotBlank(message = "Currency is required")
+        @NotNull(message = "Currency is required")
         @Pattern(regexp = "^[A-Z]{3}$",
                 message = "Currency code must consist of exactly 3 uppercase letters")
         String currency
 ) {
 }
+// TODO: unit tests to check all possible mismatches

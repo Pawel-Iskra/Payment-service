@@ -196,6 +196,6 @@ public class ControllerExceptionHandler {
                 .flatMap(validationResult -> validationResult.getResolvableErrors().stream())
                 .map(MessageSourceResolvable::getDefaultMessage)
                 .filter(Objects::nonNull)
-                .collect(Collectors.joining(","));
+                .collect(Collectors.joining(", "));
     }
 }

@@ -3,6 +3,7 @@ package priv.home.paymentservice.e2e;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.*;
@@ -35,7 +36,6 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
     private static final String IDEMPOTENCY_KEY_IS_REQUIRED = "Required header 'idempotency-key' is not present";
     private static final String IDEMPOTENCY_KEY_PATTERN_CONSTRAINT = "idempotency-key must start with a letter and contain 2-128 allowed characters";
     private static final String CURRENCY_MUST_RESPECT_PATTERN = "Currency code must consist of exactly 3 uppercase letters";
-    private static final String CURRENCY_IS_REQUIRED = "Currency is required";
     private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
     private static final String AMOUNT_MUST_NOT_EXCEED = "Amount must not exceed 9999999999.99 and must have at most 2 decimal places";
     private static final String API_PATH = "/payments";
@@ -143,7 +143,7 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
 
     @ParameterizedTest
     @MethodSource("invalidAmounts")
-    public void shouldReturnBadRequestWhenAmountIsNotCorrect(BigDecimal amount) {
+    public void shouldReturnBadRequestWhenAmountIsNotCorrect(BigDecimal amount, String expectedMessage) {
         // given
         String idempotencyKey = "abcd-1234";
         CreatePaymentRequest paymentRequest = getCreatePaymentRequest(amount, "PLN");
@@ -159,14 +159,13 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().message())
-                .isIn(AMOUNT_MUST_BE_GREATER_THAN_ZERO, AMOUNT_MUST_NOT_EXCEED);
+        assertThat(response.getBody().message()).isEqualTo(expectedMessage);
         assertThat(paymentStorageJpa.findAll()).isEmpty();
         assertThat(outboxStorageJpa.findAll()).isEmpty();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"USDD", "usd", "E", "EU", "", " ", " EU", "UD1"})
+    @ValueSource(strings = {"", " ", "E", "EU", " EU", "USDD", "usd", "U$D", "UD1"})
     public void shouldReturnBadRequestWhenCurrencyIsNotCorrect(String currency) {
         // given
         String idempotencyKey = "abcd-1234";
@@ -184,8 +183,7 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().message())
-                .containsAnyOf(CURRENCY_IS_REQUIRED, CURRENCY_MUST_RESPECT_PATTERN);
+        assertThat(response.getBody().message()).isEqualTo(CURRENCY_MUST_RESPECT_PATTERN);
         assertThat(paymentStorageJpa.findAll()).isEmpty();
         assertThat(outboxStorageJpa.findAll()).isEmpty();
     }
@@ -235,12 +233,12 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
     }
 
 
-    private static Stream<BigDecimal> invalidAmounts() {
+    private static Stream<Arguments> invalidAmounts() {
         return Stream.of(
-                new BigDecimal("0.0"),
-                new BigDecimal("-19"),
-                new BigDecimal("123.456"),
-                new BigDecimal("112233445566.00"));
+                Arguments.of(new BigDecimal("0.0"), AMOUNT_MUST_BE_GREATER_THAN_ZERO),
+                Arguments.of(new BigDecimal("-19"), AMOUNT_MUST_BE_GREATER_THAN_ZERO),
+                Arguments.of(new BigDecimal("123.456"), AMOUNT_MUST_NOT_EXCEED),
+                Arguments.of(new BigDecimal("112233445566.00"), AMOUNT_MUST_NOT_EXCEED));
     }
 
     private static Stream<String> invalidIdempotencyKeys() {
