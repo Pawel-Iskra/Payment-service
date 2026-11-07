@@ -4,21 +4,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
-import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
-import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
+import priv.home.paymentservice.integration.AbstractIntegrationTest;
+import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
 import priv.home.paymentservice.outbox.model.PublishResult;
-import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
+import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
+import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -30,27 +25,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(properties = {
-        "payment-service.outbox.publisher.batch-size=3",
-        "payment-service.outbox.publisher.retry.max-attempt=7"})
-@Testcontainers
 @ExtendWith({OutputCaptureExtension.class})
-class PaymentEventReleaserServiceIntegrationTest {
+class PaymentEventReleaserServiceIntegrationTest extends AbstractIntegrationTest {
 
-    // batch-size set to 3 in @SpringBootTest.properties
-    private static final int BATCH_SIZE = 3;
-    // max-attempt set to 7 in @SpringBootTest.properties
-    private static final int MAX_ATTEMPT = 7;
-    private static final String POSTGRES_DOCKER_EMAGE = "postgres:18";
+    private static final int BATCH_SIZE = 3; // batch-size set to 3 in DynamicPropertyRegistry
+    private static final int MAX_ATTEMPT = 7; // max-attempt set to 7 in DynamicPropertyRegistry
     private static final String NO_UNPUBLISHED_EVENTS_FOUND = "No unpublished events found";
     private static final String AMOUNT_EVENTS_TO_PUBLISH = "Amount of events to publish = %s";
     private static final String AMOUNT_EVENTS_PUBLISHED_AND_ACKNOWLEDGED = "Amount of published events acknowledged by publisher = %s";
+    private static final short[] EVENTS_VALID_FOR_PUBLISH_IN_DB_ATTEMPTS_COUNT = new short[]{0, 1, 3, 1, 0, 4, 0};
     private static final List<String> EVENTS_VALID_FOR_PUBLISH_IN_DB_EVENT_IDS = List.of(
             "86f1a6e1-85f7-444b-a18f-720c580beda4", "6562d66c-6a09-434f-b252-12942d714092",
             "9701c56b-ddaa-4ff6-82c3-18f1b73059be", "d8254ede-f250-4971-b929-339319e8a3e9",
             "a7eb2b0c-4e7b-4217-a31c-24b0df5becca", "0b4822fe-3c3d-4417-8f49-c5d92a483c0e",
             "c81fbb95-92a7-407d-9044-44c845bd7f40");
-    private static final short[] EVENTS_VALID_FOR_PUBLISH_IN_DB_ATTEMPTS_COUNT = new short[]{0, 1, 3, 1, 0, 4, 0};
 
     @Autowired
     private OutboxEventPublisherProperties publisherProperties;
@@ -58,19 +46,8 @@ class PaymentEventReleaserServiceIntegrationTest {
     private OutboxStorageJpa outboxStorageJpa;
     @MockitoBean
     private PaymentEventPublisher paymentEventPublisher;
-
     @Autowired
     private PaymentEventReleaserService releaserService;
-
-    @Container
-    private static final PostgreSQLContainer POSTGRES_CONTAINER = new PostgreSQLContainer(POSTGRES_DOCKER_EMAGE);
-
-    @DynamicPropertySource
-    static void configurePostgresContainer(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
-        registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
-    }
 
 
     @Test
