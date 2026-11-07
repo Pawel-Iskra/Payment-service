@@ -63,10 +63,6 @@ public abstract class AbstractE2ETest {
         registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
         registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
-
-        registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
-
-        registry.add("payment-service.payment-event-publisher.scheduler.publish", () -> "*/3 * * * * *");
     }
 
     @BeforeEach

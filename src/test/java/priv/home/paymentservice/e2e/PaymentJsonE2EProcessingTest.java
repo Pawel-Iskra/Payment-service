@@ -8,6 +8,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import priv.home.paymentservice.eventconsumer.persistence.ConsumedEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
@@ -33,6 +35,15 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2ETest {
     private static final String CONSUMED_EVENT_NOT_PROCESSED = "Payment event was not processed (duplicate or already registered)";
     private static final String CONSUMED_EVENT_ALREADY_EXIST_IN_DB = "Event already exist in db, eventId=%s";
     // TODO: TestKafkaConsumer which consumes from broker
+
+    @DynamicPropertySource
+    static void configurePostgresContainer(DynamicPropertyRegistry registry) {
+        registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
+        registry.add("spring.kafka.listener.auto-startup", () -> true);
+        registry.add("payment-service.payment-event-publisher.scheduler.publish", () -> "*/3 * * * * *");
+        registry.add("payment-service.payment-event-publisher.scheduler.enabled", () -> true);
+    }
+
 
     @Test
     public void shouldPublishEventToKafkaAndNextThisEventShouldBeConsumedAndPersistedByConsumer(CapturedOutput capturedOutput) {
