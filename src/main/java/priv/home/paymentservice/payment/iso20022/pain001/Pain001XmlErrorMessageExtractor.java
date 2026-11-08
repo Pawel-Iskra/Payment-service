@@ -25,8 +25,6 @@ public class Pain001XmlErrorMessageExtractor {
         String responseMessage = extractResponseMessageFromXmlParseException(pain001XmlException);
         return normalizePain001XmlValidationResponseMessage(responseMessage);
     }
-    // TODO: better would be to introduce common error enum, then map errors from JSON Bean validation and from XML XSD
-    //  validation to common error values and in ControllerExceptionHandler map them into specific response messages
 
 
     private String extractResponseMessageFromXmlParseException(InvalidPain001XmlException pain001XmlException) {
@@ -74,8 +72,10 @@ public class Pain001XmlErrorMessageExtractor {
         return Optional.empty();
     }
 
+    // TODO: better would be to introduce common error enum, then map errors from JSON Bean validation and from XML XSD
+    //  validation to common error values and in ControllerExceptionHandler map them into specific response messages
     private String normalizePain001XmlValidationResponseMessage(String responseMessage) {
-        // aligning with JSON validation response messages
+        // aligning with JSON currency/amount validation response messages
         if (responseMessage.contains("minExclusive")) {
             return AMOUNT_MUST_BE_GREATER_THAN_ZERO;
         }

@@ -1,6 +1,5 @@
 package priv.home.paymentservice.payment.api.dto;
 
-
 import lombok.Builder;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 
@@ -10,7 +9,11 @@ import java.util.UUID;
 @Builder
 public record PaymentResponse(
         UUID paymentId,
+        String endToEndId,
+        String debtorIban,
+        String creditorIban,
         BigDecimal amount,
         String currency,
-        PaymentStatus paymentStatus) {
+        PaymentStatus paymentStatus
+) {
 }

@@ -20,6 +20,15 @@ public class PaymentEntity {
     @Column(name = "payment_id")
     private UUID paymentId;
 
+    @Column(name = "end_to_end_id", nullable = false, length = 35, updatable = false)
+    private String endToEndId;
+
+    @Column(name = "debtor_iban", nullable = false, length = 34, updatable = false)
+    private String debtorIban;
+
+    @Column(name = "creditor_iban", nullable = false, length = 34, updatable = false)
+    private String creditorIban;
+
     @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 

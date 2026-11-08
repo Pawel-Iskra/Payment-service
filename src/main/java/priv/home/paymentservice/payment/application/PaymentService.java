@@ -3,15 +3,14 @@ package priv.home.paymentservice.payment.application;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
-import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
-import priv.home.paymentservice.payment.persistence.PaymentEntity;
-import priv.home.paymentservice.payment.persistence.PaymentStorageJpa;
-import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
-import priv.home.paymentservice.payment.api.dto.PaymentResponse;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.messaging.event.PaymentEventType;
+import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
+import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
+import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.model.PaymentStatus;
+import priv.home.paymentservice.payment.persistence.PaymentEntity;
+import priv.home.paymentservice.payment.persistence.PaymentStorageJpa;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.OffsetDateTime;
@@ -33,7 +32,7 @@ public class PaymentService {
         if (paymentFromDbOptional.isPresent()) {
             return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDbOptional.get());
         }
-        PaymentEntity paymentToInsert = buildPaymentFromDto(idempotencyKey, createPaymentRequest);
+        PaymentEntity paymentToInsert = buildPaymentFromRequest(idempotencyKey, createPaymentRequest);
         Optional<PaymentEntity> insertedPaymentOptional = paymentStorageJpa.insertPaymentIfAbsent(paymentToInsert);
         if (insertedPaymentOptional.isEmpty()) {
             PaymentEntity paymentFromDb = retrieveSinglePaymentByIdempotencyKey(idempotencyKey)
@@ -55,48 +54,60 @@ public class PaymentService {
         return buildPaymentSuccessfulPersistedPaymentCreationDto(paymentInserted);
     }
 
-    public Optional<PaymentResponse> retrieveSinglePaymentByPaymentId(UUID paymentId) {
+    public Optional<PaymentRetrieveResult> retrieveSinglePaymentByPaymentId(UUID paymentId) {
         Optional<PaymentEntity> paymentOptional = paymentStorageJpa.findById(paymentId);
-        return paymentOptional.map(this::buildPaymentSuccessfulResponse);
+        return paymentOptional.map(this::buildPaymentRetrieveResponse);
     }
 
-    public Optional<PaymentEntity> retrieveSinglePaymentByIdempotencyKey(String idempotencyKey) {
+
+    private Optional<PaymentEntity> retrieveSinglePaymentByIdempotencyKey(String idempotencyKey) {
         return paymentStorageJpa.findByIdempotencyKey(idempotencyKey);
     }
 
-
-    private CreatePaymentResult buildPaymentAlreadyExistPaymentCreationDto(PaymentEntity payment) {
+    private CreatePaymentResult buildPaymentAlreadyExistPaymentCreationDto(PaymentEntity paymentEntity) {
         return CreatePaymentResult.builder()
-                .paymentId(payment.getPaymentId())
-                .amount(payment.getAmount())
-                .currency(payment.getCurrency())
-                .paymentStatus(payment.getPaymentStatus())
+                .paymentId(paymentEntity.getPaymentId())
+                .endToEndId(paymentEntity.getEndToEndId())
+                .debtorIban(paymentEntity.getDebtorIban())
+                .creditorIban(paymentEntity.getCreditorIban())
+                .amount(paymentEntity.getAmount())
+                .currency(paymentEntity.getCurrency())
+                .paymentStatus(paymentEntity.getPaymentStatus())
                 .wasAlreadyInDb(Boolean.TRUE)
                 .build();
     }
 
-    private CreatePaymentResult buildPaymentSuccessfulPersistedPaymentCreationDto(PaymentEntity payment) {
+    private CreatePaymentResult buildPaymentSuccessfulPersistedPaymentCreationDto(PaymentEntity paymentEntity) {
         return CreatePaymentResult.builder()
-                .paymentId(payment.getPaymentId())
-                .amount(payment.getAmount())
-                .currency(payment.getCurrency())
-                .paymentStatus(payment.getPaymentStatus())
+                .paymentId(paymentEntity.getPaymentId())
+                .endToEndId(paymentEntity.getEndToEndId())
+                .debtorIban(paymentEntity.getDebtorIban())
+                .creditorIban(paymentEntity.getCreditorIban())
+                .amount(paymentEntity.getAmount())
+                .currency(paymentEntity.getCurrency())
+                .paymentStatus(paymentEntity.getPaymentStatus())
                 .wasAlreadyInDb(Boolean.FALSE)
                 .build();
     }
 
-    private PaymentResponse buildPaymentSuccessfulResponse(PaymentEntity payment) {
-        return PaymentResponse.builder()
-                .paymentId(payment.getPaymentId())
-                .amount(payment.getAmount())
-                .currency(payment.getCurrency())
-                .paymentStatus(payment.getPaymentStatus())
+    private PaymentRetrieveResult buildPaymentRetrieveResponse(PaymentEntity paymentEntity) {
+        return PaymentRetrieveResult.builder()
+                .paymentId(paymentEntity.getPaymentId())
+                .endToEndId(paymentEntity.getEndToEndId())
+                .debtorIban(paymentEntity.getDebtorIban())
+                .creditorIban(paymentEntity.getCreditorIban())
+                .amount(paymentEntity.getAmount())
+                .currency(paymentEntity.getCurrency())
+                .paymentStatus(paymentEntity.getPaymentStatus())
                 .build();
     }
 
-    private PaymentEntity buildPaymentFromDto(String idempotencyKey, CreatePaymentRequest createPaymentRequest) {
+    private PaymentEntity buildPaymentFromRequest(String idempotencyKey, CreatePaymentRequest createPaymentRequest) {
         return PaymentEntity.builder()
                 .paymentId(generateUuid())
+                .endToEndId(createPaymentRequest.endToEndId())
+                .debtorIban(createPaymentRequest.debtorRequest().debtorIban())
+                .creditorIban(createPaymentRequest.creditorRequest().creditorIban())
                 .amount(createPaymentRequest.amount())
                 .currency(createPaymentRequest.currency())
                 .paymentStatus(PaymentStatus.CREATED)
@@ -104,19 +115,22 @@ public class PaymentService {
                 .build();
     }
 
-    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(UUID eventId, String idempotencyKey, PaymentEntity paymentToPublish) {
+    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(UUID eventId, String idempotencyKey, PaymentEntity paymentEntity) {
         return PaymentCreatedEvent.builder()
-                .paymentId(paymentToPublish.getPaymentId())
+                .paymentId(paymentEntity.getPaymentId())
                 .eventId(eventId)
-                .amount(paymentToPublish.getAmount())
-                .currency(paymentToPublish.getCurrency())
-                .paymentStatus(paymentToPublish.getPaymentStatus())
+                .endToEndId(paymentEntity.getEndToEndId())
+                .debtorIban(paymentEntity.getDebtorIban())
+                .creditorIban(paymentEntity.getCreditorIban())
+                .amount(paymentEntity.getAmount())
+                .currency(paymentEntity.getCurrency())
+                .paymentStatus(paymentEntity.getPaymentStatus())
                 .idempotencyKey(idempotencyKey)
                 .build();
     }
 
     private String generatePayload(PaymentCreatedEvent paymentCreatedEvent) {
-        return objectMapper.writeValueAsString(paymentCreatedEvent); // TODO: possible error handling?
+        return objectMapper.writeValueAsString(paymentCreatedEvent);
     }
 
     private UUID generateUuid() {
