@@ -48,7 +48,7 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 10. Configurable outbox batch processing with keyset scrolling, exponential backoff and retry limits
 11. A lightweight idempotent Kafka event consumer with concurrent duplicate protection
 12. OpenAPI 3.x specification documented in a YAML file, integrated with Swagger UI
-13. Unit and integration tests including concurrent event processing
+13. Unit, integration and end-to-end tests including concurrent event processing
 
 </td>
 <td width="45%" valign="top">
@@ -62,7 +62,7 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 - **Data Access:** Spring Data JPA, Spring JDBC
 - **Messaging:** Apache Kafka, Spring for Apache Kafka
 - **XML Processing:** JAXB, XML Schema (XSD)
-- **Testing:** JUnit, Mockito, WebMvcTest, SpringBootTest, Testcontainers
+- **Testing:** JUnit, Mockito, WebMvcTest, SpringBootTest, Testcontainers (PostgreSQL 18, Kafka 4.1.1)
 - **Build Tool:** Maven
 - **Infrastructure:** Docker
 - **API Documentation:** OpenAPI 3.1, Swagger UI
@@ -70,7 +70,7 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 **Tools & Development Environment**:
 - IDE: IntelliJ IDEA
 - Database Management: pgAdmin
-- Containers: Docker.desktop
+- Containers: Docker
 - Version Control: Git, GitHub
 - API manual tests: Postman
 
@@ -107,7 +107,7 @@ These limitations reflect the project's intended scope and timeframe. A producti
 | **✅ Task 10 — Outbox Reliability & Retry Policy** | Improve event publishing with configurable batch size, retries, backoff, and failure tracking. |
 | **✅ Task 11 — ISO 20022 Payment Messages** | Add selected ISO 20022 pain.001 and pain.002 message structures with a limited set of fields and validation. |
 | **✅ Task 12 — OpenAPI Contract** | Define the REST API contract in openapi.yaml, covering endpoints, schemas, validation rules, error responses, and examples. |
-| **Task 13 — Test Coverage & End-to-End Testing** | Add JaCoCo with an 85% line coverage target and end-to-end tests using Kafka Testcontainers. |
+| **✅ Task 13 — Test Coverage & End-to-End Testing** | Add JaCoCo with an 90% line coverage target and end-to-end tests using Kafka Testcontainers. |
 | **Task 14 — Observability & Logging** | Add basic application metrics, health checks, and Logback logging with sensitive payment data masking. |
 | **Task 15 — DevOps & CI/CD** | Containerize the application stack with Docker Compose and automate build, test, and Docker image publishing using GitHub Actions. |<br>
 
@@ -212,3 +212,11 @@ These limitations reflect the project's intended scope and timeframe. A producti
 - Created an OpenAPI 3.1 specification in YAML covering API endpoints, request and response schemas, HTTP status codes, and error responses.
 - Added request and response examples, including JSON payment requests and ISO 20022 XML messages.
 - Integrated the YAML specification with Swagger UI to provide interactive API documentation, accessible at `http://localhost:8080/swagger-ui/index.html`
+
+#### Task 13 — Test Coverage and End-to-End Testing
+**Goal:** Improve test coverage and implement end-to-end tests using Kafka Testcontainers.
+
+- Added and expanded automated tests covering core business logic, REST API endpoints, and payment processing services.
+- Implemented end-to-end tests verifying JSON- and XML-based payment initiation and payment retrieval workflows.
+- Verified transactional outbox processing, event persistence, and duplicate event handling.
+- Added test infrastructure using Testcontainers to run integration and end-to-end tests against PostgreSQL and Kafka.
