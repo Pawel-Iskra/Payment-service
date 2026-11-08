@@ -45,6 +45,30 @@ public class PaymentController {
     //          - maybe add one/two columns in payment table, e.g. debtor IBAN/BIC, EndToEndId
     //  - common errors enum for validation Json/Xml
     //  - Json response mapper
+    /*
+    JSON:
+        {
+          "amount": 1250.50,
+          "currency": "EUR",
+          "debtor": {
+            "name": "debtor name" ?
+            "iban": "PL61109010140000071219812874" [A-Z]{2,2}[0-9]{2,2}[a-zA-Z0-9]{1,30}
+          },
+          "creditor": {
+            "name": "creditor name" ?
+            "iban": "DE89370400440532013000" [A-Z]{2,2}[0-9]{2,2}[a-zA-Z0-9]{1,30}
+          },
+          "endToEndId": "PAYMENT-2026-000123" string 1-35
+         }
+
+    DB:
+          Column	            Type
+        debtor_iban	    VARCHAR(34)	NOT NULL
+        end_to_end_id	VARCHAR(35)	NOT NULL
+
+    Payload:
+        + debtorIBAN, creditorIBAN, endToEndId
+     */
 
     @PostMapping(
             value = "/pain001",
