@@ -3,13 +3,8 @@ package priv.home.paymentservice.payment.persistance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
+import priv.home.paymentservice.integration.AbstractIntegrationTest;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 import priv.home.paymentservice.payment.persistence.PaymentEntity;
 import priv.home.paymentservice.payment.persistence.PaymentStorageJpa;
@@ -22,11 +17,8 @@ import java.util.concurrent.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-@Testcontainers
-class PaymentStorageContainerLiquibaseTest {
+class PaymentStorageContainerLiquibaseTest extends AbstractIntegrationTest {
 
-    private static final String POSTGRES_IMAGE = "postgres:18";
     private static final String IDEMPOTENCY_KEY_FIRST = "abc-123";
     private static final String IDEMPOTENCY_KEY_SECOND = "abc-124";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
@@ -38,17 +30,6 @@ class PaymentStorageContainerLiquibaseTest {
     private static final String INSERT_PAYMENT_SQL = """
             INSERT INTO payment (payment_id, amount, currency, payment_status, idempotency_key)
             VALUES (?, ?, ?, ?, ?)""";
-
-
-    @Container
-    private static final PostgreSQLContainer POSTGRES_CONTAINER = new PostgreSQLContainer(POSTGRES_IMAGE);
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
-        registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
-    }
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

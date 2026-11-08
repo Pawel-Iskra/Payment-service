@@ -9,15 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.xml.sax.SAXParseException;
+import priv.home.paymentservice.integration.AbstractIntegrationTest;
 import priv.home.paymentservice.messaging.event.PaymentEventType;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
@@ -40,9 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
-@Testcontainers
-class CreatePaymentPain001ServiceIntegrationTest {
+class CreatePaymentPain001ServiceIntegrationTest extends AbstractIntegrationTest {
 
     // expected values from pain001-single-payment.xml
     private static final String GROUP_HEADER_MESSAGE_ID = "MSG-20261027-001";
@@ -51,22 +44,10 @@ class CreatePaymentPain001ServiceIntegrationTest {
     private static final String PAYMENT_INFO_001 = "PMT-INF-001";
     private static final String PAYMENT_ID_END_TO_END = "E2E-20261027-0001";
 
-    private static final String POSTGRES_DOCKER_IMAGE = "postgres:18";
     private static final String IDEMPOTENCY_KEY_VALUE = "abc-123";
     private static final String PAIN002_STATUS_REPORT_PREFIX = "S-";
     private static final String PAIN001_VERSION = "pain.001.001.12";
-    private static final String PAIN001_XML_IS_MALFORMED =
-            "Pain.001 XML is malformed or does not match the supported profile";
-
-    @Container
-    private static final PostgreSQLContainer POSTGRES_CONTAINER = new PostgreSQLContainer(POSTGRES_DOCKER_IMAGE);
-
-    @DynamicPropertySource
-    static void configurePostgresContainer(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
-        registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
-    }
+    private static final String PAIN001_XML_IS_MALFORMED = "Pain.001 XML is malformed or does not match the supported profile";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -219,7 +200,7 @@ class CreatePaymentPain001ServiceIntegrationTest {
     @ParameterizedTest
     @CsvSource({
             "100.50, PLN, 100.50, PLN",
-            "250.50, EUR, 37.25, USD" })
+            "250.50, EUR, 37.25, USD"})
     public void shouldAddOnePaymentAndHandleConcurrentThreadsWhileRaceConditionCase(
             String amountOne, String currencyOne,
             String amountTwo, String currencyTwo) throws InterruptedException, ExecutionException, TimeoutException {

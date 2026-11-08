@@ -3,13 +3,8 @@ package priv.home.paymentservice.eventconsumer.persistence;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
+import priv.home.paymentservice.integration.AbstractIntegrationTest;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -19,28 +14,10 @@ import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+class ConsumedEventStorageJpaContainerTest extends AbstractIntegrationTest {
 
-@SpringBootTest
-@Testcontainers
-class ConsumedEventStorageJpaContainerTest {
-
-
-    private static final String POSTGRES_DOCKER_IMAGE = "postgres:18";
     private static final String SELECT_ALL_FROM_CONSUMED_EVENT_TABLE = """
-            SELECT event_id, consumed_at
-            FROM consumed_event
-            """;
-
-
-    @Container
-    private static final PostgreSQLContainer POSTGRES_CONTAINER = new PostgreSQLContainer(POSTGRES_DOCKER_IMAGE);
-
-    @DynamicPropertySource
-    static void configurePostgresContainer(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
-        registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
-    }
+            SELECT event_id, consumed_at FROM consumed_event""";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

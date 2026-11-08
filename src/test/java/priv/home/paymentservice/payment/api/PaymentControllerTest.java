@@ -76,7 +76,7 @@ class PaymentControllerTest {
         Mockito.when(paymentService.retrieveSinglePaymentByPaymentId(any())).thenReturn(Optional.of(paymentResponse));
 
         // when
-        ResponseEntity<PaymentResponse> result = underTest.retrievePayment(paymentResponse.getPaymentId());
+        ResponseEntity<PaymentResponse> result = underTest.retrievePayment(paymentResponse.paymentId());
 
         // then
         Assertions.assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);

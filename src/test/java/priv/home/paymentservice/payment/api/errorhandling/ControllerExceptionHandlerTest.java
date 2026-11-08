@@ -5,15 +5,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.DirectFieldBindingResult;
+import org.springframework.validation.method.MethodValidationResult;
+import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.xml.sax.SAXParseException;
@@ -38,19 +42,20 @@ import static org.mockito.Mockito.when;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class ControllerExceptionHandlerTest {
 
-    private static final String IDEMPOTENCY_KEY = "idempotency-key";
-    private static final String UNEXPECTED_ERROR_OCCURRED = "Unexpected error occurred";
-    private static final String HEADER_IDEMPOTENCY_KEY_NOT_PRESENT = "Required header 'idempotency-key' is not present";
-    private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
-    private static final String CURRENCY_MUST_MATCH_PATTERN = "Currency code must consist of exactly 3 uppercase letters";
-    private static final String UNRECOGNIZED_PROPERTY = "Unrecognized property";
     private static final String AMOUNT = "amount";
     private static final String CURRENCY = "currency";
+    private static final String IDEMPOTENCY_KEY = "idempotency-key";
+    private static final String HEADER_IDEMPOTENCY_KEY_NOT_PRESENT = "Required header 'idempotency-key' is not present";
+    private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
+    private static final String CURRENCY_MUST_RESPECT_PATTERN = "Currency code must consist of exactly 3 uppercase letters";
+    private static final String UNEXPECTED_ERROR_OCCURRED = "Unexpected error occurred";
+    private static final String UNRECOGNIZED_PROPERTY = "Unrecognized property";
     private static final String PAIN001_XML_IS_MALFORMED = "Pain.001 XML is malformed or does not match the supported profile";
     private static final String NO_STATIC_RESOURCE = "No static resource";
     private static final String CONTENT_TYPE_NOT_SUPPORTED = "Content-Type '%s' is not supported";
     private static final String REQUEST_METHOD_NOT_SUPPORTED = "Request method '%s' is not supported";
     private static final String ACCEPTABLE_REPRESENTATIONS = "Acceptable representations: [%s].";
+    private static final String REGEX_TO_REPLACE_NAMESPACE = "\\{\"urn:iso:std:iso:20022:tech:xsd:pain\\.001\\.001\\.12\":([^}]+)}";
     private static final String REGEX_TO_REMOVE_CVC_FROM_SAX_EXCEPTION = "cvc-[\\w.-]+:\\s*";
     private static final String REGEX_TO_REMOVE_FROM_XML_STREAM_EXCEPTION = "ParseError[\\s\\S]*?Message:\\s*";
 
@@ -94,6 +99,27 @@ class ControllerExceptionHandlerTest {
     }
 
     @Test
+    public void shouldReturnBadRequestWhenConstraintMethodValidation() {
+        // given
+        MethodValidationResult methodValidationResultMock = mock(MethodValidationResult.class);
+        HandlerMethodValidationException exception = new HandlerMethodValidationException(methodValidationResultMock);
+        ParameterValidationResult parameterValidationResultMock = mock(ParameterValidationResult.class);
+        when(methodValidationResultMock.getParameterValidationResults())
+                .thenReturn(List.of(parameterValidationResultMock));
+        when(parameterValidationResultMock.getResolvableErrors())
+                .thenReturn(List.of(new DefaultMessageSourceResolvable(new String[]{}, CURRENCY_MUST_RESPECT_PATTERN)));
+
+        // when
+        ResponseEntity<ErrorResponse> responseResponseEntity = exceptionHandler.constraintMethodValidation(exception);
+
+        // then
+        assertThat(responseResponseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody()).isNotNull();
+        assertThat(responseResponseEntity.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseResponseEntity.getBody().message()).isEqualTo(CURRENCY_MUST_RESPECT_PATTERN);
+    }
+
+    @Test
     public void shouldReturnBadRequestWhenRequestAmountIsZero() throws NoSuchMethodException {
         // given
         CreatePaymentRequest notValidPaymentRequest = new CreatePaymentRequest(
@@ -126,7 +152,7 @@ class ControllerExceptionHandlerTest {
         bindingResult.rejectValue(
                 CURRENCY,
                 "Pattern.currency",
-                CURRENCY_MUST_MATCH_PATTERN);
+                CURRENCY_MUST_RESPECT_PATTERN);
         MethodArgumentNotValidException exception = new MethodArgumentNotValidException(
                 getTestMethodParameter(),
                 bindingResult);
@@ -138,7 +164,7 @@ class ControllerExceptionHandlerTest {
         assertThat(responseResponseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(responseResponseEntity.getBody()).isNotNull();
         assertThat(responseResponseEntity.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(responseResponseEntity.getBody().message()).isEqualTo(CURRENCY_MUST_MATCH_PATTERN);
+        assertThat(responseResponseEntity.getBody().message()).isEqualTo(CURRENCY_MUST_RESPECT_PATTERN);
     }
 
     @Test
@@ -149,7 +175,7 @@ class ControllerExceptionHandlerTest {
         bindingResult.rejectValue(
                 CURRENCY,
                 "NotBlank.currency",
-                CURRENCY_MUST_MATCH_PATTERN);
+                CURRENCY_MUST_RESPECT_PATTERN);
         bindingResult.rejectValue(
                 AMOUNT,
                 "NotNull.amount",
@@ -167,7 +193,7 @@ class ControllerExceptionHandlerTest {
         assertThat(responseResponseEntity.getBody().httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(responseResponseEntity.getBody().message())
                 .contains(AMOUNT_MUST_BE_GREATER_THAN_ZERO)
-                .contains(CURRENCY_MUST_MATCH_PATTERN);
+                .contains(CURRENCY_MUST_RESPECT_PATTERN);
     }
 
     @Test
@@ -252,7 +278,7 @@ class ControllerExceptionHandlerTest {
                 "One of '{\"urn:iso:std:iso:20022:tech:xsd:pain.001.001.12\":GrpHdr}' is expected.";
         String responseMessage = saxParseExceptionMessage
                 .replaceAll(REGEX_TO_REMOVE_CVC_FROM_SAX_EXCEPTION, "")
-                .replaceAll("\\{\"urn:iso:std:iso:20022:tech:xsd:pain\\.001\\.001\\.12\":([^}]+)}", "$1");
+                .replaceAll(REGEX_TO_REPLACE_NAMESPACE, "$1");
         int lineNumber = 4;
         int columnNumber = 15;
         LocatorImpl locator = new LocatorImpl();

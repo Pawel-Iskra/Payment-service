@@ -4,15 +4,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
+import priv.home.paymentservice.integration.AbstractIntegrationTest;
 import priv.home.paymentservice.eventconsumer.persistence.ConsumedEventEntity;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.payment.model.PaymentStatus;
@@ -27,31 +22,13 @@ import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@Testcontainers
 @ExtendWith(OutputCaptureExtension.class)
-class PaymentEventConsumerServiceIntegrationTest {
+class PaymentEventConsumerServiceIntegrationTest extends AbstractIntegrationTest {
 
-
-    private static final String POSTGRES_DOCKER_IMAGE = "postgres:18";
     private static final String EVENT_ACCEPTED_FOR_PROCESSING_LOG_MESSAGE = "Event accepted for business processing, eventId=%s";
     private static final String EVENT_ALREADY_EXIST_IN_DB_LOG_MESSAGE = "Event already exist in db, eventId=%s";
     private static final String SELECT_ALL_FROM_CONSUMED_EVENT_TABLE = """
-            SELECT event_id, consumed_at
-            FROM consumed_event
-            """;
-
-
-    @Container
-    private static final PostgreSQLContainer POSTGRES_CONTAINER = new PostgreSQLContainer(POSTGRES_DOCKER_IMAGE);
-
-    @DynamicPropertySource
-    static void configurePostgresContainer(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
-        registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
-    }
-
+            SELECT event_id, consumed_at FROM consumed_event""";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

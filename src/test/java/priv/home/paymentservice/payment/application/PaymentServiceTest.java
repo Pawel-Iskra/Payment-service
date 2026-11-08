@@ -142,9 +142,9 @@ class PaymentServiceTest {
 
         // then
         assertThat(paymentResponseOptional).isNotEmpty();
-        assertThat(paymentResponseOptional.get().getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
-        assertThat(paymentResponseOptional.get().getCurrency()).isEqualTo(validPayment.getCurrency());
-        assertThat(paymentResponseOptional.get().getAmount()).isEqualTo(validPayment.getAmount());
+        assertThat(paymentResponseOptional.get().paymentStatus()).isEqualTo(PaymentStatus.CREATED);
+        assertThat(paymentResponseOptional.get().currency()).isEqualTo(validPayment.getCurrency());
+        assertThat(paymentResponseOptional.get().amount()).isEqualTo(validPayment.getAmount());
     }
 
     @Test
@@ -236,10 +236,10 @@ class PaymentServiceTest {
         // then
         PaymentCreatedEvent capturedEvent = eventCaptor.getValue();
         verify(outboxStorageJpa, times(1)).save(any(OutboxEventEntity.class));
-        assertThat(capturedEvent.getPaymentId()).isEqualTo(payment.getPaymentId());
-        assertThat(capturedEvent.getAmount()).isEqualByComparingTo(payment.getAmount());
-        assertThat(capturedEvent.getCurrency()).isEqualTo(payment.getCurrency());
-        assertThat(capturedEvent.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY);
+        assertThat(capturedEvent.paymentId()).isEqualTo(payment.getPaymentId());
+        assertThat(capturedEvent.amount()).isEqualByComparingTo(payment.getAmount());
+        assertThat(capturedEvent.currency()).isEqualTo(payment.getCurrency());
+        assertThat(capturedEvent.idempotencyKey()).isEqualTo(IDEMPOTENCY_KEY);
     }
 
 

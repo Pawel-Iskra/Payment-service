@@ -24,7 +24,7 @@ public class PaymentEventConsumerService {
     @Transactional
     public Optional<ConsumedEventEntity> processConsumedEvent(String payload) {
         PaymentCreatedEvent eventReceived = objectMapper.readValue(payload, PaymentCreatedEvent.class);
-        UUID eventReceivedId = eventReceived.getEventId();
+        UUID eventReceivedId = eventReceived.eventId();
 
         Optional<ConsumedEventEntity> insertedEventOptional = consumedEventStorageJpa.insertConsumedEventIfAbsent(eventReceivedId);
         if (insertedEventOptional.isEmpty()) {

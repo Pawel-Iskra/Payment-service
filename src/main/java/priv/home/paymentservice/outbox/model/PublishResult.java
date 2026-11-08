@@ -8,7 +8,7 @@ import java.util.UUID;
 @Getter
 public class PublishResult {
 
-    private static final int MAX_ERROR_INFO_CHARS = 255; // TODO: configs
+    private static final int MAX_ERROR_INFO_CHARS = 255; // value related to db column varchar(256)
 
     private UUID eventId;
     private boolean published;

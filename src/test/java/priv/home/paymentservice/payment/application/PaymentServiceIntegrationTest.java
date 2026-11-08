@@ -3,16 +3,11 @@ package priv.home.paymentservice.payment.application;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
+import priv.home.paymentservice.integration.AbstractIntegrationTest;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
@@ -32,12 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 
-@SpringBootTest
-@Testcontainers
-public class PaymentServiceIntegrationTest {
+public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
 
     private static final String SIMULATED_OUTBOX_FAILURE_MESSAGE = "Simulated outbox failure";
-    private static final String POSTGRES_IMAGE = "postgres:18";
     private static final String IDEMPOTENCY_KEY_FIRST = "abc-123";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String CURRENCY_PLN = "PLN";
@@ -58,17 +50,6 @@ public class PaymentServiceIntegrationTest {
     private static final String SELECT_EVENT_BY_PAYMENT_ID_SQL = """
             SELECT payload FROM outbox_event
             WHERE aggregate_id = ?""";
-
-
-    @Container
-    private static final PostgreSQLContainer POSTGRES_CONTAINER = new PostgreSQLContainer(POSTGRES_IMAGE);
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
-        registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
-    }
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -110,7 +91,7 @@ public class PaymentServiceIntegrationTest {
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
 
         compareValuesInPaymentAndInPaymentCreatedEvent(paymentFromDb, eventFromPayload);
-        assertThat(eventFromPayload.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
+        assertThat(eventFromPayload.idempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
     }
 
     @Test
@@ -145,7 +126,7 @@ public class PaymentServiceIntegrationTest {
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
 
         compareValuesInPaymentAndInPaymentCreatedEvent(paymentFromDb, eventFromPayload);
-        assertThat(eventFromPayload.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
+        assertThat(eventFromPayload.idempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
     }
 
     @Test
@@ -198,7 +179,7 @@ public class PaymentServiceIntegrationTest {
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
 
         compareValuesInPaymentAndInPaymentCreatedEvent(paymentFromDb, eventFromPayload);
-        assertThat(eventFromPayload.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
+        assertThat(eventFromPayload.idempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
     }
 
     @Test
@@ -222,10 +203,10 @@ public class PaymentServiceIntegrationTest {
 
 
     private void compareValuesInPaymentAndInPaymentCreatedEvent(PaymentEntity payment, PaymentCreatedEvent paymentCreatedEvent) {
-        assertThat(payment.getPaymentId()).isEqualTo(paymentCreatedEvent.getPaymentId());
-        assertThat(payment.getCurrency()).isEqualTo(paymentCreatedEvent.getCurrency());
-        assertThat(payment.getAmount()).isEqualTo(paymentCreatedEvent.getAmount());
-        assertThat(payment.getPaymentStatus()).isEqualTo(paymentCreatedEvent.getPaymentStatus());
+        assertThat(payment.getPaymentId()).isEqualTo(paymentCreatedEvent.paymentId());
+        assertThat(payment.getCurrency()).isEqualTo(paymentCreatedEvent.currency());
+        assertThat(payment.getAmount()).isEqualTo(paymentCreatedEvent.amount());
+        assertThat(payment.getPaymentStatus()).isEqualTo(paymentCreatedEvent.paymentStatus());
     }
 
     private List<String> retrieveEventPayloadByPaymentId(UUID paymentId) {
