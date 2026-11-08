@@ -38,6 +38,13 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final CreatePaymentPain001Service createPaymentPain001Service;
 
+    // TODO: in between task:
+    //  - upgrade Json PaymentRequest:
+    //          - add 3-5 fields (e.g. debtor IBAN, creditor IBAN, debtor BIC, creditor BIC, EndToEndId)
+    //          - enlarge payload with these values
+    //          - maybe add one/two columns in payment table, e.g. debtor IBAN/BIC, EndToEndId
+    //  - common errors enum for validation Json/Xml
+    //  - Json response mapper
 
     @PostMapping(
             value = "/pain001",
