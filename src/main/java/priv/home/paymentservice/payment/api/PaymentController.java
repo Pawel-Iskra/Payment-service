@@ -37,9 +37,6 @@ public class PaymentController {
     private final PaymentJsonResponseMapper paymentJsonResponseMapper;
     private final PaymentXmlResponseMapper paymentXmlResponseMapper;
 
-    // TODO: in between task:
-    //  - common errors enum for validation Json/Xml
-
 
     @PostMapping(
             value = "/pain001",

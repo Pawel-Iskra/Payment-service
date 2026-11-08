@@ -124,7 +124,6 @@ class CreatePaymentPain001ServiceTest {
                 .getTxInfAndSts()
                 .getFirst()
                 .getOrgnlEndToEndId()).isEqualTo(PAYMENT_MESSAGE_END_TO_END_ID);
-
     }
 
 

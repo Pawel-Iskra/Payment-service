@@ -23,6 +23,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.LocatorImpl;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
+import priv.home.paymentservice.payment.api.dto.CreditorRequest;
+import priv.home.paymentservice.payment.api.dto.DebtorRequest;
 import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException;
 import priv.home.paymentservice.payment.iso20022.pain001.InvalidPain001XmlException;
 import priv.home.paymentservice.payment.iso20022.pain001.MappingPain001ToDomainException;
@@ -44,6 +46,13 @@ class ControllerExceptionHandlerTest {
 
     private static final String AMOUNT = "amount";
     private static final String CURRENCY = "currency";
+    private static final BigDecimal VALID_AMOUNT = new BigDecimal("1234.56");
+    private static final String CURRENCY_PLN = "PLN";
+    private static final String END_TO_END_ID = "E2E-20261108-001";
+    private static final String DEBTOR_IBAN = "PL93109024023152899461927776";
+    private static final String CREDITOR_IBAN = "PL82109024029148361863856384";
+    private static final DebtorRequest DEBTOR_REQUEST = new DebtorRequest("Debtor Name", DEBTOR_IBAN);
+    private static final CreditorRequest CREDITOR_REQUEST = new CreditorRequest("Creditor Name", CREDITOR_IBAN);
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
     private static final String HEADER_IDEMPOTENCY_KEY_NOT_PRESENT = "Required header 'idempotency-key' is not present";
     private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
@@ -58,6 +67,7 @@ class ControllerExceptionHandlerTest {
     private static final String REGEX_TO_REPLACE_NAMESPACE = "\\{\"urn:iso:std:iso:20022:tech:xsd:pain\\.001\\.001\\.12\":([^}]+)}";
     private static final String REGEX_TO_REMOVE_CVC_FROM_SAX_EXCEPTION = "cvc-[\\w.-]+:\\s*";
     private static final String REGEX_TO_REMOVE_FROM_XML_STREAM_EXCEPTION = "ParseError[\\s\\S]*?Message:\\s*";
+
 
     private final ControllerExceptionHandler exceptionHandler = new ControllerExceptionHandler(
             new Pain001XmlErrorMessageExtractor());
@@ -122,8 +132,7 @@ class ControllerExceptionHandlerTest {
     @Test
     public void shouldReturnBadRequestWhenRequestAmountIsZero() throws NoSuchMethodException {
         // given
-        CreatePaymentRequest notValidPaymentRequest = new CreatePaymentRequest(
-                new BigDecimal("0"), "PLN");
+        CreatePaymentRequest notValidPaymentRequest = getPaymentRequest(new BigDecimal("0"), CURRENCY_PLN);
         DirectFieldBindingResult bindingResult = new DirectFieldBindingResult(notValidPaymentRequest, "request");
         bindingResult.rejectValue(
                 AMOUNT,
@@ -146,8 +155,7 @@ class ControllerExceptionHandlerTest {
     @Test
     public void shouldReturnBadRequestWhenCurrencyNotMatchesPattern() throws NoSuchMethodException {
         // given
-        CreatePaymentRequest notValidPaymentRequest = new CreatePaymentRequest(
-                new BigDecimal("123.45"), "USDD");
+        CreatePaymentRequest notValidPaymentRequest = getPaymentRequest(VALID_AMOUNT, "USDD");
         DirectFieldBindingResult bindingResult = new DirectFieldBindingResult(notValidPaymentRequest, "request");
         bindingResult.rejectValue(
                 CURRENCY,
@@ -170,7 +178,7 @@ class ControllerExceptionHandlerTest {
     @Test
     public void shouldReturnBadRequestWhenCurrencyAndAmountAreNull() throws NoSuchMethodException {
         // given
-        CreatePaymentRequest notValidPaymentRequest = new CreatePaymentRequest(null, null);
+        CreatePaymentRequest notValidPaymentRequest = getPaymentRequest(null, null);
         DirectFieldBindingResult bindingResult = new DirectFieldBindingResult(notValidPaymentRequest, "request");
         bindingResult.rejectValue(
                 CURRENCY,
@@ -453,6 +461,16 @@ class ControllerExceptionHandlerTest {
         assertThat(output.getOut()).contains(NullPointerException.class.getName());
     }
 
+
+    private CreatePaymentRequest getPaymentRequest(BigDecimal amount, String currency) {
+        return CreatePaymentRequest.builder()
+                .amount(amount)
+                .currency(currency)
+                .debtorRequest(DEBTOR_REQUEST)
+                .creditorRequest(CREDITOR_REQUEST)
+                .endToEndId(END_TO_END_ID)
+                .build();
+    }
 
     private MethodParameter getTestMethodParameter() throws NoSuchMethodException {
         Method method = TestController.class.getDeclaredMethod("testMethod", String.class);
