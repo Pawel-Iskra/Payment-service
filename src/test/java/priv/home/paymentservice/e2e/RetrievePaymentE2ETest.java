@@ -22,6 +22,12 @@ public class RetrievePaymentE2ETest extends AbstractE2ETest {
     private static final String NOT_FOUND_PAYMENT_WITH_GIVEN_ID = "Not found payment with given id = %s";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("12345.67");
     private static final String CURRENCY_PLN = "PLN";
+    private static final String END_TO_END_ID_1 = "E2E-20261108-001";
+    private static final String END_TO_END_ID_2 = "E2E-20261108-002";
+    private static final String DEBTOR_IBAN_1 = "PL93109024023152899461927776";
+    private static final String DEBTOR_IBAN_2 = "PL93109024023152899461927799";
+    private static final String CREDITOR_IBAN_1 = "PL82109024029148361863856384";
+    private static final String CREDITOR_IBAN_2 = "PL82109024029148361863856399";
 
 
     @Test
@@ -32,8 +38,13 @@ public class RetrievePaymentE2ETest extends AbstractE2ETest {
         BigDecimal[] amounts = new BigDecimal[]{new BigDecimal("10500.50"), new BigDecimal("3300.50")};
         String[] currencies = new String[]{"USD", "PLN"};
         String[] idempotencyKeys = new String[]{"abc-1", "abc-2"};
-        PaymentEntity paymentFirst = getPaymentEntity(idFirst, amounts[0], currencies[0], idempotencyKeys[0]);
-        PaymentEntity paymentSecond = getPaymentEntity(idSecond, amounts[1], currencies[1], idempotencyKeys[1]);
+        String[] endToEndIds = new String[]{END_TO_END_ID_1, END_TO_END_ID_2};
+        String[] debtorIbans = new String[]{DEBTOR_IBAN_1, DEBTOR_IBAN_2};
+        String[] creditorIbans = new String[]{CREDITOR_IBAN_1, CREDITOR_IBAN_2};
+        PaymentEntity paymentFirst = getPaymentEntity(idFirst, amounts[0], currencies[0], idempotencyKeys[0],
+                endToEndIds[0], debtorIbans[0], creditorIbans[0]);
+        PaymentEntity paymentSecond = getPaymentEntity(idSecond, amounts[1], currencies[1], idempotencyKeys[1],
+                endToEndIds[1], debtorIbans[1], creditorIbans[1]);
         paymentStorageJpa.saveAll(List.of(paymentFirst, paymentSecond));
 
         // when
@@ -48,6 +59,9 @@ public class RetrievePaymentE2ETest extends AbstractE2ETest {
         assertThat(response.getBody().paymentId()).isNotEqualTo(idFirst);
         assertThat(response.getBody().amount()).isEqualTo(amounts[1]);
         assertThat(response.getBody().currency()).isEqualTo(currencies[1]);
+        assertThat(response.getBody().endToEndId()).isEqualTo(endToEndIds[1]);
+        assertThat(response.getBody().debtorIban()).isEqualTo(debtorIbans[1]);
+        assertThat(response.getBody().creditorIban()).isEqualTo(creditorIbans[1]);
         assertThat(response.getBody().paymentStatus()).isEqualTo(PaymentStatus.CREATED);
 
     }
@@ -57,7 +71,8 @@ public class RetrievePaymentE2ETest extends AbstractE2ETest {
         // given
         UUID paymentId = generateRandomUuid();
         UUID notExistingPaymentId = generateRandomUuid();
-        PaymentEntity paymentEntity = getPaymentEntity(paymentId, VALID_AMOUNT, CURRENCY_PLN, IDEMPOTENCY_KEY_VALUE);
+        PaymentEntity paymentEntity = getPaymentEntity(paymentId, VALID_AMOUNT, CURRENCY_PLN, IDEMPOTENCY_KEY_VALUE,
+                END_TO_END_ID_1, DEBTOR_IBAN_1, CREDITOR_IBAN_1);
         paymentStorageJpa.save(paymentEntity);
 
         // when
@@ -92,10 +107,14 @@ public class RetrievePaymentE2ETest extends AbstractE2ETest {
     }
 
 
-    private PaymentEntity getPaymentEntity(UUID id, BigDecimal amount, String currency, String idempotencyKey) {
+    private PaymentEntity getPaymentEntity(UUID id, BigDecimal amount, String currency, String idempotencyKey,
+                                           String endToEndId, String debtorIban, String creditorIban) {
         return PaymentEntity.builder()
                 .paymentId(id)
                 .amount(amount)
+                .endToEndId(endToEndId)
+                .debtorIban(debtorIban)
+                .creditorIban(creditorIban)
                 .currency(currency)
                 .paymentStatus(PaymentStatus.CREATED)
                 .idempotencyKey(idempotencyKey)

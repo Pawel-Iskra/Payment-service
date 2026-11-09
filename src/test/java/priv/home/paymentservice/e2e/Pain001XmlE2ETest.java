@@ -38,8 +38,10 @@ public class Pain001XmlE2ETest extends AbstractE2ETest {
     private static final String GROUP_HEADER_MESSAGE_ID = "MSG-20261027-001";
     private static final BigDecimal PAYMENT_AMOUNT = new BigDecimal("125.50");
     private static final String PAYMENT_CURRENCY = "EUR";
-    private static final String PAYMENT_INFO_001 = "PMT-INF-001";
+    private static final String PAYMENT_INFO_ID = "PMT-INF-001";
     private static final String PAYMENT_ID_END_TO_END = "E2E-20261027-0001";
+    private static final String DEBTOR_IBAN = "DE89370400440532013000";
+    private static final String CREDITOR_IBAN = "DE44500105175407324931";
 
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
     private static final String IDEMPOTENCY_KEY_VALUE = "abc-123";
@@ -50,7 +52,8 @@ public class Pain001XmlE2ETest extends AbstractE2ETest {
     private static final String IDEMPOTENCY_KEY_PATTERN_CONSTRAINT = "idempotency-key must start with a letter and contain 2-128 allowed characters";
     private static final String CURRENCY_MUST_RESPECT_PATTERN = "Currency code must consist of exactly 3 uppercase letters";
     private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
-    private static final String AMOUNT_MUST_NOT_EXCEED = "Amount must not exceed 9999999999.99 and must have at most 2 decimal places";
+    private static final String AMOUNT_MUST_NOT_EXCEED = "Amount must not exceed 9999999999.99";
+    private static final String AMOUNT_MUST_HAVE_AT_MOST_DEC_PLACES = "Amount must have at most 2 decimal places";
 
 
     @Test
@@ -88,7 +91,7 @@ public class Pain001XmlE2ETest extends AbstractE2ETest {
         assertThat(statusReportV14.getOrgnlPmtInfAndSts()).isNotEmpty();
         OriginalPaymentInstruction51 instruction51 = statusReportV14.getOrgnlPmtInfAndSts().getFirst();
         assertThat(instruction51).isNotNull();
-        assertThat(instruction51.getOrgnlPmtInfId()).isEqualTo(PAYMENT_INFO_001);
+        assertThat(instruction51.getOrgnlPmtInfId()).isEqualTo(PAYMENT_INFO_ID);
         assertThat(instruction51.getTxInfAndSts()).isNotEmpty();
         assertThat(instruction51.getTxInfAndSts().getFirst().getOrgnlEndToEndId()).isEqualTo(PAYMENT_ID_END_TO_END);
 
@@ -100,6 +103,9 @@ public class Pain001XmlE2ETest extends AbstractE2ETest {
         assertThat(paymentFromDb)
                 .satisfies(paymentEntity -> {
                     assertThat(paymentEntity.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
+                    assertThat(paymentEntity.getEndToEndId()).isEqualTo(PAYMENT_ID_END_TO_END);
+                    assertThat(paymentEntity.getDebtorIban()).isEqualTo(DEBTOR_IBAN);
+                    assertThat(paymentEntity.getCreditorIban()).isEqualTo(CREDITOR_IBAN);
                     assertThat(paymentEntity.getAmount()).isEqualTo(PAYMENT_AMOUNT);
                     assertThat(paymentEntity.getCurrency()).isEqualTo(PAYMENT_CURRENCY);
                     assertThat(paymentEntity.getIdempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_VALUE);
@@ -297,14 +303,17 @@ public class Pain001XmlE2ETest extends AbstractE2ETest {
                 retryProperties.maxBackoff() : calculatedBackoff;
     }
 
-    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(UUID eventId, PaymentEntity paymentToPublish) {
+    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(UUID eventId, PaymentEntity paymentEntity) {
         return PaymentCreatedEvent.builder()
-                .paymentId(paymentToPublish.getPaymentId())
+                .paymentId(paymentEntity.getPaymentId())
                 .eventId(eventId)
-                .amount(paymentToPublish.getAmount())
-                .currency(paymentToPublish.getCurrency())
-                .paymentStatus(paymentToPublish.getPaymentStatus())
-                .idempotencyKey(paymentToPublish.getIdempotencyKey())
+                .endToEndId(paymentEntity.getEndToEndId())
+                .debtorIban(paymentEntity.getDebtorIban())
+                .creditorIban(paymentEntity.getCreditorIban())
+                .amount(paymentEntity.getAmount())
+                .currency(paymentEntity.getCurrency())
+                .paymentStatus(paymentEntity.getPaymentStatus())
+                .idempotencyKey(paymentEntity.getIdempotencyKey())
                 .build();
     }
 
@@ -312,7 +321,7 @@ public class Pain001XmlE2ETest extends AbstractE2ETest {
         return Stream.of(
                 Arguments.of(new BigDecimal("0.0"), AMOUNT_MUST_BE_GREATER_THAN_ZERO),
                 Arguments.of(new BigDecimal("-19"), AMOUNT_MUST_BE_GREATER_THAN_ZERO),
-                Arguments.of(new BigDecimal("123.456"), AMOUNT_MUST_NOT_EXCEED),
+                Arguments.of(new BigDecimal("123.456"), AMOUNT_MUST_HAVE_AT_MOST_DEC_PLACES),
                 Arguments.of(new BigDecimal("112233445566.00"), AMOUNT_MUST_NOT_EXCEED));
     }
 

@@ -18,7 +18,8 @@ public class Pain001XmlErrorMessageExtractor {
     private static final String CURRENCY_MUST_RESPECT_PATTERN = "Currency code must consist of exactly 3 uppercase letters";
     private static final String CURRENCY_IS_REQUIRED = "Currency is required";
     private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
-    private static final String AMOUNT_MUST_NOT_EXCEED = "Amount must not exceed 9999999999.99 and must have at most 2 decimal places";
+    private static final String AMOUNT_MUST_NOT_EXCEED = "Amount must not exceed 9999999999.99";
+    private static final String AMOUNT_MUST_HAVE_AT_MOST_DEC_PLACES = "Amount must have at most 2 decimal places";
 
 
     public String extractMessageFromPain001XmlParseException(InvalidPain001XmlException pain001XmlException) {
@@ -79,9 +80,10 @@ public class Pain001XmlErrorMessageExtractor {
         if (responseMessage.contains("minExclusive")) {
             return AMOUNT_MUST_BE_GREATER_THAN_ZERO;
         }
-        if (responseMessage.contains("fractionDigits")
-                || responseMessage.contains("fraction digits")
-                || responseMessage.contains("maxInclusive")) {
+        if (responseMessage.contains("fractionDigits") || responseMessage.contains("fraction digits")) {
+            return AMOUNT_MUST_HAVE_AT_MOST_DEC_PLACES;
+        }
+        if (responseMessage.contains("maxInclusive")) {
             return AMOUNT_MUST_NOT_EXCEED;
         }
         if (responseMessage.contains("[A-Z]{3,3}")) {

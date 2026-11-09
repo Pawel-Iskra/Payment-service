@@ -35,8 +35,8 @@ class PaymentServiceTest {
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("1234.56");
     private static final String CURRENCY_PLN = "PLN";
     private static final String END_TO_END_ID = "E2E-20261108-001";
-    private static final String DEBTOR_IBAN = "E2E-PL93109024023152899461927776-001";
-    private static final String CREDITOR_IBAN = "E2E-PL93109024023152899461927776-001";
+    private static final String DEBTOR_IBAN = "PL93109024023152899461927776";
+    private static final String CREDITOR_IBAN = "PL82109024029148361863856384";
     private static final DebtorRequest DEBTOR_REQUEST = new DebtorRequest("Debtor Name", DEBTOR_IBAN);
     private static final CreditorRequest CREDITOR_REQUEST = new CreditorRequest("Creditor Name", CREDITOR_IBAN);
 

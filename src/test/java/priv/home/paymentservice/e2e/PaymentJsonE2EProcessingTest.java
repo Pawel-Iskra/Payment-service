@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import priv.home.paymentservice.eventconsumer.persistence.ConsumedEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
+import priv.home.paymentservice.payment.api.dto.CreditorRequest;
+import priv.home.paymentservice.payment.api.dto.DebtorRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
 
 import java.math.BigDecimal;
@@ -32,6 +34,11 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
     private static final String CONSUMED_EVENT_SUCCESSFULLY_PROCESSED = "Payment event successfully processed, consumedEventEntity=%s";
     private static final String CONSUMED_EVENT_NOT_PROCESSED = "Payment event was not processed (duplicate or already registered)";
     private static final String CONSUMED_EVENT_ALREADY_EXIST_IN_DB = "Event already exist in db, eventId=%s";
+    private static final String END_TO_END_ID = "E2E-20261108-001";
+    private static final String DEBTOR_IBAN = "PL93109024023152899461927776";
+    private static final String CREDITOR_IBAN = "PL82109024029148361863856384";
+    private static final DebtorRequest DEBTOR_REQUEST = new DebtorRequest("Debtor Name", DEBTOR_IBAN);
+    private static final CreditorRequest CREDITOR_REQUEST = new CreditorRequest("Creditor Name", CREDITOR_IBAN);
 
 
     @Test
@@ -143,6 +150,9 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
 
     private CreatePaymentRequest getCreatePaymentRequest(BigDecimal amount, String currency) {
         return CreatePaymentRequest.builder()
+                .endToEndId(END_TO_END_ID)
+                .debtorRequest(DEBTOR_REQUEST)
+                .creditorRequest(CREDITOR_REQUEST)
                 .amount(amount)
                 .currency(currency)
                 .build();

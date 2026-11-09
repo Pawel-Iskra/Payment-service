@@ -2,6 +2,7 @@ package priv.home.paymentservice.payment.api;
 
 
 import iso.std.iso._20022.tech.xsd.pain_002_001.*;
+import jakarta.xml.bind.JAXBElement;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -40,10 +41,11 @@ public class PaymentControllerWebMvcTest {
 
     // data for create pain001
     private static final String POST_PAIN001_PATH = "/payments/pain001";
-    private static final String STATUS_PREFIX = "S-";
+    private static final String PAIN002_STATUS_REPORT_PREFIX = "S-";
     private static final String PAIN001_VERSION = "pain.001.001.12";
     private static final String TRANSACTION_STATUS_REPORT_ACTC = "ACTC";
-
+    private static final String GROUP_HEADER_MESSAGE_ID = "MSG-20261109-001";
+    private static final String PAYMENT_INFO_001 = "PMT-INF-001";
     private static final String END_TO_END_ID = "E2E-20261108-001";
     private static final String DEBTOR_IBAN = "E2E-PL93109024023152899461927776-001";
     private static final String CREDITOR_IBAN = "E2E-PL93109024023152899461927776-001";
@@ -181,52 +183,58 @@ public class PaymentControllerWebMvcTest {
                 .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
                 .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
     }
-// TODO: fix
-//    @Test
-//    public void shouldReturnHttpCreatedAndCorrectPain002Report() throws Exception {
-//        // given
-//        UUID paymentId = generateUuid();
-//        CreatePain001Result createPain001Result = getCreatePain001Result(paymentId, false);
-//        when(createPaymentPain001Service.createPaymentFromPain001Xml(any(), any()))
-//                .thenReturn(createPain001Result);
-//        String requestStringXml = Pain001TestData.getPain001SinglePaymentCorrectXmlString();
-//        when(paymentXmlResponseMapper.buildXmlResponse(any(CreatePain001Result.class)))
-//                .thenReturn(requestStringXml);
-//
-//        // then
-//        mockMvc.perform(post(POST_PAIN001_PATH)
-//                        .header(IDEMPOTENCY_KEY_NAME, IDEMPOTENCY_KEY_VALUE)
-//                        .contentType(MediaType.APPLICATION_XML)
-//                        .accept(MediaType.APPLICATION_XML)
-//                        .content(requestStringXml))
-//                .andExpect(status().isCreated())
-//                .andExpect(header().string(HttpHeaders.LOCATION, endsWith("payments/" + paymentId)))
-//                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML))
-//                .andExpect(xpath("//*[local-name()='TxInfAndSts']/*[local-name()='TxSts']")
-//                        .string(TRANSACTION_STATUS_REPORT_ACTC));
-//    }
-//
-//    @Test
-//    public void shouldReturnHttpOkAndCorrectPain002Report() throws Exception {
-//        // given
-//        UUID paymentId = generateUuid();
-//        CreatePain001Result createPain001Result = getCreatePain001Result(paymentId, true);
-//        when(createPaymentPain001Service.createPaymentFromPain001Xml(any(), any()))
-//                .thenReturn(createPain001Result);
-//        String requestStringXml = Pain001TestData.getPain001SinglePaymentCorrectXmlString();
-//
-//        // then
-//        mockMvc.perform(post(POST_PAIN001_PATH)
-//                        .header(IDEMPOTENCY_KEY_NAME, IDEMPOTENCY_KEY_VALUE)
-//                        .contentType(MediaType.APPLICATION_XML)
-//                        .accept(MediaType.APPLICATION_XML)
-//                        .content(requestStringXml))
-//                .andExpect(status().isOk())
-//                .andExpect(header().string(HttpHeaders.LOCATION, endsWith("payments/" + paymentId)))
-//                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML))
-//                .andExpect(xpath("//*[local-name()='TxInfAndSts']/*[local-name()='TxSts']")
-//                        .string(TRANSACTION_STATUS_REPORT_ACTC));
-//    }
+
+    @Test
+    public void shouldReturnHttpCreatedAndCorrectPain002Report() throws Exception {
+        // given
+        UUID paymentId = generateUuid();
+        String requestStringXml = Pain001TestData.getPain001SinglePaymentCorrectXmlString();
+        CreatePain001Result createPain001Result = getCreatePain001Result(paymentId, false);
+        JAXBElement<Document> pain002StatusReport = new ObjectFactory().createDocument(getPain002ReportDocument());
+
+        when(createPaymentPain001Service.createPaymentFromPain001Xml(any(), any()))
+                .thenReturn(createPain001Result);
+        when(paymentXmlResponseMapper.buildXmlResponse(any(CreatePain001Result.class)))
+                .thenReturn(pain002StatusReport);
+
+        // then
+        mockMvc.perform(post(POST_PAIN001_PATH)
+                        .header(IDEMPOTENCY_KEY_NAME, IDEMPOTENCY_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_XML)
+                        .accept(MediaType.APPLICATION_XML)
+                        .content(requestStringXml))
+                .andExpect(status().isCreated())
+                .andExpect(header().string(HttpHeaders.LOCATION, endsWith("payments/" + paymentId)))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML))
+                .andExpect(xpath("//*[local-name()='TxInfAndSts']/*[local-name()='TxSts']")
+                        .string(TRANSACTION_STATUS_REPORT_ACTC));
+    }
+
+    @Test
+    public void shouldReturnHttpOkAndCorrectPain002Report() throws Exception {
+        // given
+        UUID paymentId = generateUuid();
+        CreatePain001Result createPain001Result = getCreatePain001Result(paymentId, true);
+        String requestStringXml = Pain001TestData.getPain001SinglePaymentCorrectXmlString();
+        JAXBElement<Document> pain002StatusReport = new ObjectFactory().createDocument(getPain002ReportDocument());
+
+        when(createPaymentPain001Service.createPaymentFromPain001Xml(any(), any()))
+                .thenReturn(createPain001Result);
+        when(paymentXmlResponseMapper.buildXmlResponse(any(CreatePain001Result.class)))
+                .thenReturn(pain002StatusReport);
+
+        // then
+        mockMvc.perform(post(POST_PAIN001_PATH)
+                        .header(IDEMPOTENCY_KEY_NAME, IDEMPOTENCY_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_XML)
+                        .accept(MediaType.APPLICATION_XML)
+                        .content(requestStringXml))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.LOCATION, endsWith("payments/" + paymentId)))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML))
+                .andExpect(xpath("//*[local-name()='TxInfAndSts']/*[local-name()='TxSts']")
+                        .string(TRANSACTION_STATUS_REPORT_ACTC));
+    }
 
 
     private String getRequestJsonWithValues(BigDecimal amount) {
@@ -299,25 +307,25 @@ public class PaymentControllerWebMvcTest {
         return CreatePain001Result.builder()
                 .paymentId(paymentId)
                 .wasAlreadyInDb(wasAlreadyInDb)
-                .createPain001PaymentStatusReportDocument(buildPain002ReportDocument())
+                .createPain001PaymentStatusReportDocument(getPain002ReportDocument())
                 .build();
     }
 
-    private Document buildPain002ReportDocument() {
+    private Document getPain002ReportDocument() {
         Document pain002StatusReportDocument = new Document();
         CustomerPaymentStatusReportV14 customerPaymentStatusReport = new CustomerPaymentStatusReportV14();
         GroupHeader128 groupHeader = new GroupHeader128();
-        groupHeader.setMsgId(STATUS_PREFIX + generateUuid().toString().replace("-", ""));
+        groupHeader.setMsgId(PAIN002_STATUS_REPORT_PREFIX + generateUuid().toString().replace("-", ""));
         groupHeader.setCreDtTm(toXmlGregorianCalendar(OffsetDateTime.now()));
 
         OriginalGroupHeader22 groupHeaderAndStatus = new OriginalGroupHeader22();
-        groupHeaderAndStatus.setOrgnlMsgId("MSG-20261027-001");
+        groupHeaderAndStatus.setOrgnlMsgId(GROUP_HEADER_MESSAGE_ID);
         groupHeaderAndStatus.setOrgnlMsgNmId(PAIN001_VERSION);
 
         OriginalPaymentInstruction51 paymentInstructionAndStatus = new OriginalPaymentInstruction51();
-        paymentInstructionAndStatus.setOrgnlPmtInfId("PMT-INF-001");
+        paymentInstructionAndStatus.setOrgnlPmtInfId(PAYMENT_INFO_001);
         PaymentTransaction160 paymentTransaction = new PaymentTransaction160();
-        paymentTransaction.setOrgnlEndToEndId("E2E-20261027-0001");
+        paymentTransaction.setOrgnlEndToEndId(END_TO_END_ID);
         paymentTransaction.setTxSts(TRANSACTION_STATUS_REPORT_ACTC);
         paymentInstructionAndStatus.getTxInfAndSts().add(paymentTransaction);
 
