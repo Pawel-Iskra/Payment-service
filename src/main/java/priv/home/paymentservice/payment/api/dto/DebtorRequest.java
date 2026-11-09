@@ -3,12 +3,14 @@ package priv.home.paymentservice.payment.api.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
 @Builder
 public record DebtorRequest(
         @JsonProperty("name")
         @NotNull(message = "Debtor name is required")
+        @Size(min = 1, max = 140, message = "Name length must be between 1 and 140")
         String debtorName,
 
         @JsonProperty("iban")
