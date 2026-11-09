@@ -1,7 +1,6 @@
 package priv.home.paymentservice.payment.api;
 
 import iso.std.iso._20022.tech.xsd.pain_002_001.Document;
-import iso.std.iso._20022.tech.xsd.pain_002_001.ObjectFactory;
 import jakarta.validation.Valid;
 import jakarta.xml.bind.JAXBElement;
 import lombok.AllArgsConstructor;
@@ -12,15 +11,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
+import priv.home.paymentservice.payment.api.mapper.PaymentJsonResponseMapper;
+import priv.home.paymentservice.payment.api.mapper.PaymentXmlResponseMapper;
 import priv.home.paymentservice.payment.api.validation.ValidIdempotencyKey;
-import priv.home.paymentservice.payment.application.CreatePain001Result;
-import priv.home.paymentservice.payment.application.CreatePaymentPain001Service;
-import priv.home.paymentservice.payment.application.CreatePaymentResult;
-import priv.home.paymentservice.payment.application.PaymentService;
+import priv.home.paymentservice.payment.application.*;
 import priv.home.paymentservice.payment.exception.SinglePaymentNotFoundException;
 
 import java.net.URI;
-import java.util.Optional;
 import java.util.UUID;
 
 /*
@@ -37,6 +34,8 @@ public class PaymentController {
 
     private final PaymentService paymentService;
     private final CreatePaymentPain001Service createPaymentPain001Service;
+    private final PaymentJsonResponseMapper paymentJsonResponseMapper;
+    private final PaymentXmlResponseMapper paymentXmlResponseMapper;
 
 
     @PostMapping(
@@ -49,17 +48,15 @@ public class PaymentController {
     {
         CreatePain001Result createPain001Result = createPaymentPain001Service
                 .createPaymentFromPain001Xml(idempotencyKey, xmlPain001Bytes);
-        JAXBElement<Document> responsePain002XmlDocument = new ObjectFactory()
-                .createDocument(createPain001Result.createPain001PaymentStatusReportDocument());
         URI location = getLocation(createPain001Result.paymentId());
 
         if (createPain001Result.wasAlreadyInDb()) {
             return ResponseEntity.ok()
                     .location(location)
-                    .body(responsePain002XmlDocument);
+                    .body(paymentXmlResponseMapper.buildXmlResponse(createPain001Result));
         }
         return ResponseEntity.created(location)
-                .body(responsePain002XmlDocument);
+                .body(paymentXmlResponseMapper.buildXmlResponse(createPain001Result));
     }
 
     @PostMapping(
@@ -75,10 +72,10 @@ public class PaymentController {
         if (createPaymentResult.wasAlreadyInDb()) {
             return ResponseEntity.ok()
                     .location(location)
-                    .body(buildPaymentResponseFromCreatePaymentResult(createPaymentResult));
+                    .body(paymentJsonResponseMapper.buildPaymentJsonResponse(createPaymentResult));
         }
         return ResponseEntity.created(location)
-                .body(buildPaymentResponseFromCreatePaymentResult(createPaymentResult));
+                .body(paymentJsonResponseMapper.buildPaymentJsonResponse(createPaymentResult));
     }
 
     @GetMapping(
@@ -86,13 +83,11 @@ public class PaymentController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PaymentResponse> retrievePayment(@PathVariable("id") UUID paymentId)
     {
-        Optional<PaymentResponse> paymentResponseOptional =
-                paymentService.retrieveSinglePaymentByPaymentId(paymentId);
-        if (paymentResponseOptional.isPresent()) {
-            return new ResponseEntity<>(paymentResponseOptional.get(), HttpStatus.OK);
-        } else {
-            throw new SinglePaymentNotFoundException(paymentId);
-        }
+        PaymentRetrieveResult paymentRetrieveResult = paymentService
+                .retrieveSinglePaymentByPaymentId(paymentId)
+                .orElseThrow(() -> new SinglePaymentNotFoundException(paymentId));
+        return new ResponseEntity<>(paymentJsonResponseMapper
+                .buildPaymentJsonResponse(paymentRetrieveResult), HttpStatus.OK);
     }
 
 
@@ -102,15 +97,5 @@ public class PaymentController {
                 .path("/payments/{id}")
                 .buildAndExpand(paymentId)
                 .toUri();
-    }
-
-    //TODO: ResponseMapper, method for each case
-    private PaymentResponse buildPaymentResponseFromCreatePaymentResult(CreatePaymentResult createPaymentResult) {
-        return PaymentResponse.builder()
-                .paymentId(createPaymentResult.paymentId())
-                .amount(createPaymentResult.amount())
-                .currency(createPaymentResult.currency())
-                .paymentStatus(createPaymentResult.paymentStatus())
-                .build();
     }
 }

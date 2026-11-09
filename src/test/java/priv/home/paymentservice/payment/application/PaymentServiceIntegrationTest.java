@@ -12,6 +12,8 @@ import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
+import priv.home.paymentservice.payment.api.dto.CreditorRequest;
+import priv.home.paymentservice.payment.api.dto.DebtorRequest;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 import priv.home.paymentservice.payment.persistence.PaymentEntity;
 import tools.jackson.databind.ObjectMapper;
@@ -29,19 +31,28 @@ import static org.mockito.Mockito.doThrow;
 
 public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String SIMULATED_OUTBOX_FAILURE_MESSAGE = "Simulated outbox failure";
-    private static final String IDEMPOTENCY_KEY_FIRST = "abc-123";
+
+    private static final String END_TO_END_ID = "E2E-20261108-001";
+    private static final String DEBTOR_IBAN = "PL93109024023152899461927776";
+    private static final String CREDITOR_IBAN = "PL82109024029148361863856384";
+    private static final DebtorRequest DEBTOR_REQUEST = new DebtorRequest("Debtor Name", DEBTOR_IBAN);
+    private static final CreditorRequest CREDITOR_REQUEST = new CreditorRequest("Creditor Name", CREDITOR_IBAN);
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String CURRENCY_PLN = "PLN";
+    private static final String IDEMPOTENCY_KEY_FIRST = "abc-123";
+    private static final String SIMULATED_OUTBOX_FAILURE_MESSAGE = "Simulated outbox failure";
     private static final String SELECT_COUNT_ALL_PAYMENT_SQL = "SELECT COUNT(*) FROM payment";
     private static final String SELECT_COUNT_ALL_OUTBOX_EVENT_SQL = "SELECT COUNT(*) FROM outbox_event";
     private static final String SELECT_PAYMENT_BY_IDEMPOTENCY_KEY_SQL = """
-            SELECT payment_id, amount, currency, payment_status, idempotency_key
+            SELECT payment_id, amount, currency, payment_status, idempotency_key, end_to_end_id, debtor_iban, creditor_iban
             FROM payment
             WHERE  idempotency_key = ?""";
     private static final RowMapper<PaymentEntity> PAYMENT_ROW_MAPPER =
             (resultSet, rowNum) -> PaymentEntity.builder()
                     .paymentId(resultSet.getObject("payment_id", UUID.class))
+                    .endToEndId(resultSet.getString("end_to_end_id"))
+                    .debtorIban(resultSet.getString("debtor_iban"))
+                    .creditorIban(resultSet.getString("creditor_iban"))
                     .amount(resultSet.getBigDecimal("amount"))
                     .currency(resultSet.getString("currency"))
                     .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
@@ -161,6 +172,7 @@ public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
             assertThat(firstThreadResult.wasAlreadyInDb()).isNotEqualTo(secondThreadResult.wasAlreadyInDb());
             paymentId = firstThreadResult.paymentId();
         } finally {
+            startLatch.countDown();
             executor.shutdownNow();
         }
 
@@ -207,6 +219,9 @@ public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(payment.getCurrency()).isEqualTo(paymentCreatedEvent.currency());
         assertThat(payment.getAmount()).isEqualTo(paymentCreatedEvent.amount());
         assertThat(payment.getPaymentStatus()).isEqualTo(paymentCreatedEvent.paymentStatus());
+        assertThat(payment.getEndToEndId()).isEqualTo(paymentCreatedEvent.endToEndId());
+        assertThat(payment.getDebtorIban()).isEqualTo(paymentCreatedEvent.debtorIban());
+        assertThat(payment.getCreditorIban()).isEqualTo(paymentCreatedEvent.creditorIban());
     }
 
     private List<String> retrieveEventPayloadByPaymentId(UUID paymentId) {
@@ -233,9 +248,14 @@ public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
         return objectMapper.readValue(payload, PaymentCreatedEvent.class);
     }
 
-
     private CreatePaymentRequest getValidPaymentRequest() {
-        return new CreatePaymentRequest(VALID_AMOUNT, CURRENCY_PLN);
+        return CreatePaymentRequest.builder()
+                .amount(VALID_AMOUNT)
+                .currency(CURRENCY_PLN)
+                .debtorRequest(DEBTOR_REQUEST)
+                .creditorRequest(CREDITOR_REQUEST)
+                .endToEndId(END_TO_END_ID)
+                .build();
     }
 
 }

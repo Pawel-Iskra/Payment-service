@@ -10,8 +10,12 @@ import java.util.UUID;
 public record PaymentCreatedEvent(
         UUID paymentId,
         UUID eventId,
+        String endToEndId,
+        String debtorIban,
+        String creditorIban,
         BigDecimal amount,
         String currency,
         PaymentStatus paymentStatus,
-        String idempotencyKey) {
+        String idempotencyKey
+) {
 }

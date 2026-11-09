@@ -2,6 +2,7 @@ package priv.home.paymentservice.payment.api;
 
 
 import iso.std.iso._20022.tech.xsd.pain_002_001.*;
+import jakarta.xml.bind.JAXBElement;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -11,10 +12,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
-import priv.home.paymentservice.payment.application.CreatePain001Result;
-import priv.home.paymentservice.payment.application.CreatePaymentPain001Service;
-import priv.home.paymentservice.payment.application.CreatePaymentResult;
-import priv.home.paymentservice.payment.application.PaymentService;
+import priv.home.paymentservice.payment.api.mapper.PaymentJsonResponseMapper;
+import priv.home.paymentservice.payment.api.mapper.PaymentXmlResponseMapper;
+import priv.home.paymentservice.payment.application.*;
 import priv.home.paymentservice.payment.iso20022.Pain001TestData;
 import priv.home.paymentservice.payment.iso20022.pain001.Pain001XmlErrorMessageExtractor;
 import priv.home.paymentservice.payment.model.PaymentStatus;
@@ -41,10 +41,14 @@ public class PaymentControllerWebMvcTest {
 
     // data for create pain001
     private static final String POST_PAIN001_PATH = "/payments/pain001";
-    private static final String STATUS_PREFIX = "S-";
+    private static final String PAIN002_STATUS_REPORT_PREFIX = "S-";
     private static final String PAIN001_VERSION = "pain.001.001.12";
     private static final String TRANSACTION_STATUS_REPORT_ACTC = "ACTC";
-
+    private static final String GROUP_HEADER_MESSAGE_ID = "MSG-20261109-001";
+    private static final String PAYMENT_INFO_001 = "PMT-INF-001";
+    private static final String END_TO_END_ID = "E2E-20261108-001";
+    private static final String DEBTOR_IBAN = "E2E-PL93109024023152899461927776-001";
+    private static final String CREDITOR_IBAN = "E2E-PL93109024023152899461927776-001";
     private static final String IDEMPOTENCY_KEY_NAME = "idempotency-key";
     private static final String IDEMPOTENCY_KEY_VALUE = "abc-123";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
@@ -54,9 +58,18 @@ public class PaymentControllerWebMvcTest {
     private static final String GET_PATH = "/payments/{id}";
     private static final String JSON_REQUEST = """
             {
-                "amount": %s,
-                "currency": %s
-            }
+                 "amount" : %s,
+                 "currency" : "PLN",
+                 "debtor" :{
+                     "name" : "Example Debtor Name",
+                     "iban" : "PL93109024023152899461927776"
+                 },
+                 "creditor" :{
+                     "name" : "Example Creditor Name",
+                     "iban" : "PL82109024029148361863856384"
+                 },
+                 "endToEndId" : "E2E-20261108-001"
+             }
             """;
 
     @Autowired
@@ -67,7 +80,10 @@ public class PaymentControllerWebMvcTest {
     private CreatePaymentPain001Service createPaymentPain001Service;
     @MockitoBean
     private Pain001XmlErrorMessageExtractor pain001XmlErrorMessageExtractor;
-
+    @MockitoBean
+    private PaymentJsonResponseMapper paymentJsonResponseMapper;
+    @MockitoBean
+    private PaymentXmlResponseMapper paymentXmlResponseMapper;
 
     @Test
     public void shouldReturnHttpCreatedForProperRequest() throws Exception {
@@ -77,6 +93,8 @@ public class PaymentControllerWebMvcTest {
         CreatePaymentResult createPaymentResult = getSuccessfulPaymentCreationResponse(paymentId);
         when(paymentService.createPayment(any(String.class), any(CreatePaymentRequest.class)))
                 .thenReturn(createPaymentResult);
+        when(paymentJsonResponseMapper.buildPaymentJsonResponse(any(CreatePaymentResult.class)))
+                .thenReturn(getPaymentResponse(createPaymentResult));
 
         // then
         mockMvc.perform(post(POST_PATH)
@@ -85,6 +103,9 @@ public class PaymentControllerWebMvcTest {
                         .header(IDEMPOTENCY_KEY_NAME, IDEMPOTENCY_KEY_VALUE))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.paymentId").value(paymentId.toString()))
+                .andExpect(jsonPath("$.endToEndId").value(END_TO_END_ID))
+                .andExpect(jsonPath("$.debtorIban").value(DEBTOR_IBAN))
+                .andExpect(jsonPath("$.creditorIban").value(CREDITOR_IBAN))
                 .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.doubleValue()))
                 .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
                 .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
@@ -98,6 +119,8 @@ public class PaymentControllerWebMvcTest {
         CreatePaymentResult createPaymentResult = getPaymentAlreadyExistPaymentCreationResponse(paymentId);
         when(paymentService.createPayment(any(String.class), any(CreatePaymentRequest.class)))
                 .thenReturn(createPaymentResult);
+        when(paymentJsonResponseMapper.buildPaymentJsonResponse(any(CreatePaymentResult.class)))
+                .thenReturn(getPaymentResponse(createPaymentResult));
 
         // then
         mockMvc.perform(post(POST_PATH)
@@ -106,6 +129,9 @@ public class PaymentControllerWebMvcTest {
                         .header(IDEMPOTENCY_KEY_NAME, IDEMPOTENCY_KEY_VALUE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paymentId").value(paymentId.toString()))
+                .andExpect(jsonPath("$.endToEndId").value(END_TO_END_ID))
+                .andExpect(jsonPath("$.debtorIban").value(DEBTOR_IBAN))
+                .andExpect(jsonPath("$.creditorIban").value(CREDITOR_IBAN))
                 .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.doubleValue()))
                 .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
                 .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
@@ -140,14 +166,19 @@ public class PaymentControllerWebMvcTest {
     public void shouldReturnHttpOkForExistingPayment() throws Exception {
         // given
         UUID paymentId = generateUuid();
-        PaymentResponse paymentResponse = getPaymentResponse(paymentId);
+        PaymentRetrieveResult paymentRetrieveResult = getPaymentRetrieveResult(paymentId);
         when(paymentService.retrieveSinglePaymentByPaymentId(any()))
-                .thenReturn(Optional.of(paymentResponse));
+                .thenReturn(Optional.of(paymentRetrieveResult));
+        when(paymentJsonResponseMapper.buildPaymentJsonResponse(any(PaymentRetrieveResult.class)))
+                .thenReturn(getPaymentResponse(paymentRetrieveResult));
 
         // then
         mockMvc.perform(get(GET_PATH, paymentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paymentId").value(paymentId.toString()))
+                .andExpect(jsonPath("$.endToEndId").value(END_TO_END_ID))
+                .andExpect(jsonPath("$.debtorIban").value(DEBTOR_IBAN))
+                .andExpect(jsonPath("$.creditorIban").value(CREDITOR_IBAN))
                 .andExpect(jsonPath("$.amount").value(VALID_AMOUNT.doubleValue()))
                 .andExpect(jsonPath("$.currency").value(CURRENCY_PLN))
                 .andExpect(jsonPath("$.paymentStatus").value(PaymentStatus.CREATED.toString()));
@@ -157,10 +188,14 @@ public class PaymentControllerWebMvcTest {
     public void shouldReturnHttpCreatedAndCorrectPain002Report() throws Exception {
         // given
         UUID paymentId = generateUuid();
+        String requestStringXml = Pain001TestData.getPain001SinglePaymentCorrectXmlString();
         CreatePain001Result createPain001Result = getCreatePain001Result(paymentId, false);
+        JAXBElement<Document> pain002StatusReport = new ObjectFactory().createDocument(getPain002ReportDocument());
+
         when(createPaymentPain001Service.createPaymentFromPain001Xml(any(), any()))
                 .thenReturn(createPain001Result);
-        String requestStringXml = Pain001TestData.getPain001SinglePaymentCorrectXmlString();
+        when(paymentXmlResponseMapper.buildXmlResponse(any(CreatePain001Result.class)))
+                .thenReturn(pain002StatusReport);
 
         // then
         mockMvc.perform(post(POST_PAIN001_PATH)
@@ -180,9 +215,13 @@ public class PaymentControllerWebMvcTest {
         // given
         UUID paymentId = generateUuid();
         CreatePain001Result createPain001Result = getCreatePain001Result(paymentId, true);
+        String requestStringXml = Pain001TestData.getPain001SinglePaymentCorrectXmlString();
+        JAXBElement<Document> pain002StatusReport = new ObjectFactory().createDocument(getPain002ReportDocument());
+
         when(createPaymentPain001Service.createPaymentFromPain001Xml(any(), any()))
                 .thenReturn(createPain001Result);
-        String requestStringXml = Pain001TestData.getPain001SinglePaymentCorrectXmlString();
+        when(paymentXmlResponseMapper.buildXmlResponse(any(CreatePain001Result.class)))
+                .thenReturn(pain002StatusReport);
 
         // then
         mockMvc.perform(post(POST_PAIN001_PATH)
@@ -199,12 +238,39 @@ public class PaymentControllerWebMvcTest {
 
 
     private String getRequestJsonWithValues(BigDecimal amount) {
-        return String.format(JSON_REQUEST, amount.toString(), CURRENCY_PLN);
+        return String.format(JSON_REQUEST, amount.toString());
     }
 
-    private PaymentResponse getPaymentResponse(UUID paymentId) {
+    private PaymentResponse getPaymentResponse(CreatePaymentResult createPaymentResult) {
         return PaymentResponse.builder()
+                .paymentId(createPaymentResult.paymentId())
+                .endToEndId(createPaymentResult.endToEndId())
+                .debtorIban(createPaymentResult.debtorIban())
+                .creditorIban(createPaymentResult.creditorIban())
+                .amount(createPaymentResult.amount())
+                .currency(createPaymentResult.currency())
+                .paymentStatus(createPaymentResult.paymentStatus())
+                .build();
+    }
+
+    public PaymentResponse getPaymentResponse(PaymentRetrieveResult paymentRetrieveResult) {
+        return PaymentResponse.builder()
+                .paymentId(paymentRetrieveResult.paymentId())
+                .endToEndId(paymentRetrieveResult.endToEndId())
+                .debtorIban(paymentRetrieveResult.debtorIban())
+                .creditorIban(paymentRetrieveResult.creditorIban())
+                .amount(paymentRetrieveResult.amount())
+                .currency(paymentRetrieveResult.currency())
+                .paymentStatus(paymentRetrieveResult.paymentStatus())
+                .build();
+    }
+
+    private PaymentRetrieveResult getPaymentRetrieveResult(UUID paymentId) {
+        return PaymentRetrieveResult.builder()
                 .paymentId(paymentId)
+                .endToEndId(END_TO_END_ID)
+                .debtorIban(DEBTOR_IBAN)
+                .creditorIban(CREDITOR_IBAN)
                 .amount(VALID_AMOUNT)
                 .currency(CURRENCY_PLN)
                 .paymentStatus(PaymentStatus.CREATED)
@@ -214,6 +280,9 @@ public class PaymentControllerWebMvcTest {
     private CreatePaymentResult getPaymentAlreadyExistPaymentCreationResponse(UUID paymentId) {
         return CreatePaymentResult.builder()
                 .paymentId(paymentId)
+                .endToEndId(END_TO_END_ID)
+                .debtorIban(DEBTOR_IBAN)
+                .creditorIban(CREDITOR_IBAN)
                 .amount(VALID_AMOUNT)
                 .currency(CURRENCY_PLN)
                 .paymentStatus(PaymentStatus.CREATED)
@@ -224,6 +293,9 @@ public class PaymentControllerWebMvcTest {
     private CreatePaymentResult getSuccessfulPaymentCreationResponse(UUID paymentId) {
         return CreatePaymentResult.builder()
                 .paymentId(paymentId)
+                .endToEndId(END_TO_END_ID)
+                .debtorIban(DEBTOR_IBAN)
+                .creditorIban(CREDITOR_IBAN)
                 .amount(VALID_AMOUNT)
                 .currency(CURRENCY_PLN)
                 .paymentStatus(PaymentStatus.CREATED)
@@ -235,25 +307,25 @@ public class PaymentControllerWebMvcTest {
         return CreatePain001Result.builder()
                 .paymentId(paymentId)
                 .wasAlreadyInDb(wasAlreadyInDb)
-                .createPain001PaymentStatusReportDocument(buildPain002ReportDocument())
+                .createPain001PaymentStatusReportDocument(getPain002ReportDocument())
                 .build();
     }
 
-    private Document buildPain002ReportDocument() {
+    private Document getPain002ReportDocument() {
         Document pain002StatusReportDocument = new Document();
         CustomerPaymentStatusReportV14 customerPaymentStatusReport = new CustomerPaymentStatusReportV14();
         GroupHeader128 groupHeader = new GroupHeader128();
-        groupHeader.setMsgId(STATUS_PREFIX + generateUuid().toString().replace("-", ""));
+        groupHeader.setMsgId(PAIN002_STATUS_REPORT_PREFIX + generateUuid().toString().replace("-", ""));
         groupHeader.setCreDtTm(toXmlGregorianCalendar(OffsetDateTime.now()));
 
         OriginalGroupHeader22 groupHeaderAndStatus = new OriginalGroupHeader22();
-        groupHeaderAndStatus.setOrgnlMsgId("MSG-20261027-001");
+        groupHeaderAndStatus.setOrgnlMsgId(GROUP_HEADER_MESSAGE_ID);
         groupHeaderAndStatus.setOrgnlMsgNmId(PAIN001_VERSION);
 
         OriginalPaymentInstruction51 paymentInstructionAndStatus = new OriginalPaymentInstruction51();
-        paymentInstructionAndStatus.setOrgnlPmtInfId("PMT-INF-001");
+        paymentInstructionAndStatus.setOrgnlPmtInfId(PAYMENT_INFO_001);
         PaymentTransaction160 paymentTransaction = new PaymentTransaction160();
-        paymentTransaction.setOrgnlEndToEndId("E2E-20261027-0001");
+        paymentTransaction.setOrgnlEndToEndId(END_TO_END_ID);
         paymentTransaction.setTxSts(TRANSACTION_STATUS_REPORT_ACTC);
         paymentInstructionAndStatus.getTxInfAndSts().add(paymentTransaction);
 

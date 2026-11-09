@@ -12,6 +12,8 @@ import priv.home.paymentservice.messaging.event.PaymentEventType;
 import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
+import priv.home.paymentservice.payment.api.dto.CreditorRequest;
+import priv.home.paymentservice.payment.api.dto.DebtorRequest;
 import priv.home.paymentservice.payment.api.dto.PaymentResponse;
 import priv.home.paymentservice.payment.api.errorhandling.ErrorResponse;
 import priv.home.paymentservice.payment.model.PaymentStatus;
@@ -30,12 +32,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class PaymentJsonE2ETest extends AbstractE2ETest {
 
+    private static final String END_TO_END_ID = "E2E-20261108-001";
+    private static final String DEBTOR_IBAN = "PL93109024023152899461927776";
+    private static final String CREDITOR_IBAN = "PL82109024029148361863856384";
+    private static final DebtorRequest DEBTOR_REQUEST = new DebtorRequest("Debtor Name", DEBTOR_IBAN);
+    private static final CreditorRequest CREDITOR_REQUEST = new CreditorRequest("Creditor Name", CREDITOR_IBAN);
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
     private static final String IDEMPOTENCY_KEY_IS_REQUIRED = "Required header 'idempotency-key' is not present";
     private static final String IDEMPOTENCY_KEY_PATTERN_CONSTRAINT = "idempotency-key must start with a letter and contain 2-128 allowed characters";
     private static final String CURRENCY_MUST_RESPECT_PATTERN = "Currency code must consist of exactly 3 uppercase letters";
     private static final String AMOUNT_MUST_BE_GREATER_THAN_ZERO = "Amount must be greater than 0";
-    private static final String AMOUNT_MUST_NOT_EXCEED = "Amount must not exceed 9999999999.99 and must have at most 2 decimal places";
+    private static final String AMOUNT_MUST_NOT_EXCEED = "Amount must not exceed 9999999999.99";
+    private static final String AMOUNT_MUST_HAVE_AT_MOST_DEC_PLACES = "Amount must have at most 2 decimal places";
     private static final String API_PATH = "/payments";
 
 
@@ -70,6 +78,9 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
                 .satisfies(paymentEntity -> {
                     assertThat(paymentEntity.getPaymentId()).isEqualTo(paymentIdFromResponse);
                     assertThat(paymentEntity.getPaymentStatus()).isEqualTo(PaymentStatus.CREATED);
+                    assertThat(paymentEntity.getEndToEndId()).isEqualTo(END_TO_END_ID);
+                    assertThat(paymentEntity.getDebtorIban()).isEqualTo(DEBTOR_IBAN);
+                    assertThat(paymentEntity.getCreditorIban()).isEqualTo(CREDITOR_IBAN);
                     assertThat(paymentEntity.getAmount()).isEqualTo(amount);
                     assertThat(paymentEntity.getCurrency()).isEqualTo(currency);
                     assertThat(paymentEntity.getIdempotencyKey()).isEqualTo(idempotencyKey);
@@ -229,7 +240,7 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
         return Stream.of(
                 Arguments.of(new BigDecimal("0.0"), AMOUNT_MUST_BE_GREATER_THAN_ZERO),
                 Arguments.of(new BigDecimal("-19"), AMOUNT_MUST_BE_GREATER_THAN_ZERO),
-                Arguments.of(new BigDecimal("123.456"), AMOUNT_MUST_NOT_EXCEED),
+                Arguments.of(new BigDecimal("123.456"), AMOUNT_MUST_HAVE_AT_MOST_DEC_PLACES),
                 Arguments.of(new BigDecimal("112233445566.00"), AMOUNT_MUST_NOT_EXCEED));
     }
 
@@ -249,6 +260,9 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
 
     private CreatePaymentRequest getCreatePaymentRequest(BigDecimal amount, String currency) {
         return CreatePaymentRequest.builder()
+                .endToEndId(END_TO_END_ID)
+                .debtorRequest(DEBTOR_REQUEST)
+                .creditorRequest(CREDITOR_REQUEST)
                 .amount(amount)
                 .currency(currency)
                 .build();
@@ -269,14 +283,17 @@ public class PaymentJsonE2ETest extends AbstractE2ETest {
                 retryProperties.maxBackoff() : calculatedBackoff;
     }
 
-    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(UUID eventId, PaymentEntity paymentToPublish) {
+    private PaymentCreatedEvent getPaymentCreatedEventFromPayment(UUID eventId, PaymentEntity paymentEntity) {
         return PaymentCreatedEvent.builder()
-                .paymentId(paymentToPublish.getPaymentId())
+                .paymentId(paymentEntity.getPaymentId())
                 .eventId(eventId)
-                .amount(paymentToPublish.getAmount())
-                .currency(paymentToPublish.getCurrency())
-                .paymentStatus(paymentToPublish.getPaymentStatus())
-                .idempotencyKey(paymentToPublish.getIdempotencyKey())
+                .endToEndId(paymentEntity.getEndToEndId())
+                .debtorIban(paymentEntity.getDebtorIban())
+                .creditorIban(paymentEntity.getCreditorIban())
+                .amount(paymentEntity.getAmount())
+                .currency(paymentEntity.getCurrency())
+                .paymentStatus(paymentEntity.getPaymentStatus())
+                .idempotencyKey(paymentEntity.getIdempotencyKey())
                 .build();
     }
 }

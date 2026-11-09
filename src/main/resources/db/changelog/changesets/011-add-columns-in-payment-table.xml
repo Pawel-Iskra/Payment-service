@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+
+    <changeSet id="011" author="xyz">
+        <addColumn tableName="payment">
+            <column name="debtor_iban" type="Varchar(34)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="creditor_iban" type="Varchar(34)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_to_end_id" type="Varchar(35)">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

@@ -19,17 +19,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PaymentStorageContainerLiquibaseTest extends AbstractIntegrationTest {
 
+    private static final String END_TO_END_ID = "E2E-20261108-001";
+    private static final String DEBTOR_IBAN = "PL93109024023152899461927776";
+    private static final String CREDITOR_IBAN = "PL82109024029148361863856384";
     private static final String IDEMPOTENCY_KEY_FIRST = "abc-123";
     private static final String IDEMPOTENCY_KEY_SECOND = "abc-124";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String CURRENCY_PLN = "PLN";
     private static final String SELECT_PAYMENT_BY_ID_SQL = """
-            SELECT payment_id, amount, currency, payment_status, idempotency_key
+            SELECT payment_id, amount, currency, payment_status, idempotency_key, end_to_end_id, debtor_iban, creditor_iban
             FROM payment
             WHERE  payment_id = ?""";
     private static final String INSERT_PAYMENT_SQL = """
-            INSERT INTO payment (payment_id, amount, currency, payment_status, idempotency_key)
-            VALUES (?, ?, ?, ?, ?)""";
+            INSERT INTO payment (payment_id, amount, currency, payment_status, idempotency_key, end_to_end_id, debtor_iban, creditor_iban)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -53,7 +56,10 @@ class PaymentStorageContainerLiquibaseTest extends AbstractIntegrationTest {
                 payment.getAmount(),
                 payment.getCurrency(),
                 payment.getPaymentStatus().name(),
-                payment.getIdempotencyKey());
+                payment.getIdempotencyKey(),
+                payment.getEndToEndId(),
+                payment.getDebtorIban(),
+                payment.getCreditorIban());
 
         // when
         Optional<PaymentEntity> paymentFromDbOptional = paymentStorageJpa.findById(paymentId);
@@ -66,6 +72,9 @@ class PaymentStorageContainerLiquibaseTest extends AbstractIntegrationTest {
         assertEquals(CURRENCY_PLN, paymentFromDb.getCurrency());
         assertEquals(PaymentStatus.CREATED, paymentFromDb.getPaymentStatus());
         assertEquals(IDEMPOTENCY_KEY_FIRST, paymentFromDb.getIdempotencyKey());
+        assertEquals(END_TO_END_ID, paymentFromDb.getEndToEndId());
+        assertEquals(DEBTOR_IBAN, paymentFromDb.getDebtorIban());
+        assertEquals(CREDITOR_IBAN, paymentFromDb.getCreditorIban());
     }
 
     @Test
@@ -86,6 +95,9 @@ class PaymentStorageContainerLiquibaseTest extends AbstractIntegrationTest {
                         .currency(resultSet.getString("currency"))
                         .paymentStatus(PaymentStatus.valueOf(resultSet.getString("payment_status")))
                         .idempotencyKey(resultSet.getString("idempotency_key"))
+                        .endToEndId(resultSet.getString("end_to_end_id"))
+                        .debtorIban(resultSet.getString("debtor_iban"))
+                        .creditorIban(resultSet.getString("creditor_iban"))
                         .build(), paymentId);
 
         assertNotNull(paymentFromDb);
@@ -94,6 +106,9 @@ class PaymentStorageContainerLiquibaseTest extends AbstractIntegrationTest {
         assertEquals(CURRENCY_PLN, paymentFromDb.getCurrency());
         assertEquals(PaymentStatus.CREATED, paymentFromDb.getPaymentStatus());
         assertEquals(IDEMPOTENCY_KEY_FIRST, paymentFromDb.getIdempotencyKey());
+        assertEquals(END_TO_END_ID, paymentFromDb.getEndToEndId());
+        assertEquals(DEBTOR_IBAN, paymentFromDb.getDebtorIban());
+        assertEquals(CREDITOR_IBAN, paymentFromDb.getCreditorIban());
     }
 
     @Test
@@ -156,6 +171,9 @@ class PaymentStorageContainerLiquibaseTest extends AbstractIntegrationTest {
     private PaymentEntity getValidPaymentEntity(String idempotencyKey, UUID paymentId) {
         return PaymentEntity.builder()
                 .paymentId(paymentId)
+                .endToEndId(END_TO_END_ID)
+                .debtorIban(DEBTOR_IBAN)
+                .creditorIban(CREDITOR_IBAN)
                 .amount(VALID_AMOUNT)
                 .currency(CURRENCY_PLN)
                 .paymentStatus(PaymentStatus.CREATED)
