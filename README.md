@@ -8,6 +8,7 @@ An idempotent payment REST API with asynchronous Kafka publishing using the Tran
 3. Payment data and corresponding events are persisted atomically within a single PostgreSQL transaction using the Transactional Outbox Pattern.
 4. Pending outbox events are published asynchronously to Apache Kafka in configurable batches, with keyset scrolling, exponential backoff, and a configurable retry limit. Events are marked as published after broker acknowledgment.
 5. A lightweight Kafka consumer demonstrates idempotent event processing and duplicate message handling.
+6. Building reliability through comprehensive testing and test coverage. ![Line Coverage](https://img.shields.io/badge/Line%20Coverage-97.14%25-brightgreen) ![Tests](https://img.shields.io/badge/Tests-161%20passed-brightgreen) [Download Test Summary (PDF)](docs/test_summary_report_2026_11_09.pdf)
 
 The ISO 20022 implementation intentionally supports a limited subset of message structures and fields. The project-specific XSD profiles are based on the corresponding ISO 20022 schemas but do not implement the full set of ISO 20022 or SEPA business rules. This is an educational implementation, not a production-ready banking platform.
 
