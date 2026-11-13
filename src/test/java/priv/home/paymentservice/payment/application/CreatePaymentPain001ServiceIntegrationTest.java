@@ -45,6 +45,7 @@ class CreatePaymentPain001ServiceIntegrationTest extends AbstractIntegrationTest
     private static final String PAYMENT_ID_END_TO_END = "E2E-20261027-0001";
 
     private static final String IDEMPOTENCY_KEY_VALUE = "abc-123";
+    private static final UUID CORRELATION_ID = UUID.fromString("e0eb0678-c0cc-48b6-9be7-c55c68e25cdb");
     private static final String PAIN002_STATUS_REPORT_PREFIX = "S-";
     private static final String PAIN001_VERSION = "pain.001.001.12";
     private static final String PAIN001_XML_IS_MALFORMED = "Pain.001 XML is malformed or does not match the supported profile";
@@ -75,7 +76,7 @@ class CreatePaymentPain001ServiceIntegrationTest extends AbstractIntegrationTest
 
         // when
         CreatePain001Result createPain001Result = createPaymentPain001Service
-                .createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytes);
+                .createPaymentFromPain001Xml(CORRELATION_ID, IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytes);
 
         // then
         assertThat(createPain001Result.wasAlreadyInDb()).isFalse();
@@ -137,9 +138,9 @@ class CreatePaymentPain001ServiceIntegrationTest extends AbstractIntegrationTest
 
         // when
         CreatePain001Result createPain001ResultFirst = createPaymentPain001Service
-                .createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytes);
+                .createPaymentFromPain001Xml(CORRELATION_ID, IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytes);
         CreatePain001Result createPain001ResultSecond = createPaymentPain001Service
-                .createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytes);
+                .createPaymentFromPain001Xml(CORRELATION_ID, IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytes);
 
         // then
         assertThat(createPain001ResultFirst.paymentId()).isEqualTo(createPain001ResultSecond.paymentId());
@@ -169,7 +170,7 @@ class CreatePaymentPain001ServiceIntegrationTest extends AbstractIntegrationTest
 
         // when + then
         assertThatThrownBy(() -> createPaymentPain001Service
-                .createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytes))
+                .createPaymentFromPain001Xml(CORRELATION_ID, IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytes))
                 .isInstanceOf(InvalidPain001XmlException.class)
                 .hasMessageContaining(PAIN001_XML_IS_MALFORMED)
                 .hasStackTraceContaining(SAXParseException.class.getName());
@@ -188,7 +189,7 @@ class CreatePaymentPain001ServiceIntegrationTest extends AbstractIntegrationTest
 
         // when + then
         assertThatThrownBy(() -> createPaymentPain001Service
-                .createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytes))
+                .createPaymentFromPain001Xml(CORRELATION_ID, IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytes))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining(errorMessage);
 
@@ -218,12 +219,12 @@ class CreatePaymentPain001ServiceIntegrationTest extends AbstractIntegrationTest
         Callable<CreatePain001Result> createPaymentTaskOne = () -> {
             readyLatch.countDown();
             startLatch.await();
-            return createPaymentPain001Service.createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytesOne);
+            return createPaymentPain001Service.createPaymentFromPain001Xml(CORRELATION_ID, IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytesOne);
         };
         Callable<CreatePain001Result> createPaymentTaskTwo = () -> {
             readyLatch.countDown();
             startLatch.await();
-            return createPaymentPain001Service.createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytesTwo);
+            return createPaymentPain001Service.createPaymentFromPain001Xml(CORRELATION_ID, IDEMPOTENCY_KEY_VALUE, pain001XmlStringBytesTwo);
         };
 
         // when + then

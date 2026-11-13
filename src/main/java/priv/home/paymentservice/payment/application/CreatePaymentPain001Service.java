@@ -13,6 +13,7 @@ import priv.home.paymentservice.payment.iso20022.pain001.Pain001XmlParser;
 import priv.home.paymentservice.payment.iso20022.pain002.Pain002ResponseMapper;
 
 import java.io.ByteArrayInputStream;
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
@@ -24,11 +25,11 @@ public class CreatePaymentPain001Service {
     private final Pain002ResponseMapper pain002ResponseMapper;
 
 
-    public CreatePain001Result createPaymentFromPain001Xml(String idempotencyKey, byte[] xmlPain001Bytes) {
+    public CreatePain001Result createPaymentFromPain001Xml(UUID correlationId, String idempotencyKey, byte[] xmlPain001Bytes) {
         Document pain001Document = pain001XmlParser.parse(new ByteArrayInputStream(xmlPain001Bytes));
         Pain001PaymentData pain001PaymentData = pain001PaymentMapper.mapFromRequestPain001Document(pain001Document);
         CreatePaymentResult createPaymentResult = paymentService
-                .createPayment(idempotencyKey, getCreatePaymentRequest(pain001PaymentData));
+                .createPayment(correlationId, idempotencyKey, getCreatePaymentRequest(pain001PaymentData));
 
         return CreatePain001Result.builder()
                 .paymentId(createPaymentResult.paymentId())

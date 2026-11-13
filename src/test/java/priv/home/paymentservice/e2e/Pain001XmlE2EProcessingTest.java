@@ -21,6 +21,7 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 @ExtendWith(OutputCaptureExtension.class)
 public class Pain001XmlE2EProcessingTest extends AbstractE2EProcessingTest {
 
+    private static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
     private static final String IDEMPOTENCY_KEY_VALUE = "abc-123";
     private static final String PAIN001_XML_POST_PATH = "/payments/pain001";
@@ -137,6 +138,7 @@ public class Pain001XmlE2EProcessingTest extends AbstractE2EProcessingTest {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(mediaType);
         httpHeaders.set(IDEMPOTENCY_KEY, idempotencyKey);
+        httpHeaders.set(CORRELATION_ID_HEADER, UUID.randomUUID().toString());
         return httpHeaders;
     }
 

@@ -70,6 +70,7 @@ public class PaymentEventReleaserService {
         return OutboxEventToPublish.builder()
                 .eventId(outboxEventEntity.getEventId())
                 .paymentId(outboxEventEntity.getPaymentId())
+                .correlationId(outboxEventEntity.getCorrelationId())
                 .eventType(outboxEventEntity.getEventType())
                 .payload(outboxEventEntity.getPayload())
                 .build();

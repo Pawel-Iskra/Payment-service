@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -35,6 +36,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PaymentControllerTest {
 
+    private static final String MDC_CORRELATION_ID = "correlationId";
+    private static final UUID CORRELATION_ID = UUID.fromString("68200105-914b-4ab6-9ce6-819c2d7abd89");
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("1234.56");
     private static final String CURRENCY_PLN = "PLN";
@@ -58,6 +61,7 @@ class PaymentControllerTest {
         mockRequest.setServerName("localhost");
         mockRequest.setServerPort(8080);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(mockRequest));
+        MDC.put(MDC_CORRELATION_ID, CORRELATION_ID.toString());
     }
 
     @AfterEach
@@ -72,7 +76,7 @@ class PaymentControllerTest {
         CreatePaymentRequest properCreatePaymentRequest = getProperPaymentRequest();
         CreatePaymentResult createPaymentResult = getPaymentCreateResult(properCreatePaymentRequest, false);
         PaymentResponse paymentResponse = getPaymentResponse(createPaymentResult);
-        when(paymentService.createPayment(any(), any()))
+        when(paymentService.createPayment(any(), any(), any()))
                 .thenReturn(createPaymentResult);
         when(paymentJsonResponseMapper.buildPaymentJsonResponse(any(CreatePaymentResult.class)))
                 .thenReturn(paymentResponse);

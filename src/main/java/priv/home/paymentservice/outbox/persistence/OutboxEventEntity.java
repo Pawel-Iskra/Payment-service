@@ -54,6 +54,9 @@ public class OutboxEventEntity {
     @Column(name = "next_attempt_at", nullable = false)
     private OffsetDateTime nextAttemptAt = OffsetDateTime.now();
 
+    @Column(name = "correlation_id")
+    private UUID correlationId;
+
 
     public void markAsPublished() {
         this.attemptCount++;

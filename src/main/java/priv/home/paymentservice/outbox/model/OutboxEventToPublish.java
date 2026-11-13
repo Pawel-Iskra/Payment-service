@@ -8,6 +8,8 @@ import java.util.UUID;
 public record OutboxEventToPublish(
         UUID eventId,
         UUID paymentId,
+        UUID correlationId,
         String eventType,
-        String payload) {
+        String payload
+) {
 }

@@ -28,6 +28,7 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 @ExtendWith(OutputCaptureExtension.class)
 public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
 
+    private static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
     private static final String API_PATH = "/payments";
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
     private static final String CONSUMED_PAYMENT_EVENT = "Consumed payment event=%s";
@@ -162,6 +163,7 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(mediaType);
         httpHeaders.set(IDEMPOTENCY_KEY, idempotencyKey);
+        httpHeaders.set(CORRELATION_ID_HEADER, UUID.randomUUID().toString());
         return httpHeaders;
     }
 

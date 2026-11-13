@@ -27,7 +27,7 @@ public class PaymentService {
 
 
     @Transactional
-    public CreatePaymentResult createPayment(String idempotencyKey, CreatePaymentRequest createPaymentRequest) {
+    public CreatePaymentResult createPayment(UUID correlationId, String idempotencyKey, CreatePaymentRequest createPaymentRequest) {
         Optional<PaymentEntity> paymentFromDbOptional = retrieveSinglePaymentByIdempotencyKey(idempotencyKey);
         if (paymentFromDbOptional.isPresent()) {
             return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDbOptional.get());
@@ -47,6 +47,7 @@ public class PaymentService {
                 OutboxEventEntity.builder()
                         .eventId(eventId)
                         .paymentId(paymentInserted.getPaymentId())
+                        .correlationId(correlationId)
                         .eventType(PaymentEventType.PAYMENT_CREATED_EVENT.name())
                         .payload(generatePayload(paymentCreatedEvent))
                         .createdAt(OffsetDateTime.now())

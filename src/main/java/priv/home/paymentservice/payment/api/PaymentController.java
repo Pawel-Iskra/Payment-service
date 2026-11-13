@@ -3,7 +3,9 @@ package priv.home.paymentservice.payment.api;
 import iso.std.iso._20022.tech.xsd.pain_002_001.Document;
 import jakarta.validation.Valid;
 import jakarta.xml.bind.JAXBElement;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,12 +27,14 @@ import java.util.UUID;
  * The endpoint supports exactly one payment instruction containing one credit transfer transaction.
  */
 
-@AllArgsConstructor
+@Slf4j
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/payments")
 public class PaymentController {
 
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
+    private static final String MDC_CORRELATION_ID = "correlationId";
 
     private final PaymentService paymentService;
     private final CreatePaymentPain001Service createPaymentPain001Service;
@@ -46,8 +50,10 @@ public class PaymentController {
             @RequestHeader(name = IDEMPOTENCY_KEY) @ValidIdempotencyKey String idempotencyKey,
             @RequestBody byte[] xmlPain001Bytes)
     {
+        log.info("Processing payment POST PAIN001 request");
+
         CreatePain001Result createPain001Result = createPaymentPain001Service
-                .createPaymentFromPain001Xml(idempotencyKey, xmlPain001Bytes);
+                .createPaymentFromPain001Xml(getCorrelationId(), idempotencyKey, xmlPain001Bytes);
         URI location = getLocation(createPain001Result.paymentId());
 
         if (createPain001Result.wasAlreadyInDb()) {
@@ -66,7 +72,10 @@ public class PaymentController {
             @RequestHeader(name = IDEMPOTENCY_KEY) @ValidIdempotencyKey String idempotencyKey,
             @Valid @RequestBody CreatePaymentRequest createPaymentRequest)
     {
-        CreatePaymentResult createPaymentResult = paymentService.createPayment(idempotencyKey, createPaymentRequest);
+        log.info("Processing payment POST JSON request");
+
+        CreatePaymentResult createPaymentResult = paymentService
+                .createPayment(getCorrelationId(), idempotencyKey, createPaymentRequest);
         URI location = getLocation(createPaymentResult.paymentId());
 
         if (createPaymentResult.wasAlreadyInDb()) {
@@ -83,6 +92,8 @@ public class PaymentController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PaymentResponse> retrievePayment(@PathVariable("id") UUID paymentId)
     {
+        log.info("Processing payment GET request");
+
         PaymentRetrieveResult paymentRetrieveResult = paymentService
                 .retrieveSinglePaymentByPaymentId(paymentId)
                 .orElseThrow(() -> new SinglePaymentNotFoundException(paymentId));
@@ -98,4 +109,9 @@ public class PaymentController {
                 .buildAndExpand(paymentId)
                 .toUri();
     }
+
+    private UUID getCorrelationId() {
+        return UUID.fromString(MDC.get(MDC_CORRELATION_ID));
+    }
+
 }

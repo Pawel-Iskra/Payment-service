@@ -33,6 +33,7 @@ import static org.mockito.Mockito.*;
 class CreatePaymentPain001ServiceTest {
 
     private static final String IDEMPOTENCY_KEY_VALUE = "abc-123";
+    private static final UUID CORRELATION_ID = UUID.fromString("e0eb0678-c0cc-48b6-9be7-c55c68e25cdb");
     private static final int PAYMENT_TRANSACTION_ONE = 1;
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("123.45");
     private static final String CURRENCY_PLN = "\"PLN\"";
@@ -73,7 +74,7 @@ class CreatePaymentPain001ServiceTest {
                 .thenReturn(pain001Document);
         when(pain001PaymentMapper.mapFromRequestPain001Document(pain001Document))
                 .thenReturn(pain001PaymentData);
-        when(paymentService.createPayment(any(), any()))
+        when(paymentService.createPayment(any(), any(), any()))
                 .thenReturn(createPaymentResult);
         when(pain002ResponseMapper.buildCustomerPaymentStatusReport(pain001PaymentData))
                 .thenReturn(pain002StatusReport);
@@ -81,7 +82,7 @@ class CreatePaymentPain001ServiceTest {
 
         // when
         CreatePain001Result createPain001Result = createPaymentPain001Service
-                .createPaymentFromPain001Xml(IDEMPOTENCY_KEY_VALUE, exampleInputBytes);
+                .createPaymentFromPain001Xml(CORRELATION_ID, IDEMPOTENCY_KEY_VALUE, exampleInputBytes);
 
         // then
         verify(pain001XmlParser, times(1))
@@ -89,7 +90,7 @@ class CreatePaymentPain001ServiceTest {
         verify(pain001PaymentMapper, times(1))
                 .mapFromRequestPain001Document(pain001DocumentArgumentCaptor.capture());
         verify(paymentService, times(1))
-                .createPayment(eq(IDEMPOTENCY_KEY_VALUE), createPaymentRequestArgumentCaptor.capture());
+                .createPayment(eq(CORRELATION_ID), eq(IDEMPOTENCY_KEY_VALUE), createPaymentRequestArgumentCaptor.capture());
         verify(pain002ResponseMapper, times(1))
                 .buildCustomerPaymentStatusReport(pain001PaymentDataArgumentCaptor.capture());
 

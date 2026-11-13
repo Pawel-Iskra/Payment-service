@@ -1,6 +1,7 @@
 package priv.home.paymentservice.outbox.kafka;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -9,6 +10,7 @@ import priv.home.paymentservice.outbox.application.PaymentEventPublisher;
 import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
 import priv.home.paymentservice.outbox.model.PublishResult;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
+    private static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
 
     private final String kafkaTopic;
     private final KafkaTemplate<String, String> kafkaTemplate;
@@ -45,10 +48,13 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
     private CompletableFuture<SendResult<String, String>> send(OutboxEventToPublish outboxEvent) {
         try {
-            return kafkaTemplate.send(
+            ProducerRecord<String, String> producerRecord = new ProducerRecord<>(
                     kafkaTopic,
                     outboxEvent.paymentId().toString(),
                     outboxEvent.payload());
+            producerRecord.headers().add(
+                    CORRELATION_ID_HEADER, outboxEvent.correlationId().toString().getBytes(StandardCharsets.UTF_8));
+            return kafkaTemplate.send(producerRecord);
         } catch (Exception exception) { // synchronous exception thrown by send (before future returned)
             return CompletableFuture.failedFuture(exception);
         }
@@ -57,9 +63,10 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
     private CompletableFuture<PublishResult> handle(OutboxEventToPublish outboxEvent,
                                                     CompletableFuture<SendResult<String, String>> sendResultFuture) {
         UUID eventId = outboxEvent.eventId();
+        UUID correlationId = outboxEvent.correlationId();
         return sendResultFuture.handle((sendResult, exception) -> {
             if (exception != null) {
-                log.error("Failed to publish the event, eventId={}", eventId, exception);
+                log.error("Failed to publish the event, eventId={}, correlationId={}", eventId, correlationId, exception);
                 return PublishResult.buildNotPublished(eventId, exception);
             }
             // Defensive check for unlikely case when the future completes successfully but sendResult is null
@@ -69,7 +76,7 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
                 return PublishResult.buildNotPublished(
                         eventId, new IllegalStateException("Kafka send completed without a result"));
             }
-            log.info("Event acknowledged by Kafka, eventId={}", eventId);
+            log.info("Event acknowledged by Kafka, eventId={}, correlationId={}", eventId, correlationId);
             return PublishResult.buildPublished(eventId);
         });
     }
