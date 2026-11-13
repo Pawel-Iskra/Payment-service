@@ -1,5 +1,6 @@
 package priv.home.paymentservice.eventconsumer;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class KafkaPaymentEventConsumerTest {
 
+    private static final String KAFKA_TOPIC = "payment-created";
     private static final String PAYMENT_EVENT_CONSUMED = "Consumed payment event=%s";
     private static final String EVENT_SUCCESSFULLY_PROCESSED = "Payment event successfully processed, consumedEventEntity=%s";
     private static final String EVENT_NOT_PROCESSED = "Payment event was not processed (duplicate or already registered)";
@@ -44,11 +46,17 @@ class KafkaPaymentEventConsumerTest {
         UUID eventId = generateRandomUuid();
         String payload = getPayloadForConsumption(eventId);
         ConsumedEventEntity insertedEvent = getValidConsumedEventEntity(eventId);
+        ConsumerRecord<String, String> consumerRecord = new ConsumerRecord<>(
+                KAFKA_TOPIC,
+                0,
+                0,
+                eventId.toString(),
+                payload);
         when(paymentEventConsumerService.processConsumedEvent(payload))
                 .thenReturn(Optional.of(insertedEvent));
 
         // when
-        underTest.consumePaymentEventFromKafka(payload);
+        underTest.consumePaymentEventFromKafka(consumerRecord);
 
         // then
         verify(paymentEventConsumerService).processConsumedEvent(payload);
@@ -61,11 +69,17 @@ class KafkaPaymentEventConsumerTest {
         // given
         UUID eventId = generateRandomUuid();
         String payload = getPayloadForConsumption(eventId);
+        ConsumerRecord<String, String> consumerRecord = new ConsumerRecord<>(
+                KAFKA_TOPIC,
+                0,
+                0,
+                eventId.toString(),
+                payload);
         when(paymentEventConsumerService.processConsumedEvent(payload))
                 .thenReturn(Optional.empty());
 
         // when
-        underTest.consumePaymentEventFromKafka(payload);
+        underTest.consumePaymentEventFromKafka(consumerRecord);
 
         // then
         verify(paymentEventConsumerService).processConsumedEvent(payload);
@@ -78,11 +92,17 @@ class KafkaPaymentEventConsumerTest {
         // given
         String payload = "not-json";
         String exceptionMessage = "Processing failed";
+        ConsumerRecord<String, String> consumerRecord = new ConsumerRecord<>(
+                KAFKA_TOPIC,
+                0,
+                0,
+                generateRandomUuid().toString(),
+                payload);
         when(paymentEventConsumerService.processConsumedEvent(payload))
                 .thenThrow(new IllegalStateException(exceptionMessage));
 
         // when
-        assertThatThrownBy(() -> underTest.consumePaymentEventFromKafka(payload))
+        assertThatThrownBy(() -> underTest.consumePaymentEventFromKafka(consumerRecord))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage(exceptionMessage);
 
