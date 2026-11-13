@@ -24,6 +24,15 @@ paths:
           maxLength: 128
           pattern: ^[a-zA-Z][a-zA-Z0-9._:-]{1,127}$
           example: payment-1234
+      - name: x-correlation-id
+        in: header
+        required: false
+        description: Unique identifier used to correlate logs and trace the request across the payment processing flow. 
+                     Optional. If omitted or invalid, the application generates a new UUID
+        schema:
+          type: string
+          format: uuid
+          example: 4358af09-ce85-48f1-948a-0ecbc949fc54
       requestBody:
         description: Payment initiation message using JSON format input.
         content:
@@ -43,6 +52,11 @@ paths:
               schema:
                 type: string
                 format: uri
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -59,6 +73,11 @@ paths:
               schema:
                 type: string
                 format: uri
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -68,6 +87,12 @@ paths:
                   $ref: '#/components/examples/paymentResponseExample'
         "400":
           description: BAD REQUEST
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -77,6 +102,12 @@ paths:
                   $ref: '#/components/examples/ErrorResponseBadRequestJsonExample'
         "404":
           description: NOT FOUND
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -86,6 +117,12 @@ paths:
                   $ref: '#/components/examples/NoStaticResourceNotFoundExample'
         "405":
           description: METHOD NOT ALLOWED
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -95,6 +132,12 @@ paths:
                   $ref: '#/components/examples/ErrorResponseMethodGetNotAllowedExample'
         "406":
           description: NOT ACCEPTABLE
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -104,6 +147,12 @@ paths:
                   $ref: '#/components/examples/ErrorResponse406AcceptableIsJsonExample'
         "415":
           description: UNSUPPORTED MEDIA TYPE
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -113,6 +162,12 @@ paths:
                   $ref: '#/components/examples/ErrorResponseNotSupportedXmlExample'
         "500":
           description: 500 INTERNAL_SERVER_ERROR
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -138,6 +193,15 @@ paths:
           maxLength: 128
           pattern: ^[a-zA-Z][a-zA-Z0-9._:-]{1,127}$
           example: payment-1234
+      - name: x-correlation-id
+        in: header
+        required: false
+        description: Unique identifier used to correlate logs and trace the request across the payment processing flow.
+                     Optional. If omitted or invalid, the application generates a new UUID
+        schema:
+          type: string
+          format: uuid
+          example: 4358af09-ce85-48f1-948a-0ecbc949fc54
       requestBody:
         description: Payment initiation message using the Payment Service limited profile based on ISO 20022 pain.001.001.12. Only the elements and fields defined by this profile are supported.
         content:
@@ -157,6 +221,11 @@ paths:
               schema:
                 type: string
                 format: uri
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/xml:
               schema:
@@ -173,6 +242,11 @@ paths:
               schema:
                 type: string
                 format: uri
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/xml:
               schema:
@@ -182,6 +256,12 @@ paths:
                   $ref: '#/components/examples/LimitedPain002ResponseBody'
         "400":
           description: BAD REQUEST
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -191,6 +271,12 @@ paths:
                   $ref: '#/components/examples/ErrorResponseBadRequestXmlExample'
         "404":
           description: NOT FOUND
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -200,6 +286,12 @@ paths:
                   $ref: '#/components/examples/NoStaticResourceNotFoundExample'
         "405":
           description: METHOD NOT ALLOWED
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -209,6 +301,12 @@ paths:
                   $ref: '#/components/examples/ErrorResponseMethodGetNotAllowedExample'
         "406":
           description: NOT ACCEPTABLE
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -218,6 +316,12 @@ paths:
                   $ref: '#/components/examples/ErrorResponse406AcceptableIsXmlExample'
         "415":
           description: UNSUPPORTED MEDIA TYPE
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -227,6 +331,12 @@ paths:
                   $ref: '#/components/examples/ErrorResponseNotSupportedJsonExample'
         "500":
           description: 500 INTERNAL SERVER ERROR
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -247,9 +357,24 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: X-Correlation-ID
+        in: header
+        required: false
+        description: Unique identifier used to correlate logs and trace the request across the payment processing flow.
+                     Optional. If omitted or invalid, the application generates a new UUID
+        schema:
+          type: string
+          format: uuid
+          example: 4358af09-ce85-48f1-948a-0ecbc949fc54
       responses:
         "200":
           description: OK
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -259,6 +384,12 @@ paths:
                   $ref: '#/components/examples/paymentResponseExample'
         "400":
           description: BAD REQUEST
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -268,6 +399,12 @@ paths:
                   $ref: '#/components/examples/ErrorResponseBadRequestInvalidUuidExample'
         "404":
           description: NOT FOUND
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -277,6 +414,12 @@ paths:
                   $ref: '#/components/examples/PaymentRetrievalNotFoundExample'
         "405":
           description: METHOD NOT ALLOWED
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -286,6 +429,12 @@ paths:
                   $ref: '#/components/examples/ErrorResponseMethodPostNotAllowedExample'
         "406":
           description: NOT ACCEPTABLE
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -295,6 +444,12 @@ paths:
                   $ref: '#/components/examples/ErrorResponse406AcceptableIsJsonExample'
         "500":
           description: 500 INTERNAL SERVER ERROR
+          headers:
+            X-Correlation-Id:
+              description: ID of processed request
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
