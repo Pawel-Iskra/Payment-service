@@ -12,6 +12,8 @@ import priv.home.paymentservice.eventconsumer.persistence.ConsumedEventEntity;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @AllArgsConstructor
@@ -20,6 +22,8 @@ public class KafkaPaymentEventConsumer {
 
     private static final String MDC_CORRELATION_ID = "correlationId";
     private static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
+    private static final Pattern EVENT_ID_PATTERN = Pattern.compile("\"eventId\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern PAYMENT_ID_PATTERN = Pattern.compile("\"paymentId\"\\s*:\\s*\"([^\"]+)\"");
 
     private final PaymentEventConsumerService paymentEventConsumerService;
 
@@ -33,9 +37,13 @@ public class KafkaPaymentEventConsumer {
 
         try {
             MDC.put(MDC_CORRELATION_ID, correlationId);
-            log.info("Consumed payment event={}", consumedRecord.value());
+
+            String payload = consumedRecord.value();
+            log.info("Consumed payment eventId={}, paymentId={}",
+                    extractValue(payload, EVENT_ID_PATTERN),
+                    extractValue(payload, PAYMENT_ID_PATTERN));
             Optional<ConsumedEventEntity> consumedEventInsertedOptional =
-                    paymentEventConsumerService.processConsumedEvent(consumedRecord.value());
+                    paymentEventConsumerService.processConsumedEvent(payload);
             if (consumedEventInsertedOptional.isPresent()) {
                 log.info("Payment event successfully processed, consumedEventEntity={}", consumedEventInsertedOptional.get());
             } else {
@@ -44,5 +52,11 @@ public class KafkaPaymentEventConsumer {
         } finally {
             MDC.remove(MDC_CORRELATION_ID);
         }
+    }
+
+
+    private String extractValue(String payload, Pattern pattern) {
+        Matcher matcher = pattern.matcher(payload);
+        return matcher.find() ? matcher.group(1) : null;
     }
 }
