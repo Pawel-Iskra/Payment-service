@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 class KafkaPaymentEventConsumerTest {
 
     private static final String KAFKA_TOPIC = "payment-created";
-    private static final String PAYMENT_EVENT_CONSUMED = "Consumed payment event=%s";
+    private static final String PAYMENT_EVENT_CONSUMED = "Consumed payment eventId=%s, paymentId=%s";
     private static final String EVENT_SUCCESSFULLY_PROCESSED = "Payment event successfully processed, consumedEventEntity=%s";
     private static final String EVENT_NOT_PROCESSED = "Payment event was not processed (duplicate or already registered)";
 
@@ -44,7 +44,8 @@ class KafkaPaymentEventConsumerTest {
     public void shouldPassPayloadAndLogSuccessMessage(CapturedOutput output) {
         // given
         UUID eventId = generateRandomUuid();
-        String payload = getPayloadForConsumption(eventId);
+        UUID paymentId = generateRandomUuid();
+        String payload = getPayloadForConsumption(eventId, paymentId);
         ConsumedEventEntity insertedEvent = getValidConsumedEventEntity(eventId);
         ConsumerRecord<String, String> consumerRecord = new ConsumerRecord<>(
                 KAFKA_TOPIC,
@@ -60,7 +61,7 @@ class KafkaPaymentEventConsumerTest {
 
         // then
         verify(paymentEventConsumerService).processConsumedEvent(payload);
-        assertThat(output).contains(PAYMENT_EVENT_CONSUMED.formatted(payload));
+        assertThat(output).contains(PAYMENT_EVENT_CONSUMED.formatted(eventId, paymentId));
         assertThat(output).contains(EVENT_SUCCESSFULLY_PROCESSED.formatted(insertedEvent));
     }
 
@@ -68,7 +69,8 @@ class KafkaPaymentEventConsumerTest {
     public void shouldPassPayloadAndLogNotProcessedMessage(CapturedOutput output) {
         // given
         UUID eventId = generateRandomUuid();
-        String payload = getPayloadForConsumption(eventId);
+        UUID paymentId = generateRandomUuid();
+        String payload = getPayloadForConsumption(eventId, paymentId);
         ConsumerRecord<String, String> consumerRecord = new ConsumerRecord<>(
                 KAFKA_TOPIC,
                 0,
@@ -83,7 +85,7 @@ class KafkaPaymentEventConsumerTest {
 
         // then
         verify(paymentEventConsumerService).processConsumedEvent(payload);
-        assertThat(output).contains(PAYMENT_EVENT_CONSUMED.formatted(payload));
+        assertThat(output).contains(PAYMENT_EVENT_CONSUMED.formatted(eventId, paymentId));
         assertThat(output).contains(EVENT_NOT_PROCESSED);
     }
 
@@ -108,19 +110,19 @@ class KafkaPaymentEventConsumerTest {
 
         // then
         verify(paymentEventConsumerService).processConsumedEvent(payload);
-        assertThat(output).contains(PAYMENT_EVENT_CONSUMED.formatted(payload));
+        assertThat(output).contains(PAYMENT_EVENT_CONSUMED.formatted(null, null));
     }
 
 
     // here payload is json-string format of PaymentCreatedEvent
-    private String getPayloadForConsumption(UUID eventId) {
-        PaymentCreatedEvent paymentCreatedEvent = getValidPaymentCreatedEvent(eventId);
+    private String getPayloadForConsumption(UUID eventId, UUID paymentIdId) {
+        PaymentCreatedEvent paymentCreatedEvent = getValidPaymentCreatedEvent(eventId, paymentIdId);
         return objectMapper.writeValueAsString(paymentCreatedEvent);
     }
 
-    private PaymentCreatedEvent getValidPaymentCreatedEvent(UUID eventId) {
+    private PaymentCreatedEvent getValidPaymentCreatedEvent(UUID eventId, UUID paymentIdId) {
         return PaymentCreatedEvent.builder()
-                .paymentId(generateRandomUuid())
+                .paymentId(paymentIdId)
                 .eventId(eventId)
                 .amount(new BigDecimal("123.45"))
                 .currency("PLN")
