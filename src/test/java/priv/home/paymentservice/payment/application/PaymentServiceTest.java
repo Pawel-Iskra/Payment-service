@@ -12,6 +12,7 @@ import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.CreditorRequest;
 import priv.home.paymentservice.payment.api.dto.DebtorRequest;
+import priv.home.paymentservice.payment.api.logging.PaymentPersistedEventListener;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 import priv.home.paymentservice.payment.persistence.PaymentEntity;
 import priv.home.paymentservice.payment.persistence.PaymentStorageJpa;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
 
+    private static final UUID CORRELATION_ID = UUID.fromString("e0eb0678-c0cc-48b6-9be7-c55c68e25cdb");
     private static final String IDEMPOTENCY_KEY = "abc-123";
     private static final String PAYMENT_NOT_FOUND_AFTER_CONFLICT = "Payment not found after idempotency conflict";
     private static final BigDecimal VALID_AMOUNT = new BigDecimal("1234.56");
@@ -46,6 +48,8 @@ class PaymentServiceTest {
     private PaymentStorageJpa paymentStorageJpa;
     @Mock
     private OutboxStorageJpa outboxStorageJpa;
+    @Mock
+    private PaymentPersistedEventListener persistedEventListener;
     @InjectMocks
     private PaymentService underTest;
 
@@ -61,7 +65,7 @@ class PaymentServiceTest {
         // thenAnswer -> returns Payment object passed by Service to Storage
 
         // when
-        underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
+        underTest.createPayment(CORRELATION_ID, IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
         verify(paymentStorageJpa).insertPaymentIfAbsent(any(PaymentEntity.class));
@@ -78,7 +82,7 @@ class PaymentServiceTest {
                 .thenAnswer(invocation -> Optional.of(invocation.getArgument(0)));
 
         // when + then
-        underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
+        underTest.createPayment(CORRELATION_ID, IDEMPOTENCY_KEY, createPaymentRequest);
         verify(paymentStorageJpa).insertPaymentIfAbsent(paymentArgumentCaptor.capture());
         PaymentEntity savedPayment = paymentArgumentCaptor.getValue();
 
@@ -102,7 +106,8 @@ class PaymentServiceTest {
                 .thenAnswer(invocation -> Optional.of(invocation.getArgument(0)));
 
         // when
-        CreatePaymentResult createPaymentResult = underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
+        CreatePaymentResult createPaymentResult = underTest
+                .createPayment(CORRELATION_ID, IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
         assertThat(createPaymentResult.amount()).isEqualTo(createPaymentRequest.amount());
@@ -119,7 +124,8 @@ class PaymentServiceTest {
                 .thenAnswer(invocation -> Optional.of(invocation.getArgument(0)));
 
         // when
-        CreatePaymentResult paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
+        CreatePaymentResult paymentResponseResult = underTest
+                .createPayment(CORRELATION_ID, IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
         assertThat(paymentResponseResult.paymentId()).isNotNull();
@@ -135,7 +141,8 @@ class PaymentServiceTest {
                 .thenAnswer(invocation -> Optional.of(invocation.getArgument(0)));
 
         // when
-        CreatePaymentResult paymentResponseResult = underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
+        CreatePaymentResult paymentResponseResult = underTest
+                .createPayment(CORRELATION_ID, IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
         assertThat(paymentResponseResult.paymentStatus()).isEqualTo(PaymentStatus.CREATED);
@@ -189,7 +196,7 @@ class PaymentServiceTest {
 
         // when + then
         IllegalStateException thrown = assertThrows(IllegalStateException.class,
-                () -> underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest));
+                () -> underTest.createPayment(CORRELATION_ID, IDEMPOTENCY_KEY, createPaymentRequest));
         assertThat(thrown.getMessage()).isEqualTo(PAYMENT_NOT_FOUND_AFTER_CONFLICT);
     }
 
@@ -202,7 +209,7 @@ class PaymentServiceTest {
                 .thenReturn(Optional.of(payment));
 
         // when
-        underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
+        underTest.createPayment(CORRELATION_ID, IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
         verify(paymentStorageJpa, never()).insertPaymentIfAbsent(any(PaymentEntity.class));
@@ -221,7 +228,8 @@ class PaymentServiceTest {
                 .thenReturn(Optional.empty());
 
         // when
-        CreatePaymentResult createPaymentResultResult = underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
+        CreatePaymentResult createPaymentResultResult = underTest
+                .createPayment(CORRELATION_ID, IDEMPOTENCY_KEY, createPaymentRequest);
 
         // then
         verifyNoInteractions(outboxStorageJpa);
@@ -247,7 +255,7 @@ class PaymentServiceTest {
                 .thenReturn(payload);
 
         // when
-        underTest.createPayment(IDEMPOTENCY_KEY, createPaymentRequest);
+        underTest.createPayment(CORRELATION_ID, IDEMPOTENCY_KEY, createPaymentRequest);
         verify(objectMapper).writeValueAsString(eventCaptor.capture());
 
         // then

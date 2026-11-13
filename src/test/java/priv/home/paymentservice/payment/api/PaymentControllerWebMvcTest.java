@@ -91,7 +91,7 @@ public class PaymentControllerWebMvcTest {
         UUID paymentId = generateUuid();
         String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT);
         CreatePaymentResult createPaymentResult = getSuccessfulPaymentCreationResponse(paymentId);
-        when(paymentService.createPayment(any(String.class), any(CreatePaymentRequest.class)))
+        when(paymentService.createPayment(any(UUID.class), any(String.class), any(CreatePaymentRequest.class)))
                 .thenReturn(createPaymentResult);
         when(paymentJsonResponseMapper.buildPaymentJsonResponse(any(CreatePaymentResult.class)))
                 .thenReturn(getPaymentResponse(createPaymentResult));
@@ -117,7 +117,7 @@ public class PaymentControllerWebMvcTest {
         UUID paymentId = generateUuid();
         String jsonRequest = getRequestJsonWithValues(VALID_AMOUNT);
         CreatePaymentResult createPaymentResult = getPaymentAlreadyExistPaymentCreationResponse(paymentId);
-        when(paymentService.createPayment(any(String.class), any(CreatePaymentRequest.class)))
+        when(paymentService.createPayment(any(UUID.class), any(String.class), any(CreatePaymentRequest.class)))
                 .thenReturn(createPaymentResult);
         when(paymentJsonResponseMapper.buildPaymentJsonResponse(any(CreatePaymentResult.class)))
                 .thenReturn(getPaymentResponse(createPaymentResult));
@@ -192,7 +192,7 @@ public class PaymentControllerWebMvcTest {
         CreatePain001Result createPain001Result = getCreatePain001Result(paymentId, false);
         JAXBElement<Document> pain002StatusReport = new ObjectFactory().createDocument(getPain002ReportDocument());
 
-        when(createPaymentPain001Service.createPaymentFromPain001Xml(any(), any()))
+        when(createPaymentPain001Service.createPaymentFromPain001Xml(any(), any(), any()))
                 .thenReturn(createPain001Result);
         when(paymentXmlResponseMapper.buildXmlResponse(any(CreatePain001Result.class)))
                 .thenReturn(pain002StatusReport);
@@ -218,7 +218,7 @@ public class PaymentControllerWebMvcTest {
         String requestStringXml = Pain001TestData.getPain001SinglePaymentCorrectXmlString();
         JAXBElement<Document> pain002StatusReport = new ObjectFactory().createDocument(getPain002ReportDocument());
 
-        when(createPaymentPain001Service.createPaymentFromPain001Xml(any(), any()))
+        when(createPaymentPain001Service.createPaymentFromPain001Xml(any(), any(), any()))
                 .thenReturn(createPain001Result);
         when(paymentXmlResponseMapper.buildXmlResponse(any(CreatePain001Result.class)))
                 .thenReturn(pain002StatusReport);

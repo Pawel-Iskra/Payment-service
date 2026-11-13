@@ -32,6 +32,7 @@ import static org.mockito.Mockito.doThrow;
 public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
 
 
+    private static final UUID CORRELATION_ID = UUID.fromString("e0eb0678-c0cc-48b6-9be7-c55c68e25cdb");
     private static final String END_TO_END_ID = "E2E-20261108-001";
     private static final String DEBTOR_IBAN = "PL93109024023152899461927776";
     private static final String CREDITOR_IBAN = "PL82109024029148361863856384";
@@ -84,7 +85,8 @@ public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
         CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
 
         // when
-        CreatePaymentResult resultCreatePaymentResult = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
+        CreatePaymentResult resultCreatePaymentResult = paymentService
+                .createPayment(CORRELATION_ID, IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
 
         // then
         Integer countEventRecords = jdbcTemplate.queryForObject(SELECT_COUNT_ALL_OUTBOX_EVENT_SQL, Integer.class);
@@ -111,8 +113,10 @@ public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
         CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
 
         // when
-        CreatePaymentResult resultFirstInsert = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
-        CreatePaymentResult resultSecondInsert = paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
+        CreatePaymentResult resultFirstInsert = paymentService
+                .createPayment(CORRELATION_ID, IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
+        CreatePaymentResult resultSecondInsert = paymentService
+                .createPayment(CORRELATION_ID, IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
 
         // then
         assertThat(resultFirstInsert.paymentId()).isEqualTo(resultSecondInsert.paymentId());
@@ -154,7 +158,7 @@ public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
         Callable<CreatePaymentResult> insertPayment = () -> {
             readyLatch.countDown();
             startLatch.await();
-            return paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
+            return paymentService.createPayment(CORRELATION_ID, IDEMPOTENCY_KEY_FIRST, createPaymentRequest);
         };
 
         // when + then
@@ -203,7 +207,7 @@ public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
 
         // when
         RuntimeException thrown = assertThrows(RuntimeException.class, () ->
-                paymentService.createPayment(IDEMPOTENCY_KEY_FIRST, createPaymentRequest));
+                paymentService.createPayment(CORRELATION_ID, IDEMPOTENCY_KEY_FIRST, createPaymentRequest));
 
         // then
         assertThat(thrown.getMessage()).contains(SIMULATED_OUTBOX_FAILURE_MESSAGE);

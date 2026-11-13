@@ -10,10 +10,10 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.data.domain.ScrollPosition;
 import org.springframework.data.domain.Window;
+import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
+import priv.home.paymentservice.outbox.model.PublishResult;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
-import priv.home.paymentservice.outbox.model.PublishResult;
-import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -250,6 +250,7 @@ class PaymentEventReleaserServiceTest {
             resultList.add(OutboxEventEntity.builder()
                     .eventId(generateUuid())
                     .paymentId(generateUuid())
+                    .correlationId(generateUuid())
                     .createdAt(OffsetDateTime.now().minusMinutes(5))
                     .payload(SAMPLE_PAYLOAD)
                     .attemptCount((short) 0)

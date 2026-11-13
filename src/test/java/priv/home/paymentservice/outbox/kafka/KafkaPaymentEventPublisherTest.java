@@ -10,14 +10,15 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
-import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
-import priv.home.paymentservice.outbox.model.PublishResult;
 import priv.home.paymentservice.messaging.event.PaymentEventType;
+import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
+import priv.home.paymentservice.outbox.model.PublishResult;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class KafkaPaymentEventPublisherTest {
 
+    private static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
     private static final String IDEMPOTENCY_KEY_FIRST = "abc-123";
     private static final String IDEMPOTENCY_KEY_SECOND = "abc-124";
     private static final String IDEMPOTENCY_KEY_THIRD = "abc-125";
@@ -63,28 +65,36 @@ class KafkaPaymentEventPublisherTest {
         String eventType = PaymentEventType.PAYMENT_CREATED_EVENT.name();
         List<UUID> paymentIds = List.of(generateUuid(), generateUuid());
         List<UUID> eventIds = List.of(generateUuid(), generateUuid());
+        List<UUID> correlationIds = List.of(generateUuid(), generateUuid());
         List<PaymentCreatedEvent> paymentCreatedEvents = getListOfPaymentCreatedEvents(paymentIds, eventIds);
         List<String> payloads = getListOfPayloads(paymentCreatedEvents);
-        List<OutboxEventToPublish> eventsToPublish = getListOfOutboxEventToPublish(eventIds, paymentIds, eventType, payloads);
+        List<OutboxEventToPublish> eventsToPublish = getListOfOutboxEventToPublish(
+                eventIds, paymentIds, correlationIds, eventType, payloads);
+        List<ProducerRecord<String, String>> producerRecords = List.of(
+                new ProducerRecord<>(KAFKA_TOPIC, paymentIds.getFirst().toString(), payloads.getFirst()),
+                new ProducerRecord<>(KAFKA_TOPIC, paymentIds.getLast().toString(), payloads.getLast())
+        );
+        producerRecords.getFirst().headers()
+                .add(CORRELATION_ID_HEADER, correlationIds.getFirst().toString().getBytes(StandardCharsets.UTF_8));
+        producerRecords.getLast().headers()
+                .add(CORRELATION_ID_HEADER, correlationIds.getLast().toString().getBytes(StandardCharsets.UTF_8));
 
-        SendResult<String, String> sendResultFirst = new SendResult<>(new ProducerRecord<>(
-                KAFKA_TOPIC, paymentIds.getFirst().toString(), payloads.getFirst()), null);
-        SendResult<String, String> sendResultSecond = new SendResult<>(new ProducerRecord<>(
-                KAFKA_TOPIC, paymentIds.getLast().toString(), payloads.getLast()), null);
+        SendResult<String, String> sendResultFirst = new SendResult<>(producerRecords.getFirst(), null);
+        SendResult<String, String> sendResultSecond = new SendResult<>(producerRecords.getLast(), null);
         CompletableFuture<SendResult<String, String>> futureFirst = CompletableFuture.completedFuture(sendResultFirst);
         CompletableFuture<SendResult<String, String>> futureSecond = CompletableFuture.completedFuture(sendResultSecond);
 
-        when(kafkaTemplate.send(KAFKA_TOPIC, paymentIds.getFirst().toString(), payloads.getFirst()))
+        when(kafkaTemplate.send(producerRecords.getFirst()))
                 .thenReturn(futureFirst);
-        when(kafkaTemplate.send(KAFKA_TOPIC, paymentIds.getLast().toString(), payloads.getLast()))
+        when(kafkaTemplate.send(producerRecords.getLast()))
                 .thenReturn(futureSecond);
 
         // when
         List<PublishResult> publishResultList = underTest.publishPaymentEvents(eventsToPublish);
 
         // then
-        verify(kafkaTemplate).send(KAFKA_TOPIC, paymentIds.getFirst().toString(), payloads.getFirst());
-        verify(kafkaTemplate).send(KAFKA_TOPIC, paymentIds.getLast().toString(), payloads.getLast());
+        verify(kafkaTemplate).send(producerRecords.getFirst());
+        verify(kafkaTemplate).send(producerRecords.getLast());
         assertThat(publishResultList.size()).isEqualTo(eventIds.size());
         assertThat(publishResultList.getFirst()).satisfies(publishResult -> {
             assertThat(publishResult.getEventId()).isEqualTo(eventIds.getFirst());
@@ -108,30 +118,42 @@ class KafkaPaymentEventPublisherTest {
         String eventType = PaymentEventType.PAYMENT_CREATED_EVENT.name();
         List<UUID> paymentIds = List.of(generateUuid(), generateUuid(), generateUuid());
         List<UUID> eventIds = List.of(generateUuid(), generateUuid(), generateUuid());
+        List<UUID> correlationIds = List.of(generateUuid(), generateUuid(), generateUuid());
         List<PaymentCreatedEvent> paymentCreatedEvents = getListOfPaymentCreatedEvents(paymentIds, eventIds);
         List<String> payloads = getListOfPayloads(paymentCreatedEvents);
-        List<OutboxEventToPublish> eventsToPublish = getListOfOutboxEventToPublish(eventIds, paymentIds, eventType, payloads);
+        List<OutboxEventToPublish> eventsToPublish = getListOfOutboxEventToPublish(
+                eventIds, paymentIds, correlationIds, eventType, payloads);
+        List<ProducerRecord<String, String>> producerRecords = List.of(
+                new ProducerRecord<>(KAFKA_TOPIC, paymentIds.getFirst().toString(), payloads.getFirst()),
+                new ProducerRecord<>(KAFKA_TOPIC, paymentIds.get(1).toString(), payloads.get(1)),
+                new ProducerRecord<>(KAFKA_TOPIC, paymentIds.getLast().toString(), payloads.getLast())
+        );
+        producerRecords.getFirst().headers()
+                .add(CORRELATION_ID_HEADER, correlationIds.getFirst().toString().getBytes(StandardCharsets.UTF_8));
+        producerRecords.get(1).headers()
+                .add(CORRELATION_ID_HEADER, correlationIds.get(1).toString().getBytes(StandardCharsets.UTF_8));
+        producerRecords.getLast().headers()
+                .add(CORRELATION_ID_HEADER, correlationIds.getLast().toString().getBytes(StandardCharsets.UTF_8));
 
-        SendResult<String, String> sendResultThird = new SendResult<>(new ProducerRecord<>(
-                KAFKA_TOPIC, paymentIds.getLast().toString(), payloads.getLast()), null);
+        SendResult<String, String> sendResultThird = new SendResult<>(producerRecords.getLast(), null);
         CompletableFuture<SendResult<String, String>> futureSecond = CompletableFuture.failedFuture(
                 new RuntimeException(asynchronousFailureMessage + eventIds.get(1).toString()));
         CompletableFuture<SendResult<String, String>> futureThird = CompletableFuture.completedFuture(sendResultThird);
 
-        when(kafkaTemplate.send(KAFKA_TOPIC, paymentIds.getFirst().toString(), payloads.getFirst()))
+        when(kafkaTemplate.send(producerRecords.getFirst()))
                 .thenThrow(new IllegalStateException(synchronousFailureMessage + eventIds.getFirst().toString()));
-        when(kafkaTemplate.send(KAFKA_TOPIC, paymentIds.get(1).toString(), payloads.get(1)))
+        when(kafkaTemplate.send(producerRecords.get(1)))
                 .thenReturn(futureSecond); // test of asynchronous send failure
-        when(kafkaTemplate.send(KAFKA_TOPIC, paymentIds.getLast().toString(), payloads.getLast()))
+        when(kafkaTemplate.send(producerRecords.getLast()))
                 .thenReturn(futureThird);
 
         // when
         List<PublishResult> publishResultList = underTest.publishPaymentEvents(eventsToPublish);
 
         // then
-        verify(kafkaTemplate).send(KAFKA_TOPIC, paymentIds.getFirst().toString(), payloads.getFirst());
-        verify(kafkaTemplate).send(KAFKA_TOPIC, paymentIds.get(1).toString(), payloads.get(1));
-        verify(kafkaTemplate).send(KAFKA_TOPIC, paymentIds.getLast().toString(), payloads.getLast());
+        verify(kafkaTemplate).send(producerRecords.getFirst());
+        verify(kafkaTemplate).send(producerRecords.get(1));
+        verify(kafkaTemplate).send(producerRecords.getLast());
         assertThat(publishResultList.getFirst()).satisfies(publishResult -> {
             assertThat(publishResult.getEventId()).isEqualTo(eventIds.getFirst());
             assertThat(publishResult.isPublished()).isFalse();
@@ -182,10 +204,17 @@ class KafkaPaymentEventPublisherTest {
     }
 
     private List<OutboxEventToPublish> getListOfOutboxEventToPublish(List<UUID> eventIds, List<UUID> paymentIds,
-                                                                     String eventType, List<String> payloads) {
+                                                                     List<UUID> correlationIds, String eventType,
+                                                                     List<String> payloads) {
         List<OutboxEventToPublish> resultList = new ArrayList<>();
         for (int i = 0; i < eventIds.size(); i++) {
-            resultList.add(new OutboxEventToPublish(eventIds.get(i), paymentIds.get(i), eventType, payloads.get(i)));
+            resultList.add(OutboxEventToPublish.builder()
+                    .eventId(eventIds.get(i))
+                    .paymentId(paymentIds.get(i))
+                    .correlationId(correlationIds.get(i))
+                    .eventType(eventType)
+                    .payload(payloads.get(i))
+                    .build());
         }
         return resultList;
     }

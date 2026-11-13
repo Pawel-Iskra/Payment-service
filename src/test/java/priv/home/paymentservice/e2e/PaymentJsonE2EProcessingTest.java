@@ -28,9 +28,10 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 @ExtendWith(OutputCaptureExtension.class)
 public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
 
+    private static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
     private static final String API_PATH = "/payments";
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
-    private static final String CONSUMED_PAYMENT_EVENT = "Consumed payment event=%s";
+    private static final String CONSUMED_PAYMENT_EVENT = "Consumed payment eventId=%s, paymentId=%s";
     private static final String CONSUMED_EVENT_SUCCESSFULLY_PROCESSED = "Payment event successfully processed, consumedEventEntity=%s";
     private static final String CONSUMED_EVENT_NOT_PROCESSED = "Payment event was not processed (duplicate or already registered)";
     private static final String CONSUMED_EVENT_ALREADY_EXIST_IN_DB = "Event already exist in db, eventId=%s";
@@ -89,7 +90,8 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
                             .isBefore(timeAfterEventConsumed);
                     assertThat(outboxEventEntity.getFailedAt()).isNull();
                     assertThat(capturedOutput.getOut())
-                            .contains(CONSUMED_PAYMENT_EVENT.formatted(outboxEventEntity.getPayload()));
+                            .contains(CONSUMED_PAYMENT_EVENT.formatted(
+                                    outboxEventEntity.getEventId(), outboxEventEntity.getPaymentId()));
                 });
     }
 
@@ -162,6 +164,7 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(mediaType);
         httpHeaders.set(IDEMPOTENCY_KEY, idempotencyKey);
+        httpHeaders.set(CORRELATION_ID_HEADER, UUID.randomUUID().toString());
         return httpHeaders;
     }
 

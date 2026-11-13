@@ -19,3 +19,7 @@ databaseChangeLog:
       file: db/changelog/changesets/009-add-columns-in-outbox-table.xml
   - include:
       file: db/changelog/changesets/010-add-column-in-outbox-table.xml
+  - include:
+      file: db/changelog/changesets/011-add-columns-in-payment-table.xml
+  - include:
+      file: db/changelog/changesets/012-add-column-in-outbox-table.xml

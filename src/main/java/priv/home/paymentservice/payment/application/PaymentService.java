@@ -1,6 +1,7 @@
 package priv.home.paymentservice.payment.application;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
@@ -8,6 +9,8 @@ import priv.home.paymentservice.messaging.event.PaymentEventType;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
 import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
+import priv.home.paymentservice.payment.api.logging.PaymentPersistedEvent;
+import priv.home.paymentservice.payment.api.logging.PaymentPersistedEventListener;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 import priv.home.paymentservice.payment.persistence.PaymentEntity;
 import priv.home.paymentservice.payment.persistence.PaymentStorageJpa;
@@ -17,6 +20,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class PaymentService {
@@ -24,10 +28,11 @@ public class PaymentService {
     private final PaymentStorageJpa paymentStorageJpa;
     private final OutboxStorageJpa outboxStorageJpa;
     private final ObjectMapper objectMapper;
+    private final PaymentPersistedEventListener persistedEventListener;
 
 
     @Transactional
-    public CreatePaymentResult createPayment(String idempotencyKey, CreatePaymentRequest createPaymentRequest) {
+    public CreatePaymentResult createPayment(UUID correlationId, String idempotencyKey, CreatePaymentRequest createPaymentRequest) {
         Optional<PaymentEntity> paymentFromDbOptional = retrieveSinglePaymentByIdempotencyKey(idempotencyKey);
         if (paymentFromDbOptional.isPresent()) {
             return buildPaymentAlreadyExistPaymentCreationDto(paymentFromDbOptional.get());
@@ -47,10 +52,12 @@ public class PaymentService {
                 OutboxEventEntity.builder()
                         .eventId(eventId)
                         .paymentId(paymentInserted.getPaymentId())
+                        .correlationId(correlationId)
                         .eventType(PaymentEventType.PAYMENT_CREATED_EVENT.name())
                         .payload(generatePayload(paymentCreatedEvent))
                         .createdAt(OffsetDateTime.now())
                         .build());
+        persistedEventListener.handleLogging(new PaymentPersistedEvent(paymentInserted.getPaymentId(), eventId));
         return buildPaymentSuccessfulPersistedPaymentCreationDto(paymentInserted);
     }
 
