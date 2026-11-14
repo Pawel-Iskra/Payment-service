@@ -1,4 +1,4 @@
-package priv.home.paymentservice.payment.api.logging;
+package priv.home.paymentservice.observability.logging;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
