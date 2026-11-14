@@ -1,4 +1,4 @@
-package priv.home.paymentservice.payment.api.logging;
+package priv.home.paymentservice.observability.logging;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

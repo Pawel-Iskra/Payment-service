@@ -12,7 +12,7 @@ import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 import priv.home.paymentservice.payment.api.dto.CreatePaymentRequest;
 import priv.home.paymentservice.payment.api.dto.CreditorRequest;
 import priv.home.paymentservice.payment.api.dto.DebtorRequest;
-import priv.home.paymentservice.payment.api.logging.PaymentPersistedEventListener;
+import priv.home.paymentservice.observability.logging.PaymentPersistedEventListener;
 import priv.home.paymentservice.payment.model.PaymentStatus;
 import priv.home.paymentservice.payment.persistence.PaymentEntity;
 import priv.home.paymentservice.payment.persistence.PaymentStorageJpa;
