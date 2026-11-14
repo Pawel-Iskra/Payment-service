@@ -51,7 +51,7 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 12. OpenAPI 3.x specification documented in a YAML file, integrated with Swagger UI
 13. Unit, integration and end-to-end tests including concurrent event processing
 14. Application observability with Spring Boot Actuator, Micrometer, Prometheus, Grafana dashboards
-15. Centralized application logging with Logback, including Correlation ID propagation and sensitive payment data protection
+15. Logging with Logback, including Correlation ID propagation across HTTP requests, transactional outbox processing, and Kafka events. and sensitive payment data protection
 
 </td>
 <td width="45%" valign="top">
