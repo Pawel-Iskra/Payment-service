@@ -12,6 +12,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import priv.home.paymentservice.messaging.event.PaymentCreatedEvent;
 import priv.home.paymentservice.messaging.event.PaymentEventType;
+import priv.home.paymentservice.observability.metrics.PaymentMetrics;
 import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
 import priv.home.paymentservice.outbox.model.PublishResult;
 import priv.home.paymentservice.payment.model.PaymentStatus;
@@ -50,12 +51,14 @@ class KafkaPaymentEventPublisherTest {
 
     @Mock
     private KafkaTemplate<String, String> kafkaTemplate;
+    @Mock
+    private PaymentMetrics paymentMetrics;
     private KafkaPaymentEventPublisher underTest;
 
 
     @BeforeEach
     public void setUp() {
-        underTest = new KafkaPaymentEventPublisher(KAFKA_TOPIC, kafkaTemplate);
+        underTest = new KafkaPaymentEventPublisher(KAFKA_TOPIC, kafkaTemplate, paymentMetrics);
     }
 
 
