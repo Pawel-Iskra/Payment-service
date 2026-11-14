@@ -50,6 +50,8 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 11. A lightweight idempotent Kafka event consumer with concurrent duplicate protection
 12. OpenAPI 3.x specification documented in a YAML file, integrated with Swagger UI
 13. Unit, integration and end-to-end tests including concurrent event processing
+14. Application observability with Spring Boot Actuator, Micrometer, Prometheus, Grafana dashboards
+15. Centralized application logging with Logback, including Correlation ID propagation and sensitive payment data protection
 
 </td>
 <td width="45%" valign="top">
@@ -63,6 +65,8 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 - **Data Access:** Spring Data JPA, Spring JDBC
 - **Messaging:** Apache Kafka, Spring for Apache Kafka
 - **XML Processing:** JAXB, XML Schema (XSD)
+- **Observability:** Spring Boot Actuator, Micrometer, Prometheus, Grafana
+- **Logging:** SLF4J, Logback, MDC
 - **Testing:** JUnit, Mockito, WebMvcTest, SpringBootTest, Testcontainers (PostgreSQL 18, Kafka 4.1.1)
 - **Build Tool:** Maven
 - **Infrastructure:** Docker
@@ -71,7 +75,7 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 **Tools & Development Environment**:
 - IDE: IntelliJ IDEA
 - Database Management: pgAdmin
-- Containers: Docker
+- Containers: Docker, Docker Compose
 - Version Control: Git, GitHub
 - API manual tests: Postman
 
@@ -109,7 +113,7 @@ These limitations reflect the project's intended scope and timeframe. A producti
 | **✅ Task 11 — ISO 20022 Payment Messages** | Add selected ISO 20022 pain.001 and pain.002 message structures with a limited set of fields and validation. |
 | **✅ Task 12 — OpenAPI Contract** | Define the REST API contract in openapi.yaml, covering endpoints, schemas, validation rules, error responses, and examples. |
 | **✅ Task 13 — Test Coverage & End-to-End Testing** | Add JaCoCo with an 90% line coverage target and end-to-end tests using Kafka Testcontainers. |
-| **Task 14 — Observability & Logging** | Add basic application metrics, health checks, and Logback logging with sensitive payment data masking. |
+| **✅ Task 14 — Observability & Logging** | Add Actuator health checks, Micrometer metrics, Prometheus, Grafana dashboards, correlation IDs, and secure Logback logging. |
 | **Task 15 — DevOps & CI/CD** | Containerize the application stack with Docker Compose and automate build, test, and Docker image publishing using GitHub Actions. |<br>
 
 
@@ -221,3 +225,12 @@ These limitations reflect the project's intended scope and timeframe. A producti
 - Implemented end-to-end tests verifying JSON- and XML-based payment initiation and payment retrieval workflows.
 - Verified transactional outbox processing, event persistence, and duplicate event handling.
 - Added test infrastructure using Testcontainers to run integration and end-to-end tests against PostgreSQL and Kafka.
+  
+#### Task 14 — Observability and Logging
+**Goal:** Implement application monitoring, health checks, business metrics, and secure logging.
+
+- Integrated Spring Boot Actuator and Micrometer to expose application health checks and metrics.
+- Implemented custom business metrics for payment creation and Kafka event publishing, including failed publishing attempts.
+- Configured Prometheus to scrape application metrics and Grafana to visualize them using a version-controlled dashboard with automatic provisioning.
+- Implemented correlation ID generation and propagation across HTTP requests, transactional outbox processing, and Kafka events.
+- Configured Logback logging with correlation IDs and ensured sensitive payment data is excluded from application logs.
