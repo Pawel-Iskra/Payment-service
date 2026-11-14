@@ -1,4 +1,4 @@
-package priv.home.paymentservice.payment.api.logging;
+package priv.home.paymentservice.observability.logging;
 
 import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.BeforeEach;

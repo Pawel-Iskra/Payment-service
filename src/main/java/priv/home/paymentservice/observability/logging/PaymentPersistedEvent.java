@@ -1,4 +1,4 @@
-package priv.home.paymentservice.payment.api.logging;
+package priv.home.paymentservice.observability.logging;
 
 import java.util.UUID;
 

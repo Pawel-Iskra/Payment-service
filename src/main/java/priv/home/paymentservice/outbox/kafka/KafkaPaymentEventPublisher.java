@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
+import priv.home.paymentservice.observability.metrics.PaymentMetrics;
 import priv.home.paymentservice.outbox.application.PaymentEventPublisher;
 import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
 import priv.home.paymentservice.outbox.model.PublishResult;
@@ -24,13 +25,16 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
     private final String kafkaTopic;
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final PaymentMetrics paymentMetrics;
 
 
     public KafkaPaymentEventPublisher(
             @Value("${payment-service.kafka-topic}") String kafkaTopic,
-            KafkaTemplate<String, String> kafkaTemplate) {
+            KafkaTemplate<String, String> kafkaTemplate,
+            PaymentMetrics paymentMetrics) {
         this.kafkaTopic = kafkaTopic;
         this.kafkaTemplate = kafkaTemplate;
+        this.paymentMetrics = paymentMetrics;
     }
 
 
@@ -66,6 +70,7 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
         UUID correlationId = outboxEvent.correlationId();
         return sendResultFuture.handle((sendResult, exception) -> {
             if (exception != null) {
+                paymentMetrics.incrementFailedPublishAttempt();
                 log.error("Failed to publish the event, eventId={}, correlationId={}", eventId, correlationId, exception);
                 return PublishResult.buildNotPublished(eventId, exception);
             }
@@ -73,9 +78,11 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
             // since delivery status is uncertain, the publisher will retry to preserve at-least-once delivery
             // the broker may have received the event, so a retry could result in a duplicate which idempotent consumer can handle
             if (sendResult == null) {
+                paymentMetrics.incrementFailedPublishAttempt();
                 return PublishResult.buildNotPublished(
                         eventId, new IllegalStateException("Kafka send completed without a result"));
             }
+            paymentMetrics.incrementPaymentEventPublished();
             log.info("Event acknowledged by Kafka, eventId={}, correlationId={}", eventId, correlationId);
             return PublishResult.buildPublished(eventId);
         });

@@ -1,8 +1,12 @@
 package priv.home.paymentservice.payment.application;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -29,9 +33,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 
+@ExtendWith(OutputCaptureExtension.class)
 public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
 
 
+    private static final String PAYMENTS_CREATED_REGISTRY = "paymentsCreated";
+    private static final String PAYMENT_AND_EVENT_PERSISTED_LOG = "Payment and outbox event successfully committed, paymentId=%s, eventId=%s";
     private static final UUID CORRELATION_ID = UUID.fromString("e0eb0678-c0cc-48b6-9be7-c55c68e25cdb");
     private static final String END_TO_END_ID = "E2E-20261108-001";
     private static final String DEBTOR_IBAN = "PL93109024023152899461927776";
@@ -70,6 +77,8 @@ public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
     @MockitoSpyBean
     private OutboxStorageJpa outboxStorageJpa;
     @Autowired
+    private MeterRegistry meterRegistry;
+    @Autowired
     private PaymentService paymentService;
 
     @BeforeEach
@@ -80,9 +89,10 @@ public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
 
 
     @Test
-    public void shouldInsertBothPaymentAndEventToDbAsNormalExpectedCase() {
+    public void shouldInsertBothPaymentAndEventToDbAsNormalExpectedCase(CapturedOutput capturedOutput) {
         // given
         CreatePaymentRequest createPaymentRequest = getValidPaymentRequest();
+        int initialCount = (int) meterRegistry.get(PAYMENTS_CREATED_REGISTRY).counter().count();
 
         // when
         CreatePaymentResult resultCreatePaymentResult = paymentService
@@ -97,14 +107,18 @@ public class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
         Optional<PaymentEntity> paymentFromDbOptional = retrievePaymentByIdempotencyKey(IDEMPOTENCY_KEY_FIRST);
         assertThat(paymentFromDbOptional).isNotEmpty();
         PaymentEntity paymentFromDb = paymentFromDbOptional.get();
+        String paymentId = paymentFromDb.getPaymentId().toString();
 
         List<String> eventPayloadFromDbAsList = retrieveEventPayloadByPaymentId(resultCreatePaymentResult.paymentId());
         assertThat(eventPayloadFromDbAsList).isNotEmpty();
         String eventPayload = eventPayloadFromDbAsList.getFirst();
         PaymentCreatedEvent eventFromPayload = generatePaymentCreatedEventFromPayloadString(eventPayload);
+        String eventId = eventFromPayload.eventId().toString();
 
         compareValuesInPaymentAndInPaymentCreatedEvent(paymentFromDb, eventFromPayload);
         assertThat(eventFromPayload.idempotencyKey()).isEqualTo(IDEMPOTENCY_KEY_FIRST);
+        assertThat(capturedOutput.getOut()).contains(PAYMENT_AND_EVENT_PERSISTED_LOG.formatted(paymentId, eventId));
+        assertThat((int) meterRegistry.get(PAYMENTS_CREATED_REGISTRY).counter().count()).isEqualTo(initialCount + 1);
     }
 
     @Test
