@@ -1,7 +1,9 @@
 package priv.home.paymentservice.e2e;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpEntity;
@@ -40,6 +42,10 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
     private static final String CREDITOR_IBAN = "PL82109024029148361863856384";
     private static final DebtorRequest DEBTOR_REQUEST = new DebtorRequest("Debtor Name", DEBTOR_IBAN);
     private static final CreditorRequest CREDITOR_REQUEST = new CreditorRequest("Creditor Name", CREDITOR_IBAN);
+    private static final String PUBLISHED_PAYMENT_EVENTS_COUNTER = "paymentEventPublished";
+
+    @Autowired
+    private MeterRegistry meterRegistry;
 
 
     @Test
@@ -52,6 +58,7 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
         CreatePaymentRequest paymentRequest = getCreatePaymentRequest(amount, currency);
         HttpHeaders requestHeaders = getRequestHeaders(MediaType.APPLICATION_JSON, idempotencyKey);
         HttpEntity<CreatePaymentRequest> httpRequest = new HttpEntity<>(paymentRequest, requestHeaders);
+        int initialPublishedEventsCount = (int) meterRegistry.get(PUBLISHED_PAYMENT_EVENTS_COUNTER).counter().count();
 
         // when
         ResponseEntity<PaymentResponse> response = testRestTemplate.postForEntity(
@@ -93,6 +100,8 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
                             .contains(CONSUMED_PAYMENT_EVENT.formatted(
                                     outboxEventEntity.getEventId(), outboxEventEntity.getPaymentId()));
                 });
+        int finalPublishedEventsCount = (int) meterRegistry.get(PUBLISHED_PAYMENT_EVENTS_COUNTER).counter().count();
+        assertThat(finalPublishedEventsCount).isEqualTo(initialPublishedEventsCount + 1);
     }
 
     @Test
