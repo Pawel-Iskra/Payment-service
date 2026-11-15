@@ -1,5 +1,6 @@
 package priv.home.paymentservice.e2e;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
@@ -40,6 +41,8 @@ public abstract class AbstractE2ETest {
     protected ConsumedEventStorageJpa consumedEventStorageJpa;
     @Autowired
     protected OutboxEventPublisherProperties publisherProperties;
+    @Autowired
+    protected MeterRegistry meterRegistry;
 
     @LocalServerPort
     protected int port;

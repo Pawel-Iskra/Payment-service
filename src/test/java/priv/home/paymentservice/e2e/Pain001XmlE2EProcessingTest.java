@@ -22,6 +22,8 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 public class Pain001XmlE2EProcessingTest extends AbstractE2EProcessingTest {
 
     private static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
+    private static final String PUBLISHED_PAYMENT_EVENTS_COUNTER = "paymentEventPublished";
+    private static final String PAYMENTS_CREATED_COUNTER = "paymentsCreated";
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
     private static final String IDEMPOTENCY_KEY_VALUE = "abc-123";
     private static final String PAIN001_XML_POST_PATH = "/payments/pain001";
@@ -38,6 +40,8 @@ public class Pain001XmlE2EProcessingTest extends AbstractE2EProcessingTest {
         String pain001XmlString = Pain001TestData.getPain001SinglePaymentCorrectXmlString();
         HttpHeaders requestHeaders = getRequestHeaders(MediaType.APPLICATION_XML, IDEMPOTENCY_KEY_VALUE);
         HttpEntity<byte[]> httpRequest = new HttpEntity<>(pain001XmlString.getBytes(), requestHeaders);
+        int initialPublishedEventsCount = (int) meterRegistry.get(PUBLISHED_PAYMENT_EVENTS_COUNTER).counter().count();
+        int initialPaymentsCreatedCount = (int) meterRegistry.get(PAYMENTS_CREATED_COUNTER).counter().count();
 
         // when
         ResponseEntity<String> response = testRestTemplate.exchange(
@@ -45,6 +49,7 @@ public class Pain001XmlE2EProcessingTest extends AbstractE2EProcessingTest {
                 HttpMethod.POST,
                 httpRequest,
                 String.class);
+        String correlationId = response.getHeaders().getFirst(CORRELATION_ID_HEADER);
 
         // then
         List<OutboxEventEntity> outboxEventEntities = outboxStorageJpa.findAll();
@@ -80,6 +85,11 @@ public class Pain001XmlE2EProcessingTest extends AbstractE2EProcessingTest {
                             .contains(CONSUMED_PAYMENT_EVENT.formatted(
                                     outboxEventEntity.getEventId(), outboxEventEntity.getPaymentId()));
                 });
+        assertThat(capturedOutput.getOut()).contains(correlationId);
+        int finalPublishedEventsCount = (int) meterRegistry.get(PUBLISHED_PAYMENT_EVENTS_COUNTER).counter().count();
+        int finalPaymentsCreatedCount = (int) meterRegistry.get(PAYMENTS_CREATED_COUNTER).counter().count();
+        assertThat(finalPublishedEventsCount).isEqualTo(initialPublishedEventsCount + 1);
+        assertThat(finalPaymentsCreatedCount).isEqualTo(initialPaymentsCreatedCount + 1);
     }
 
     @Test
@@ -88,6 +98,8 @@ public class Pain001XmlE2EProcessingTest extends AbstractE2EProcessingTest {
         String pain001XmlString = Pain001TestData.getPain001SinglePaymentCorrectXmlString();
         HttpHeaders requestHeaders = getRequestHeaders(MediaType.APPLICATION_XML, IDEMPOTENCY_KEY_VALUE);
         HttpEntity<byte[]> httpRequest = new HttpEntity<>(pain001XmlString.getBytes(), requestHeaders);
+        int initialPublishedEventsCount = (int) meterRegistry.get(PUBLISHED_PAYMENT_EVENTS_COUNTER).counter().count();
+        int initialPaymentsCreatedCount = (int) meterRegistry.get(PAYMENTS_CREATED_COUNTER).counter().count();
 
         // when
         ResponseEntity<String> response = testRestTemplate.exchange(
@@ -95,6 +107,7 @@ public class Pain001XmlE2EProcessingTest extends AbstractE2EProcessingTest {
                 HttpMethod.POST,
                 httpRequest,
                 String.class);
+        String correlationId = response.getHeaders().getFirst(CORRELATION_ID_HEADER);
         assertThat(response.getBody()).isNotNull();
         await().atMost(Duration.ofSeconds(10))
                 .pollInterval(Duration.ofMillis(250))
@@ -132,6 +145,11 @@ public class Pain001XmlE2EProcessingTest extends AbstractE2EProcessingTest {
                             .isEqualTo(consumedEvent.getConsumedAt())
                             .isBefore(timeAfterEventSendFirstTime);
                 });
+        assertThat(capturedOutput.getOut()).contains(correlationId);
+        int finalPublishedEventsCount = (int) meterRegistry.get(PUBLISHED_PAYMENT_EVENTS_COUNTER).counter().count();
+        int finalPaymentsCreatedCount = (int) meterRegistry.get(PAYMENTS_CREATED_COUNTER).counter().count();
+        assertThat(finalPaymentsCreatedCount).isEqualTo(initialPaymentsCreatedCount + 1);
+        assertThat(finalPublishedEventsCount).isEqualTo(initialPublishedEventsCount + 2);
     }
 
 

@@ -1,9 +1,7 @@
 package priv.home.paymentservice.e2e;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpEntity;
@@ -31,6 +29,8 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
 
     private static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
+    private static final String PUBLISHED_PAYMENT_EVENTS_COUNTER = "paymentEventPublished";
+    private static final String PAYMENTS_CREATED_COUNTER = "paymentsCreated";
     private static final String API_PATH = "/payments";
     private static final String IDEMPOTENCY_KEY = "idempotency-key";
     private static final String CONSUMED_PAYMENT_EVENT = "Consumed payment eventId=%s, paymentId=%s";
@@ -42,10 +42,6 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
     private static final String CREDITOR_IBAN = "PL82109024029148361863856384";
     private static final DebtorRequest DEBTOR_REQUEST = new DebtorRequest("Debtor Name", DEBTOR_IBAN);
     private static final CreditorRequest CREDITOR_REQUEST = new CreditorRequest("Creditor Name", CREDITOR_IBAN);
-    private static final String PUBLISHED_PAYMENT_EVENTS_COUNTER = "paymentEventPublished";
-
-    @Autowired
-    private MeterRegistry meterRegistry;
 
 
     @Test
@@ -59,12 +55,14 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
         HttpHeaders requestHeaders = getRequestHeaders(MediaType.APPLICATION_JSON, idempotencyKey);
         HttpEntity<CreatePaymentRequest> httpRequest = new HttpEntity<>(paymentRequest, requestHeaders);
         int initialPublishedEventsCount = (int) meterRegistry.get(PUBLISHED_PAYMENT_EVENTS_COUNTER).counter().count();
+        int initialPaymentsCreatedCount = (int) meterRegistry.get(PAYMENTS_CREATED_COUNTER).counter().count();
 
         // when
         ResponseEntity<PaymentResponse> response = testRestTemplate.postForEntity(
                 API_PATH,
                 httpRequest,
                 PaymentResponse.class);
+        String correlationId = response.getHeaders().getFirst(CORRELATION_ID_HEADER);
 
         // then
         List<OutboxEventEntity> outboxEventEntities = outboxStorageJpa.findAll();
@@ -100,8 +98,11 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
                             .contains(CONSUMED_PAYMENT_EVENT.formatted(
                                     outboxEventEntity.getEventId(), outboxEventEntity.getPaymentId()));
                 });
+        assertThat(capturedOutput.getOut()).contains(correlationId);
         int finalPublishedEventsCount = (int) meterRegistry.get(PUBLISHED_PAYMENT_EVENTS_COUNTER).counter().count();
+        int finalPaymentsCreatedCount = (int) meterRegistry.get(PAYMENTS_CREATED_COUNTER).counter().count();
         assertThat(finalPublishedEventsCount).isEqualTo(initialPublishedEventsCount + 1);
+        assertThat(finalPaymentsCreatedCount).isEqualTo(initialPaymentsCreatedCount + 1);
     }
 
     @Test
@@ -113,12 +114,15 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
         CreatePaymentRequest paymentRequest = getCreatePaymentRequest(amount, currency);
         HttpHeaders requestHeaders = getRequestHeaders(MediaType.APPLICATION_JSON, idempotencyKey);
         HttpEntity<CreatePaymentRequest> httpRequest = new HttpEntity<>(paymentRequest, requestHeaders);
+        int initialPublishedEventsCount = (int) meterRegistry.get(PUBLISHED_PAYMENT_EVENTS_COUNTER).counter().count();
+        int initialPaymentsCreatedCount = (int) meterRegistry.get(PAYMENTS_CREATED_COUNTER).counter().count();
 
         // when
         ResponseEntity<PaymentResponse> response = testRestTemplate.postForEntity(
                 API_PATH,
                 httpRequest,
                 PaymentResponse.class);
+        String correlationId = response.getHeaders().getFirst(CORRELATION_ID_HEADER);
         assertThat(response.getBody()).isNotNull();
         UUID createdPaymentId = response.getBody().paymentId();
         await().atMost(Duration.ofSeconds(10))
@@ -156,6 +160,11 @@ public class PaymentJsonE2EProcessingTest extends AbstractE2EProcessingTest {
                             .isEqualTo(consumedEvent.getConsumedAt())
                             .isBefore(timeAfterEventSendFirstTime);
                 });
+        assertThat(capturedOutput.getOut()).contains(correlationId);
+        int finalPublishedEventsCount = (int) meterRegistry.get(PUBLISHED_PAYMENT_EVENTS_COUNTER).counter().count();
+        int finalPaymentsCreatedCount = (int) meterRegistry.get(PAYMENTS_CREATED_COUNTER).counter().count();
+        assertThat(finalPaymentsCreatedCount).isEqualTo(initialPaymentsCreatedCount + 1);
+        assertThat(finalPublishedEventsCount).isEqualTo(initialPublishedEventsCount + 2);
     }
 
 
