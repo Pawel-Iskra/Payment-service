@@ -1,7 +1,20 @@
 volumes:
   grafana-data:
   prometheus-data:
+  postgres-data:
 services:
+  postgres:
+    image: postgres:18
+    container_name: postgres
+    environment:
+      POSTGRES_DB: payment-service
+      POSTGRES_USER: payment-user
+      POSTGRES_PASSWORD: payment-password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgres
+    restart: unless-stopped
   kafka:
     image: apache/kafka:4.3.1
     container_name: kafka
