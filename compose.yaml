@@ -12,6 +12,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payment-service
       SPRING_DATASOURCE_USERNAME: payment-user
       SPRING_DATASOURCE_PASSWORD: payment-password
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     ports:
       - "8080:8080"
     depends_on:
