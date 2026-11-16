@@ -3,6 +3,20 @@ volumes:
   prometheus-data:
   postgres-data:
 services:
+  payment-service:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: payment-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payment-service
+      SPRING_DATASOURCE_USERNAME: payment-user
+      SPRING_DATASOURCE_PASSWORD: payment-password
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    restart: unless-stopped
   postgres:
     image: postgres:18
     container_name: postgres
