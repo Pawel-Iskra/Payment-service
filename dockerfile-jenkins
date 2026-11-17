@@ -1,11 +1,11 @@
-# creatinn of jenkins agent
-FROM eclipse-temurin:25-jdk
+# creation of jenkins agent
+FROM jenkins/inbound-agent:jdk25
 
 USER root
 
 # preparing jenkins agent tools
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends\
+    apt-get install -y --no-install-recommends \
         maven \
         git \
         curl \
@@ -13,11 +13,8 @@ RUN apt-get update && \
         openssh-client && \
     rm -rf /var/lib/apt/lists/*
 
+# switch from root to user jenkins
+USER jenkins
+
 # set agent workspace
 WORKDIR /home/jenkins/agent
-
-# change ownership of jenkins home dir
-RUN chown -R 1000:1000 /home/jenkins
-
-# switch from root to user uid 1000
-USER 1000:1000
