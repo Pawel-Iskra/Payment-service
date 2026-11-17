@@ -2,7 +2,16 @@ volumes:
   grafana-data:
   prometheus-data:
   postgres-data:
+  jenkins-data:
 services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk25
+    container_name: jenkins
+    ports:
+      - "8082:8080"
+    volumes:
+      - jenkins-data:/var/jenkins_home
+    restart: unless-stopped
   payment-service:
     build:
       context: .
@@ -67,7 +76,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     ports:
-      - "8082:8080"
+      - "8083:8080"
     environment:
       DYNAMIC_CONFIG_ENABLED: "true"
       KAFKA_CLUSTERS_0_NAME: payment-service
