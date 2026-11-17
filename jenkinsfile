@@ -1,0 +1,20 @@
+pipeline {
+    agent {
+        label 'payment-service-agent'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'master',
+                    url: 'https://github.com/Pawel-Iskra/Payment-service.git'
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                sh 'mvn clean verify'
+            }
+        }
+    }
+}
