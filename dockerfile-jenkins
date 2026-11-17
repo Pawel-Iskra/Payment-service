@@ -1,4 +1,4 @@
-# Build stage
+# creatinn of jenkins agent
 FROM eclipse-temurin:25-jdk
 
 USER root

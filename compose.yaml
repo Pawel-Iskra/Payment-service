@@ -5,9 +5,7 @@ volumes:
   jenkins-data:
 services:
   jenkins:
-    build:
-      context: .
-      dockerfile: dockerfile-jenkins
+    image: jenkins/jenkins:lts-jdk25
     container_name: jenkins
     ports:
       - "8082:8080"
