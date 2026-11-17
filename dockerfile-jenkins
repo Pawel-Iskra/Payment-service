@@ -1,0 +1,23 @@
+# Build stage
+FROM eclipse-temurin:25-jdk
+
+USER root
+
+# preparing jenkins agent tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends\
+        maven \
+        git \
+        curl \
+        ca-certificates \
+        openssh-client && \
+    rm -rf /var/lib/apt/lists/*
+
+# set agent workspace
+WORKDIR /home/jenkins/agent
+
+# change ownership of jenkins home dir
+RUN chown -R 1000:1000 /home/jenkins
+
+# switch from root to user uid 1000
+USER 1000:1000

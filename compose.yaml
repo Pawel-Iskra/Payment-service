@@ -5,7 +5,9 @@ volumes:
   jenkins-data:
 services:
   jenkins:
-    image: jenkins/jenkins:lts-jdk25
+    build:
+      context: .
+      dockerfile: dockerfile-jenkins
     container_name: jenkins
     ports:
       - "8082:8080"
@@ -15,7 +17,7 @@ services:
   payment-service:
     build:
       context: .
-      dockerfile: dockerfile
+      dockerfile: dockerfile-payment-service
     container_name: payment-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payment-service
