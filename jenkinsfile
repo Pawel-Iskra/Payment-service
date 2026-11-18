@@ -3,7 +3,9 @@ pipeline {
         label 'payment-service-agent'
     }
 
+
     stages {
+
         stage('Checkout') {
             steps {
                 git branch: 'master',
@@ -11,9 +13,40 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
+        stage('Build') {
             steps {
-                sh 'mvn clean verify'
+                sh 'mvn clean compile'
+            }
+        }
+
+        stage('Unit & Integration Tests') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('E2E Tests') {
+            steps {
+                sh 'mvn test-compile failsafe:integration-test failsafe:verify'
+            }
+        }
+
+        stage('Coverage') {
+            steps {
+                sh 'mvn jacoco:report'
+                sh 'mvn jacoco:check@check-coverage'
+            }
+        }
+
+        stage('Package') {
+            steps {
+                sh 'mvn package -DskipTests'
+            }
+        }
+
+        stage('Docker Image') {
+            steps {
+                sh 'docker build -f dockerfile-payment-service -t payment-service:${BUILD_NUMBER} -t payment-service:latest .'
             }
         }
     }
@@ -29,6 +62,11 @@ pipeline {
                         pattern: '**/target/site/jacoco/jacoco.xml'
                     ]]
                 )
+            }
+
+            success {
+                archiveArtifacts artifacts: 'target/*.jar',
+                                 fingerprint: true
             }
     }
 

@@ -4,6 +4,9 @@ volumes:
   postgres-data:
 services:
   payment-service:
+    # when Jenkins CI is available, use the image built by the Jenkins Agent
+#    image: payment-service:latest
+    # when Jenkins CI is not available, build and run the application locally using Docker
     build:
       context: .
       dockerfile: dockerfile-payment-service
