@@ -1,0 +1,24 @@
+# creation of jenkins agent
+FROM jenkins/inbound-agent:jdk25
+
+USER root
+
+# preparing jenkins agent tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        maven \
+        git \
+        curl \
+        ca-certificates \
+        openssh-client \
+        docker.cli && \
+    rm -rf /var/lib/apt/lists/*
+
+# allow jenikns user to access the docker socket
+RUN usermod -aG root jenkins
+
+# switch from root to user jenkins
+USER jenkins
+
+# set agent workspace
+WORKDIR /home/jenkins/agent
