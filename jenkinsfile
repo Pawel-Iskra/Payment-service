@@ -17,4 +17,19 @@ pipeline {
             }
         }
     }
+
+    post {
+            always {
+                junit '**/target/surefire-reports/*.xml'
+                junit '**/target/failsafe-reports/*.xml'
+
+                recordCoverage(
+                    tools: [[
+                        parser: 'JACOCO',
+                        pattern: '**/target/site/jacoco/jacoco.xml'
+                    ]]
+                )
+            }
+    }
+
 }
