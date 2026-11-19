@@ -1,6 +1,7 @@
 ### Payment Service
 A Java 25 and Spring Boot project demonstrating reliable payment processing and event-driven communication.<br>
-An idempotent payment REST API with asynchronous Kafka publishing using the Transactional Outbox Pattern, and a workflow supporting limited ISO 20022 pain.001.001.12 and pain.002.001.14.
+An idempotent payment REST API with asynchronous Kafka publishing using the Transactional Outbox Pattern, and a workflow supporting limited ISO 20022 pain.001.001.12 and pain.002.001.14.<br>
+The project includes comprehensive observability, automated testing, Docker-based infrastructure, and a Jenkins CI pipeline.
 
 ### Overview
 1. The service exposes a REST API for creating and retrieving payments, with request validation and idempotent payment creation using the Idempotency-Key request header. Both JSON and ISO 20022 XML input formats are supported.
@@ -10,9 +11,8 @@ An idempotent payment REST API with asynchronous Kafka publishing using the Tran
 5. A lightweight Kafka consumer demonstrates idempotent event processing and duplicate message handling.
 6. Building reliability through comprehensive testing and test coverage. ![Line Coverage](https://img.shields.io/badge/Line%20Coverage-97.14%25-brightgreen) ![Tests](https://img.shields.io/badge/Tests-161%20passed-brightgreen) [Download Test Summary (PDF)](docs/test_summary_report_2026_11_09.pdf)
 
-The ISO 20022 implementation intentionally supports a limited subset of message structures and fields. The project-specific XSD profiles are based on the corresponding ISO 20022 schemas but do not implement the full set of ISO 20022 or SEPA business rules. This is an educational implementation, not a production-ready banking platform.
+The ISO 20022 implementation intentionally supports a limited subset of message structures and fields. The project-specific XSD profiles are based on the corresponding ISO 20022 schemas but do not cover the full range of ISO 20022 or SEPA business rules. The implementation focuses on the requirements and scope of this project.
 
-_**The project is part of my ongoing effort to strengthen and expand my backend development skills, with a particular focus on reliable data processing, transactional consistency, idempotency, and production-oriented design patterns.**_
 <br>
 
 <!-- another option for visualisation
@@ -69,7 +69,8 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 - **Logging:** SLF4J, Logback, MDC
 - **Testing:** JUnit, Mockito, WebMvcTest, SpringBootTest, Testcontainers (PostgreSQL 18, Kafka 4.1.1)
 - **Build Tool:** Maven
-- **Infrastructure:** Docker
+- **Containerization:** Docker, Docker Compose
+- **CI/CD**: Jenkins
 - **API Documentation:** OpenAPI 3.1, Swagger UI
 
 **Tools & Development Environment**:
@@ -83,18 +84,42 @@ _**The project is part of my ongoing effort to strengthen and expand my backend 
 </tr>
 </table>
 
-<h3 align="center"> Known Limitations </h3>
-This project is an educational implementation of a Payment Service, designed to demonstrate payment processing concepts, application architecture, persistence, idempotency, messaging, and ISO 20022 integration. It is not intended to be a production-ready banking platform.
 
-The following aspects are intentionally simplified:
+<h3 align="center"> Screenshots </h3>
+<!--screenshots-->
+<table>
+  <tr>
+    <td width="50%">
+      <img src="https://raw.githubusercontent.com/Pawel-Iskra/Media/master/swagger.png" width="100%" />
+    </td>
+    <td width="50%">
+      <img src="https://raw.githubusercontent.com/Pawel-Iskra/Media/master/docker.png" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="https://raw.githubusercontent.com/Pawel-Iskra/Media/master/grafana.png" width="100%" />
+    </td>
+    <td width="50%">
+      <img src="https://raw.githubusercontent.com/Pawel-Iskra/Media/master/jenkins.png" width="100%" />
+    </td>
+  </tr>
+</table>
+
+
+<h3 align="center"> Known Limitations </h3>
+This project is my personal implementation of a Payment Service, designed to demonstrate payment processing concepts, application architecture, persistence, idempotency, messaging, and ISO 20022 integration. Most implemented solutions follow production-oriented design principles and practices. However, given the scope and nature of a personal project, some mechanisms have been intentionally simplified or remain limited in functionality.
+
+<br>The following aspects are intentionally simplified:
 
 - **Idempotency and request processing:** For `pain.001` requests, XML parsing and mapping take place before the existing payment creation service checks the idempotency key. Repeated requests therefore still incur parsing and mapping overhead.
 - **Idempotent response handling:** The original `pain.002` response is not persisted. Repeated requests may produce a newly generated response with a different message ID and creation timestamp.
 - **Idempotency key and payload consistency:** The service does not verify whether a reused idempotency key belongs to the same original request payload. Reusing a key with different payment data is therefore not fully handled.
 - **ISO 20022 scope:** The `limited-pain001.xsd` and `limited-pain002.xsd` schemas define restricted message profiles for the fields and structures supported by this project. They do not implement the full set of ISO 20022 or SEPA business rules.
 - **Payment lifecycle:** A positive `pain.002` status such as `ACTC` indicates successful technical validation, not that a payment has been executed or settled by a bank.
+- **CI/CD and image distribution:** Jenkins automates the build, test, coverage verification, packaging, and Docker image creation process. The pipeline does not include publishing images to an external container registry or automated deployment to a production environment.
 
-These limitations reflect the project's intended scope and timeframe. A production-grade implementation would require additional business rules, request fingerprinting, persisted response replay, more comprehensive payment lifecycle handling, operational controls, and further security and compliance measures.
+These limitations reflect the scope of this personal project, a production-grade system would require further business, operational, security, and compliance enhancements.
 
 <h3 align="center"> Project Roadmap</h3>
 
@@ -114,7 +139,7 @@ These limitations reflect the project's intended scope and timeframe. A producti
 | **✅ Task 12 — OpenAPI Contract** | Define the REST API contract in openapi.yaml, covering endpoints, schemas, validation rules, error responses, and examples. |
 | **✅ Task 13 — Test Coverage & End-to-End Testing** | Add JaCoCo with an 90% line coverage target and end-to-end tests using Kafka Testcontainers. |
 | **✅ Task 14 — Observability & Logging** | Add Actuator health checks, Micrometer metrics, Prometheus, Grafana dashboards, correlation IDs, and secure Logback logging. |
-| **Task 15 — DevOps & CI/CD** | Containerize the application stack with Docker Compose and automate build, test, and Docker image publishing using GitHub Actions. |<br>
+| **✅ Task 15 — DevOps & CI/CD** | Containerize the application stack with Docker Compose and implement Jenkins CI/CD for automated builds, tests, coverage checks, and Docker image creation. |<br>
 
 
 
@@ -234,3 +259,13 @@ These limitations reflect the project's intended scope and timeframe. A producti
 - Configured Prometheus to scrape application metrics and Grafana to visualize them using a version-controlled dashboard with automatic provisioning.
 - Implemented correlation ID generation and propagation across HTTP requests, transactional outbox processing, and Kafka events.
 - Configured Logback logging with correlation IDs and ensured sensitive payment data is excluded from application logs.
+
+#### Task 15 — Containerization and CI/CD
+**Goal:** Containerize the application stack and automate the build, testing, and Docker image creation process using Jenkins.
+
+- Configured Docker Compose to run the application stack, including PostgreSQL, Kafka, Kafka UI, Prometheus, and Grafana, with persistent volumes and service health checks.
+- Prepared a dedicated Docker Compose configuration for Jenkins and its inbound build agent, including Docker CLI and Testcontainers support.
+- Implemented a Jenkins pipeline covering stages checkout, compilation, unit and integration tests, end-to-end tests, JaCoCo coverage check, application packaging, and Docker image creation.
+
+
+  _**The project is part of my ongoing effort to strengthen and expand my backend development skills, with a particular focus on reliable data processing, transactional consistency, idempotency, and production-oriented design patterns.**_
