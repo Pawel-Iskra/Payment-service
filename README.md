@@ -265,7 +265,8 @@ These limitations reflect the scope of this personal project, a production-grade
 
 - Configured Docker Compose to run the application stack, including PostgreSQL, Kafka, Kafka UI, Prometheus, and Grafana, with persistent volumes and service health checks.
 - Prepared a dedicated Docker Compose configuration for Jenkins and its inbound build agent, including Docker CLI and Testcontainers support.
-- Implemented a Jenkins pipeline covering stages checkout, compilation, unit and integration tests, end-to-end tests, JaCoCo coverage check, application packaging, and Docker image creation.
+- Implemented a Jenkins pipeline covering stages checkout, compilation, unit and integration tests, end-to-end tests, JaCoCo coverage check, application packaging, and Docker image creation.<br>
 
+<hr>
 
   _**The project is part of my ongoing effort to strengthen and expand my backend development skills, with a particular focus on reliable data processing, transactional consistency, idempotency, and production-oriented design patterns.**_
