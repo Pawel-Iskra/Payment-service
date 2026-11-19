@@ -70,7 +70,7 @@ The ISO 20022 implementation intentionally supports a limited subset of message 
 - **Testing:** JUnit, Mockito, WebMvcTest, SpringBootTest, Testcontainers (PostgreSQL 18, Kafka 4.1.1)
 - **Build Tool:** Maven
 - **Containerization:** Docker, Docker Compose
-- **CI/CD**: Jenkins
+- **CI**: Jenkins
 - **API Documentation:** OpenAPI 3.1, Swagger UI
 
 **Tools & Development Environment**:
