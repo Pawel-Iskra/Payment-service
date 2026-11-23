@@ -1,11 +1,13 @@
 package priv.home.paymentservice.outbox.persistence;
 
 import org.springframework.data.domain.Limit;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.ScrollPosition;
 import org.springframework.data.domain.Window;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
@@ -29,11 +31,19 @@ public interface OutboxStorageJpa extends JpaRepository<OutboxEventEntity, UUID>
     findByPublishedAtIsNullAndFailedAtIsNullAndNextAttemptAtIsLessThanEqualOrderByCreatedAtAscEventIdAsc(
             OffsetDateTime now, ScrollPosition position, Limit limit);
 
+
+    @SelectForUpdateSkipLocked
     @Query("""
-            SELECT OutboxEventEntity e
-            FROM outbox_event
+            SELECT e
+            FROM OutboxEventEntity e
             WHERE e.published_at IS NULL
-              AND e.failed_at IS NULL            
-            """) // TODO:
-    List<OutboxEventEntity> findEventsForPublish(OffsetDateTime now, int batchSize);
+              AND e.failed_at IS NULL
+              AND e.nextAttemptAt <= :now
+              AND (e.lockedUntil IS NULL OR e.lockedUntil <= :now)
+            ORDER BY e.createdAt ASC, e.eventId ASC
+            """)
+    List<OutboxEventEntity> findEventsForPublish(
+            @Param("now") OffsetDateTime now,
+            Pageable pageable
+    );
 }
