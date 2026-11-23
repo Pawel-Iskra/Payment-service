@@ -11,9 +11,9 @@ import org.springframework.stereotype.Service;
 @Service
 @AllArgsConstructor
 @ConditionalOnProperty(
-        prefix = "payment-service.payment-event-publisher.scheduler",
-        name = "enabled",
-        havingValue = "true",
+        prefix = "payment-service.outbox.publisher",
+        name = "publishing-mode",
+        havingValue = "SINGLE",
         matchIfMissing = true
 ) // controls bean creation by boolean property value in .properties
 public class PaymentEventPublishScheduler {
@@ -23,7 +23,7 @@ public class PaymentEventPublishScheduler {
 
     @Scheduled(cron = "${payment-service.payment-event-publisher.scheduler.publish}")
     public void schedulePaymentEventPublishing() {
-        log.info("START scheduled publishing of PaymentCreatedEvent");
+        log.info("START scheduled single-thread publishing of PaymentCreatedEvent");
         paymentEventReleaserService.publishPaymentCreatedEvents();
     }
 }

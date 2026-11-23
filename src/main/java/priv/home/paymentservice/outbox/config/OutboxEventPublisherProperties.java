@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
+import priv.home.paymentservice.outbox.application.OutboxPublishingMode;
 
 import java.time.Duration;
 
@@ -14,6 +15,8 @@ public record OutboxEventPublisherProperties(
         @Min(1) int batchSize,
         @Min(1) @DefaultValue("3")
         int publishingWorkerCount,
+        @DefaultValue("SINGLE")
+        OutboxPublishingMode publishingMode,
         @Valid Retry retry) {
 
     public record Retry(

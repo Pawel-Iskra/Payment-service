@@ -15,7 +15,7 @@ import java.lang.annotation.*;
 @QueryHints(
         value = @QueryHint(
                 name = "jakarta.persistence.lock.timeout",
-                value = "-2"
+                value = "-2"    // lock.timeout = -2 -> SKIP_LOCKED
         ), forCounting = false
 )
 public @interface SelectForUpdateSkipLocked {
