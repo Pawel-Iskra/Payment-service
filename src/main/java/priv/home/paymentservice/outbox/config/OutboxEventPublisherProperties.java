@@ -3,6 +3,7 @@ package priv.home.paymentservice.outbox.config;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.Duration;
@@ -11,6 +12,8 @@ import java.time.Duration;
 @ConfigurationProperties(prefix = "payment-service.outbox.publisher")
 public record OutboxEventPublisherProperties(
         @Min(1) int batchSize,
+        @Min(1) @DefaultValue("3")
+        int publishingWorkerCount,
         @Valid Retry retry) {
 
     public record Retry(

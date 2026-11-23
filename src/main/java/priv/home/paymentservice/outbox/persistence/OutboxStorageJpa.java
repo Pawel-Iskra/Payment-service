@@ -28,4 +28,12 @@ public interface OutboxStorageJpa extends JpaRepository<OutboxEventEntity, UUID>
     Window<OutboxEventEntity>
     findByPublishedAtIsNullAndFailedAtIsNullAndNextAttemptAtIsLessThanEqualOrderByCreatedAtAscEventIdAsc(
             OffsetDateTime now, ScrollPosition position, Limit limit);
+
+    @Query("""
+            SELECT OutboxEventEntity e
+            FROM outbox_event
+            WHERE e.published_at IS NULL
+              AND e.failed_at IS NULL            
+            """) // TODO:
+    List<OutboxEventEntity> findEventsForPublish(OffsetDateTime now, int batchSize);
 }

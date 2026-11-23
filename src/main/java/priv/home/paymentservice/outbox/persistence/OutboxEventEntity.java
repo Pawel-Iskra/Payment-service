@@ -57,6 +57,12 @@ public class OutboxEventEntity {
     @Column(name = "correlation_id")
     private UUID correlationId;
 
+    @Column(name = "locked_by")
+    private String lockedBy;
+
+    @Column(name = "locked_until")
+    private OffsetDateTime lockedUntil;
+
 
     public void markAsPublished() {
         this.attemptCount++;
