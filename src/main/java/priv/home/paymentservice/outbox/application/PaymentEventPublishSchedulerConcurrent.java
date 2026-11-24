@@ -23,6 +23,6 @@ public class PaymentEventPublishSchedulerConcurrent {
     @Scheduled(cron = "${payment-service.payment-event-publisher.scheduler.publish}")
     public void schedulePaymentEventPublishing() {
         log.info("START scheduled multi-thread publishing of PaymentCreatedEvent");
-        paymentEventReleaserServiceConcurrent.publishPaymentCreatedEvents();
+        paymentEventReleaserServiceConcurrent.publishPaymentCreatedEventsWithMultiWorkers();
     }
 }
