@@ -17,7 +17,16 @@ public record OutboxEventPublisherProperties(
         int publishingWorkerCount,
         @DefaultValue("SINGLE")
         OutboxPublishingMode publishingMode,
+        @DefaultValue("PT1M")
+        Duration leaseDuration,
         @Valid Retry retry) {
+
+
+    public OutboxEventPublisherProperties {
+        if (leaseDuration == null || !leaseDuration.isPositive()) {
+            throw new IllegalArgumentException("leaseDuration mus be positive");
+        }
+    }
 
     public record Retry(
             @Min(1) int maxAttempt,

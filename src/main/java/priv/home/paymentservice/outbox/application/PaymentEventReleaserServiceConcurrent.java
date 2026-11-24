@@ -1,5 +1,6 @@
 package priv.home.paymentservice.outbox.application;
 
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -7,7 +8,6 @@ import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
 import priv.home.paymentservice.outbox.model.PublishResult;
 import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
-import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -22,9 +22,9 @@ import java.util.concurrent.ExecutorService;
 @RequiredArgsConstructor
 public class PaymentEventReleaserServiceConcurrent {
 
-    private final OutboxStorageJpa outboxStorageJpa;
     private final PaymentEventPublisher paymentEventPublisher;
     private final OutboxEventPublisherProperties publisherProperties;
+    private final OutboxClaimService outboxClaimService;
     private final ExecutorService executorService;
 
 
@@ -34,31 +34,26 @@ public class PaymentEventReleaserServiceConcurrent {
             String workerId = "outbox-worker-" + i;
             executorService.submit(() -> processEvents(workerId));
         }
-
-
     }
 
 
     private void processEvents(String workerId) {
         log.info("Outbox worker started : {}", workerId);
         int batchSize = publisherProperties.batchSize();
+        Duration leaseDuration = publisherProperties.leaseDuration();
+
         ReservedOutboxBatch batch;
         do {
-            batch = reserveEvents(workerId, batchSize);
-            if(!batch.eventToPublish().isEmpty()){
-                // publish events, process resuts
+            batch = outboxClaimService.reserveEvents(workerId, batchSize, leaseDuration);
+            if (!batch.eventsToPublish().isEmpty()) {
+                List<PublishResult> publishResults = paymentEventPublisher.publishPaymentEvents(batch.eventsToPublish());
+                outboxClaimService.completeClaim(batch.claimToken(), publishResults);
             }
 
-        } while (!batch.eventToPublish().isEmpty() && !Thread.currentThread().isInterrupted());
+        } while (!batch.eventsToPublish().isEmpty());
 
         log.info("Outbox worker finished: {}", workerId);
     }
-
-    private ReservedOutboxBatch reserveEvents(String workerId, int batchSize) {
-
-        return null;
-    }
-
 
     private Map<UUID, OutboxEventEntity> getOutboxEventEntityMap(List<OutboxEventEntity> outboxEventsEntityToPublish) {
         Map<UUID, OutboxEventEntity> resultMap = new HashMap<>();

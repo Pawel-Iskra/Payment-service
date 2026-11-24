@@ -63,6 +63,9 @@ public class OutboxEventEntity {
     @Column(name = "locked_until")
     private OffsetDateTime lockedUntil;
 
+    @Column(name = "claim_token")
+    private UUID claimToken;
+
 
     public void markAsPublished() {
         this.attemptCount++;
@@ -76,5 +79,17 @@ public class OutboxEventEntity {
         if (this.attemptCount >= maxAttempts) {
             this.failedAt = OffsetDateTime.now();
         }
+    }
+
+    public void reserve(String workerId, OffsetDateTime lockedUntil, UUID claimToken) {
+        this.lockedBy = workerId;
+        this.lockedUntil = lockedUntil;
+        this.claimToken = claimToken;
+    }
+
+    public void releaseClaim() {
+        this.lockedBy = null;
+        this.lockedUntil = null;
+        this.claimToken = null;
     }
 }

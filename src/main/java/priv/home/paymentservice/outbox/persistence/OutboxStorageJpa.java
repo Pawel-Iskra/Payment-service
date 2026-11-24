@@ -36,14 +36,16 @@ public interface OutboxStorageJpa extends JpaRepository<OutboxEventEntity, UUID>
     @Query("""
             SELECT e
             FROM OutboxEventEntity e
-            WHERE e.published_at IS NULL
-              AND e.failed_at IS NULL
+            WHERE e.publishedAt IS NULL
+              AND e.failedAt IS NULL
               AND e.nextAttemptAt <= :now
               AND (e.lockedUntil IS NULL OR e.lockedUntil <= :now)
             ORDER BY e.createdAt ASC, e.eventId ASC
             """)
-    List<OutboxEventEntity> findEventsForPublish(
+    List<OutboxEventEntity> reserveEventsForPublish(
             @Param("now") OffsetDateTime now,
             Pageable pageable
     );
+
+    List<OutboxEventEntity> findAllByClaimToken(UUID claimToken);
 }
