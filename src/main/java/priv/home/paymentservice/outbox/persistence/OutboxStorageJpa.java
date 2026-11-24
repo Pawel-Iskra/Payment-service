@@ -1,10 +1,12 @@
 package priv.home.paymentservice.outbox.persistence;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.ScrollPosition;
 import org.springframework.data.domain.Window;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -47,5 +49,6 @@ public interface OutboxStorageJpa extends JpaRepository<OutboxEventEntity, UUID>
             Pageable pageable
     );
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<OutboxEventEntity> findAllByClaimToken(UUID claimToken);
 }

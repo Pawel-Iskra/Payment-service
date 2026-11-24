@@ -1,7 +1,6 @@
-package priv.home.paymentservice.outbox.application;
+package priv.home.paymentservice.outbox.model;
 
 import lombok.Builder;
-import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
 
 import java.util.List;
 import java.util.UUID;

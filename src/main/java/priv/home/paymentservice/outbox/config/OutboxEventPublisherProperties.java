@@ -2,10 +2,10 @@ package priv.home.paymentservice.outbox.config;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
-import priv.home.paymentservice.outbox.application.OutboxPublishingMode;
 
 import java.time.Duration;
 
@@ -19,12 +19,12 @@ public record OutboxEventPublisherProperties(
         OutboxPublishingMode publishingMode,
         @DefaultValue("PT1M")
         Duration leaseDuration,
-        @Valid Retry retry) {
+        @NotNull @Valid Retry retry) {
 
 
     public OutboxEventPublisherProperties {
         if (leaseDuration == null || !leaseDuration.isPositive()) {
-            throw new IllegalArgumentException("leaseDuration mus be positive");
+            throw new IllegalArgumentException("leaseDuration must be positive");
         }
     }
 

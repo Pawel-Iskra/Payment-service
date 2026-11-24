@@ -1,4 +1,4 @@
-package priv.home.paymentservice.outbox.application;
+package priv.home.paymentservice.outbox.config;
 
 public enum OutboxPublishingMode {
     SINGLE,

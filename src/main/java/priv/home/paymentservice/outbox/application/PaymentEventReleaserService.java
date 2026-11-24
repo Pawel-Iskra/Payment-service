@@ -2,6 +2,7 @@ package priv.home.paymentservice.outbox.application;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.ScrollPosition;
 import org.springframework.data.domain.Window;
@@ -21,6 +22,12 @@ import java.util.UUID;
 @Slf4j
 @Service
 @AllArgsConstructor
+@ConditionalOnProperty(
+        prefix = "payment-service.outbox.publisher",
+        name = "publishing-mode",
+        havingValue = "SINGLE",
+        matchIfMissing = true
+)
 public class PaymentEventReleaserService {
 
     private final OutboxStorageJpa outboxStorageJpa;
