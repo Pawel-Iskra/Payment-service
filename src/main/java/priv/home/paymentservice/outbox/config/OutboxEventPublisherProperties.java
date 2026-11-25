@@ -21,7 +21,6 @@ public record OutboxEventPublisherProperties(
         Duration leaseDuration,
         @NotNull @Valid Retry retry) {
 
-
     public OutboxEventPublisherProperties {
         if (leaseDuration == null || !leaseDuration.isPositive()) {
             throw new IllegalArgumentException("leaseDuration must be positive");
