@@ -7,7 +7,7 @@ The project includes comprehensive observability, automated testing, Docker-base
 1. The service exposes a REST API for creating and retrieving payments, with request validation and idempotent payment creation using the Idempotency-Key request header. Both JSON and ISO 20022 XML input formats are supported.
 2. The service supports limited, project-specific XML profiles based on ISO 20022 `pain.001.001.12` and `pain.002.001.14`. Incoming payment messages are validated against the corresponding limited XSD profile, mapped to the application's payment model, and processed through the existing payment creation flow. Responses are returned as structured `pain.002` XML messages.
 3. Payment data and corresponding events are persisted atomically within a single PostgreSQL transaction using the Transactional Outbox Pattern.
-4. Pending outbox events are published asynchronously to Apache Kafka in configurable batches, with keyset scrolling, exponential backoff, and a configurable retry limit. Events are marked as published after broker acknowledgment.
+4. Pending outbox events are published asynchronously to Apache Kafka in configurable batches using two configurable publishing modes: SINGLE single-worker publishing with keyset scrolling and CONCURRENT multi-worker publishing with atomic event claiming using ForUpdateSkipLocked. Both modes support exponential backoff and a configurable retry limit. Events are marked as published only after broker acknowledgment.
 5. A lightweight Kafka consumer demonstrates idempotent event processing and duplicate message handling.
 6. Implemented application observability with health checks and business metrics on Grafana dashboards, end-to-end correlation ID tracking across synchronous and asynchronous communication flows.
 7. Containerized the application and its supporting infrastructure using Docker to provide a consistent and reproducible environment. Implemented a Jenkins CI pipeline from build to code coverage validation and container image creation.
@@ -48,7 +48,7 @@ The ISO 20022 implementation intentionally supports a limited subset of message 
 7. Transactional Outbox Pattern for reliable event publishing
 8. Asynchronous Kafka event publishing with acknowledgement-based outbox updates
 9. Kafka publisher with synchronous and asynchronous failure handling
-10. Configurable outbox batch processing with keyset scrolling, exponential backoff and retry limits
+10. Configurable outbox SINGLE mode or CONCURRENT mode (multi-thread) batch processing with exponential backoff and retry limits
 11. A lightweight idempotent Kafka event consumer with concurrent duplicate protection
 12. OpenAPI 3.x specification documented in a YAML file, integrated with Swagger UI
 13. Unit, integration and end-to-end tests including concurrent event processing
@@ -116,41 +116,41 @@ This project is my personal implementation of a Payment Service, designed to dem
 
 <br>The following aspects are intentionally simplified:
 
-- **Idempotency and request processing:** For `pain.001` requests, XML parsing and mapping take place before the existing payment creation service checks the idempotency key. Repeated requests therefore still incur parsing and mapping overhead.
-- **Idempotent response handling:** The original `pain.002` response is not persisted. Repeated requests may produce a newly generated response with a different message ID and creation timestamp.
-- **Idempotency key and payload consistency:** The service does not verify whether a reused idempotency key belongs to the same original request payload. Reusing a key with different payment data is therefore not fully handled.
+- **Response handling:** The original `pain.002` response is not persisted. Repeated requests may produce a newly generated response with a different message ID and creation timestamp.
+- **Pain001 request processing:** For `pain.001` requests, XML parsing and mapping take place before the existing payment creation service checks the idempotency key. Repeated requests therefore still incur parsing and mapping overhead.
+- **Payload consistency:** The service does not verify whether a reused idempotency key belongs to the same original request payload. Reusing a key with different payment data is therefore not fully handled.
 - **ISO 20022 scope:** The `limited-pain001.xsd` and `limited-pain002.xsd` schemas define restricted message profiles for the fields and structures supported by this project. They do not implement the full set of ISO 20022 or SEPA business rules.
 - **Payment lifecycle:** A positive `pain.002` status such as `ACTC` indicates successful technical validation, not that a payment has been executed or settled by a bank.
-- **CI/CD and image distribution:** Jenkins automates the build, test, coverage verification, packaging, and Docker image creation process. The pipeline does not include publishing images to an external container registry or automated deployment to a production environment.
 
 These limitations reflect the scope of this personal project, a production-grade system would require further business, operational, security, and compliance enhancements.
 
 <h3 align="center"> Project Roadmap</h3>
 
-| Task | Description |
-|:---|---|
-| **✅ Task 01 — Basic Payment REST API** | Implemented payment creation with request validation, DTOs, service-layer logic, persistence, and unit tests. |
-| **✅ Task 02 — Payment Retrieval** | Added payment retrieval by ID, handling of missing payments with HTTP 404, and centralized exception handling. |
-| **✅ Task 03 — MVC Tests** | Added controller tests covering successful requests, validation, and error responses. |
-| **✅ Task 04 — PostgreSQL Persistence** | Integrated PostgreSQL, JDBC, Liquibase, and Testcontainers. |
-| **✅ Task 05 — Idempotent Payment Creation** | Implemented idempotent payment creation using `Idempotency-Key` and database constraints. |
-| **✅ Task 06 — Kafka Integration** | Added asynchronous Kafka event publishing and consumption. |
-| **✅ Task 07 — Transactional Outbox Pattern** | Ensured payment data and outbox events are saved atomically and events are marked as published after Kafka acknowledgement. |
-| **✅ Task 08 — Spring Data JPA Migration** | Migrated payment and outbox persistence to Spring Data JPA while preserving atomic idempotent payment creation. |
-| **✅ Task 09 — Idempotent Kafka Consumer** | Prevent duplicate consumed event processing through event identification and deduplication. |
-| **✅ Task 10 — Outbox Reliability & Retry Policy** | Improve event publishing with configurable batch size, retries, backoff, and failure tracking. |
-| **✅ Task 11 — ISO 20022 Payment Messages** | Add selected ISO 20022 pain.001 and pain.002 message structures with a limited set of fields and validation. |
-| **✅ Task 12 — OpenAPI Contract** | Define the REST API contract in openapi.yaml, covering endpoints, schemas, validation rules, error responses, and examples. |
-| **✅ Task 13 — Test Coverage & End-to-End Testing** | Add JaCoCo with an 90% line coverage target and end-to-end tests using Kafka Testcontainers. |
-| **✅ Task 14 — Observability & Logging** | Add Actuator health checks, Micrometer metrics, Prometheus, Grafana dashboards, correlation IDs, and secure Logback logging. |
-| **✅ Task 15 — DevOps & CI/CD** | Containerize the application stack with Docker Compose and implement Jenkins CI/CD for automated builds, tests, coverage checks, and Docker image creation. |<br>
+| Task                                                 | Description                                                                                                                                                   |
+|:-----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **✅ Task 01 — Basic Payment REST API**               | Implemented payment creation with request validation, DTOs, service-layer logic, persistence, and unit tests.                                                 |
+| **✅ Task 02 — Payment Retrieval**                    | Added payment retrieval by ID, handling of missing payments with HTTP 404, and centralized exception handling.                                                |
+| **✅ Task 03 — MVC Tests**                            | Added controller tests covering successful requests, validation, and error responses.                                                                         |
+| **✅ Task 04 — PostgreSQL Persistence**               | Integrated PostgreSQL, JDBC, Liquibase, and Testcontainers.                                                                                                   |
+| **✅ Task 05 — Idempotent Payment Creation**          | Implemented idempotent payment creation using `Idempotency-Key` and database constraints.                                                                     |
+| **✅ Task 06 — Kafka Integration**                    | Added asynchronous Kafka event publishing and consumption.                                                                                                    |
+| **✅ Task 07 — Transactional Outbox Pattern**         | Ensured payment data and outbox events are saved atomically and events are marked as published after Kafka acknowledgement.                                   |
+| **✅ Task 08 — Spring Data JPA Migration**            | Migrated payment and outbox persistence to Spring Data JPA while preserving atomic idempotent payment creation.                                               |
+| **✅ Task 09 — Idempotent Kafka Consumer**            | Prevent duplicate consumed event processing through event identification and deduplication.                                                                   |
+| **✅ Task 10 — Outbox Reliability & Retry Policy**    | Improve event publishing with configurable batch size, retries, backoff, and failure tracking.                                                                |
+| **✅ Task 11 — ISO 20022 Payment Messages**           | Add selected ISO 20022 pain.001 and pain.002 message structures with a limited set of fields and validation.                                                  |
+| **✅ Task 12 — OpenAPI Contract**                     | Define the REST API contract in openapi.yaml, covering endpoints, schemas, validation rules, error responses, and examples.                                   |
+| **✅ Task 13 — Test Coverage & End-to-End Testing**   | Add JaCoCo with an 90% line coverage target and end-to-end tests using Kafka Testcontainers.                                                                  |
+| **✅ Task 14 — Observability & Logging**              | Add Actuator health checks, Micrometer metrics, Prometheus, Grafana dashboards, correlation IDs, and secure Logback logging.                                  |
+| **✅ Task 15 — DevOps & CI/CD**                       | Containerize the application stack with Docker Compose and implement Jenkins CI/CD for automated builds, tests, coverage checks, and Docker image creation.   |
+| **- Task 16 — Concurrent outbox event publishing**   | Implement concurrent multi-worker outbox publishing with atomic event claiming, lease-based recovery, and retry handling.                                     |
+<br>
 
 
 
 ### Possible Future Extensions 
 <p align="left"><em>Ideas under consideration for future development.</em></p>
 
-- **Concurrent Outbox Publishing** — introduce multiple publishing workers while maintaining consistency and preventing duplicate processing.
 - **Extended Consumer Business Logic** — implement more realistic payment event processing and downstream business workflows.
 - **Payment Lifecycle Management** — add payment cancellation, reversal, and additional state-transition endpoints.
 - **Angular Frontend** — build a web interface for creating payments, retrieving their status, and exploring payment events.
