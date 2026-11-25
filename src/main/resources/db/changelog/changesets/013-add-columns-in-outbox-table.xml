@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+
+    <changeSet id="013" author="xyz">
+        <addColumn tableName="outbox_event">
+            <column name="locked_by" type="varchar(32)"/>
+            <column name="locked_until" type="timestamp(6) with time zone"/>
+            <column name="claim_token" type="uuid"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

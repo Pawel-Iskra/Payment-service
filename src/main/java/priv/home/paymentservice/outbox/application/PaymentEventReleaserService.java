@@ -2,17 +2,17 @@ package priv.home.paymentservice.outbox.application;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.ScrollPosition;
 import org.springframework.data.domain.Window;
 import org.springframework.stereotype.Service;
-import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
-import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
 import priv.home.paymentservice.outbox.model.PublishResult;
+import priv.home.paymentservice.outbox.persistence.OutboxEventEntity;
+import priv.home.paymentservice.outbox.persistence.OutboxStorageJpa;
 
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -22,11 +22,18 @@ import java.util.UUID;
 @Slf4j
 @Service
 @AllArgsConstructor
+@ConditionalOnProperty(
+        prefix = "payment-service.outbox.publisher",
+        name = "publishing-mode",
+        havingValue = "SINGLE",
+        matchIfMissing = true
+)
 public class PaymentEventReleaserService {
 
     private final OutboxStorageJpa outboxStorageJpa;
     private final PaymentEventPublisher paymentEventPublisher;
     private final OutboxEventPublisherProperties publisherProperties;
+    private final OutboxRetryPolicy outboxRetryPolicy;
 
 
     public void publishPaymentCreatedEvents() {
@@ -84,18 +91,10 @@ public class PaymentEventReleaserService {
                 currentOutboxEventEntity.markAsPublished();
             } else {
                 int attemptsDone = currentOutboxEventEntity.getAttemptCount();
-                OffsetDateTime nextAttemptAt = OffsetDateTime.now().plus(calculateBackoff(attemptsDone));
+                OffsetDateTime nextAttemptAt = OffsetDateTime.now().plus(outboxRetryPolicy.calculateBackoff(attemptsDone));
                 currentOutboxEventEntity.markAsNotPublished(
                         currentPublishResult.getErrorInfo(), publisherProperties.retry().maxAttempt(), nextAttemptAt);
             }
         }
-    }
-
-    private Duration calculateBackoff(int attemptsDone) {
-        OutboxEventPublisherProperties.Retry retryProperties = publisherProperties.retry();
-        int multiplier = Math.powExact(retryProperties.multiplier(), attemptsDone);
-        Duration calculatedBackoff = retryProperties.initialBackoff().multipliedBy(multiplier);
-        return calculatedBackoff.compareTo(retryProperties.maxBackoff()) > 0 ?
-                retryProperties.maxBackoff() : calculatedBackoff;
     }
 }
