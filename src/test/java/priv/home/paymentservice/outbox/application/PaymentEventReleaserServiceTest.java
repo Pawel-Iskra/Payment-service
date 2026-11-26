@@ -44,6 +44,8 @@ class PaymentEventReleaserServiceTest {
     private PaymentEventPublisher paymentEventPublisher;
     @Mock
     private OutboxEventPublisherProperties publisherProperties;
+    @Mock
+    private OutboxRetryPolicy outboxRetryPolicy;
 
     @InjectMocks
     private PaymentEventReleaserService releaserService;
@@ -105,6 +107,8 @@ class PaymentEventReleaserServiceTest {
         List<PublishResult> publishResultNotPublishedList = getPublishResultAsNotPublished(List.of(outboxEntityFirst, outboxEntityThird));
         List<PublishResult> allPublishResultList = new ArrayList<>(publishResultPublishedList);
         allPublishResultList.addAll(publishResultNotPublishedList);
+        when(outboxRetryPolicy.calculateBackoff(firstAttemptCount)).thenReturn(calculateBackoff(firstAttemptCount));
+        when(outboxRetryPolicy.calculateBackoff(thirdAttemptCount)).thenReturn(calculateBackoff(thirdAttemptCount));
         when(publisherProperties.batchSize()).thenReturn(BATCH_SIZE);
         when(publisherProperties.retry()).thenReturn(VALID_PUBLISHER_RETRY_PROPERTIES);
         when(outboxStorageJpa

@@ -14,8 +14,8 @@ public abstract class AbstractIntegrationTest {
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.kafka.listener.auto-startup", () -> false);
-        registry.add("payment-service.payment-event-publisher.scheduler.enabled", () -> false);
         registry.add("payment-service.outbox.publisher.batch-size", () -> 3);
         registry.add("payment-service.outbox.publisher.retry.max-attempt", () -> 7);
+        registry.add("payment-service.outbox.publisher.publishing-mode", () -> "SINGLE");
     }
 }
