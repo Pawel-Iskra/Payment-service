@@ -11,7 +11,7 @@ The project includes comprehensive observability, automated testing, Docker-base
 5. A lightweight Kafka consumer demonstrates idempotent event processing and duplicate message handling.
 6. Implemented application observability with health checks and business metrics on Grafana dashboards, end-to-end correlation ID tracking across synchronous and asynchronous communication flows.
 7. Containerized the application and its supporting infrastructure using Docker to provide a consistent and reproducible environment. Implemented a Jenkins CI pipeline from build to code coverage validation and container image creation.
-8. Building reliability through comprehensive testing and test coverage. ![Line Coverage](https://img.shields.io/badge/Line%20Coverage-97.14%25-brightgreen) ![Tests](https://img.shields.io/badge/Tests-161%20passed-brightgreen) [Download Test Summary (PDF)](docs/test_summary_report_2026_11_09.pdf)
+8. Building reliability through comprehensive testing and test coverage. ![Line Coverage](https://img.shields.io/badge/Line%20Coverage-96.07%25-brightgreen) ![Tests](https://img.shields.io/badge/Tests-161%20passed-brightgreen) [Download Test Summary (PDF)](docs/test_summary_report_2026_11_09.pdf)
 
 The ISO 20022 implementation intentionally supports a limited subset of message structures and fields. The project-specific XSD profiles are based on the corresponding ISO 20022 schemas but do not cover the full range of ISO 20022 or SEPA business rules. The implementation focuses on the requirements and scope of this project.
 
@@ -126,8 +126,8 @@ These limitations reflect the scope of this personal project, a production-grade
 
 <h3 align="center"> Project Roadmap</h3>
 
-| Task                                                 | Description                                                                                                                                                   |
-|:-----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Task                                                  | Description                                                                                                                                                   |
+|:------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **✅ Task 01 — Basic Payment REST API**               | Implemented payment creation with request validation, DTOs, service-layer logic, persistence, and unit tests.                                                 |
 | **✅ Task 02 — Payment Retrieval**                    | Added payment retrieval by ID, handling of missing payments with HTTP 404, and centralized exception handling.                                                |
 | **✅ Task 03 — MVC Tests**                            | Added controller tests covering successful requests, validation, and error responses.                                                                         |
@@ -143,7 +143,7 @@ These limitations reflect the scope of this personal project, a production-grade
 | **✅ Task 13 — Test Coverage & End-to-End Testing**   | Add JaCoCo with an 90% line coverage target and end-to-end tests using Kafka Testcontainers.                                                                  |
 | **✅ Task 14 — Observability & Logging**              | Add Actuator health checks, Micrometer metrics, Prometheus, Grafana dashboards, correlation IDs, and secure Logback logging.                                  |
 | **✅ Task 15 — DevOps & CI/CD**                       | Containerize the application stack with Docker Compose and implement Jenkins CI/CD for automated builds, tests, coverage checks, and Docker image creation.   |
-| **- Task 16 — Concurrent outbox event publishing**   | Implement concurrent multi-worker outbox publishing with atomic event claiming, lease-based recovery, and retry handling.                                     |
+| **✅ Task 16 — Concurrent outbox event publishing**   | Implement concurrent multi-worker outbox publishing with atomic event claiming, lease-based recovery, and retry handling.                                     |
 <br>
 
 
@@ -269,7 +269,15 @@ These limitations reflect the scope of this personal project, a production-grade
 
 - Configured Docker Compose to run the application stack, including PostgreSQL, Kafka, Kafka UI, Prometheus, and Grafana, with persistent volumes and service health checks.
 - Prepared a dedicated Docker Compose configuration for Jenkins and its inbound build agent, including Docker CLI and Testcontainers support.
-- Implemented a Jenkins pipeline covering stages checkout, compilation, unit and integration tests, end-to-end tests, JaCoCo coverage check, application packaging, and Docker image creation.<br>
+- Implemented a Jenkins pipeline covering stages checkout, compilation, unit and integration tests, end-to-end tests, JaCoCo coverage check, application packaging, and Docker image creation.
+
+#### Task 16 — Concurrent Outbox Event Publishing
+**Goal:** Implement concurrent processing of outbox events to improve publishing throughput with event claiming and reliable message delivery.
+
+- Implemented a configurable publishing mode supporting both single-worker and concurrent event publishing, with a dedicated thread pool for parallel processing.
+- Introduced atomic event claiming using PostgreSQL `ForUpdateSkipLocked`, allowing multiple workers to process separate batches without claiming the same events.
+- Implemented a lease-based locking mechanism with worker identifiers, expiration timestamps, and unique claim tokens to prevent workers from updating events claimed by other workers.
+- Added PostgreSQL Testcontainers integration tests to verify concurrent event claiming, worker coordination, and processing without duplicate claims.<br>
 
 <hr>
 
