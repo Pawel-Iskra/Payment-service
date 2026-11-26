@@ -11,7 +11,7 @@ The project includes comprehensive observability, automated testing, Docker-base
 5. A lightweight Kafka consumer demonstrates idempotent event processing and duplicate message handling.
 6. Implemented application observability with health checks and business metrics on Grafana dashboards, end-to-end correlation ID tracking across synchronous and asynchronous communication flows.
 7. Containerized the application and its supporting infrastructure using Docker to provide a consistent and reproducible environment. Implemented a Jenkins CI pipeline from build to code coverage validation and container image creation.
-8. Building reliability through comprehensive testing and test coverage. ![Line Coverage](https://img.shields.io/badge/Line%20Coverage-96.07%25-brightgreen) ![Tests](https://img.shields.io/badge/Tests-179%20passed-brightgreen) [Download Test Summary (PDF)](docs/test_summary_report_2026_11_09.pdf)
+8. Building reliability through comprehensive testing and test coverage. ![Line Coverage](https://img.shields.io/badge/Line%20Coverage-96.07%25-brightgreen) ![Tests](https://img.shields.io/badge/Tests-179%20passed-brightgreen) [Download Test Summary (PDF)](docs/test_summary_report_2026_11_26.pdf)
 
 The ISO 20022 implementation intentionally supports a limited subset of message structures and fields. The project-specific XSD profiles are based on the corresponding ISO 20022 schemas but do not cover the full range of ISO 20022 or SEPA business rules. The implementation focuses on the requirements and scope of this project.
 
