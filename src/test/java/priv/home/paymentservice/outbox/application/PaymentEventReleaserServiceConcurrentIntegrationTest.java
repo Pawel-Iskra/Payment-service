@@ -1,11 +1,8 @@
 package priv.home.paymentservice.outbox.application;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -33,7 +30,6 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 @ActiveProfiles("local")
 @SpringBootTest
 @Import(IntegrationTestPostgresContainerConfig.class)
-@ExtendWith({OutputCaptureExtension.class})
 class PaymentEventReleaserServiceConcurrentIntegrationTest {
 
 
@@ -55,9 +51,9 @@ class PaymentEventReleaserServiceConcurrentIntegrationTest {
 
 
     @Test
-    @Sql(scripts = "/eventpublisher/insert_outbox_events_eligible_for_publish.sql",
+    @Sql(scripts = "/eventpublisher/insert_100_outbox_events_eligible_for_publish.sql",
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-    public void shouldReserveRecordsConcurrently(CapturedOutput capturedOutput) {
+    public void shouldPublishOutboxEventsConcurrently() {
         // given inserted 100 records eligible for publishing
         int load = 100;
         List<OutboxEventEntity> eventEntities = outboxStorageJpa.findAll();
@@ -82,7 +78,7 @@ class PaymentEventReleaserServiceConcurrentIntegrationTest {
 
         // then
         await()
-                .atMost(Duration.ofSeconds(15))
+                .atMost(Duration.ofSeconds(10))
                 .pollInterval(Duration.ofMillis(250))
                 .untilAsserted(() -> {
                     List<OutboxEventEntity> entitiesFromDb = outboxStorageJpa.findAll();

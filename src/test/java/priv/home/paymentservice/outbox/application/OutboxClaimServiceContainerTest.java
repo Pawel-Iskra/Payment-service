@@ -1,10 +1,9 @@
 package priv.home.paymentservice.outbox.application;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.jdbc.Sql;
 import priv.home.paymentservice.integration.AbstractIntegrationTest;
-import priv.home.paymentservice.messaging.event.PaymentEventType;
 import priv.home.paymentservice.outbox.config.OutboxEventPublisherProperties;
 import priv.home.paymentservice.outbox.model.OutboxEventToPublish;
 import priv.home.paymentservice.outbox.model.PublishResult;
@@ -24,12 +23,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
 class OutboxClaimServiceContainerTest extends AbstractIntegrationTest {
-
-
-    // for the tests correctness of payload is not necessary
-    private static final String SAMPLE_PAYLOAD = "{\"eventId\":\"c32d0cae-a082-4633-95c8-add8fd4a8b41\"}";
 
     @Autowired
     private OutboxStorageJpa outboxStorageJpa;
@@ -39,20 +33,16 @@ class OutboxClaimServiceContainerTest extends AbstractIntegrationTest {
     private OutboxClaimService outboxClaimService;
 
 
-    @BeforeEach
-    void clearTable(){
-        outboxStorageJpa.deleteAll();
-    }
-
     @Test
+    @Sql(scripts = "/eventpublisher/insert_40_outbox_events_eligible_for_publish.sql",
+            executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     public void shouldReserveRecordsConcurrently() throws InterruptedException {
-        // given
+        // given inserted 40 outbox events eligible for publish
         OffsetDateTime startTime = OffsetDateTime.now().minusSeconds(1);
-        int workers = 4;
         int timeoutSec = 5;
+        int workers = 4;
         int batchSize = 10;
-        List<OutboxEventEntity> eventEntities = getOutboxEventEntityList(workers * batchSize);
-        outboxStorageJpa.saveAllAndFlush(eventEntities);
+        int insertedRecords = 40;
         ExecutorService executorService = Executors.newFixedThreadPool(workers);
         CountDownLatch readyLatch = new CountDownLatch(workers);
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -87,7 +77,7 @@ class OutboxClaimServiceContainerTest extends AbstractIntegrationTest {
                     .flatMap(batch -> batch.eventsToPublish().stream())
                     .map(OutboxEventToPublish::eventId)
                     .collect(Collectors.toSet());
-            assertThat(batchEventsIds).hasSize(workers * batchSize);
+            assertThat(batchEventsIds).hasSize(insertedRecords);
 
             Set<UUID> claimTokens = workersBatches.stream()
                     .map(ReservedOutboxBatch::claimToken)
@@ -107,29 +97,23 @@ class OutboxClaimServiceContainerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Sql(scripts = "/eventpublisher/insert_10_events_eligible_for_publish.sql",
+            executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     public void shouldProperlyCompleteClaim() {
-        // given
-        int batchSize = 5;
-        Duration leaseDuration = publisherProperties.leaseDuration();
-        UUID claimToken = UUID.randomUUID();
-        List<OutboxEventEntity> eventEntitiesToBePublished = getOutboxEventEntityList(batchSize - 1);
-        List<OutboxEventEntity> eventEntitiesToBeNotPublished = getOutboxEventEntityList(batchSize + 1);
-        List<UUID> publishedEventsIds = eventEntitiesToBePublished.stream().map(OutboxEventEntity::getEventId).toList();
-        List<UUID> notPublishedEventsIds = eventEntitiesToBeNotPublished.stream().map(OutboxEventEntity::getEventId).toList();
-        List<PublishResult> publishResultsPublished = getPublishResultAsPublished(publishedEventsIds);
-        List<PublishResult> publishResultsNotPublished = getPublishResultAsNotPublished(notPublishedEventsIds);
-        List<OutboxEventEntity> allEntities = Stream.concat(
-                eventEntitiesToBePublished.stream(),
-                eventEntitiesToBeNotPublished.stream()).toList();
-        allEntities.forEach(entity ->
-                entity.reserve("worker", OffsetDateTime.now().plus(leaseDuration), claimToken));
+        // given inserted 10 records reserved by worker
+        UUID claimTokenFromDb = UUID.fromString("d6d1d13a-2f4d-45f3-8bd1-a7f5d7658970");
+        List<String> eventsIdsFromDbToBePublished = List.of("86f1a6e1-85f7-444b-a18f-720c580beda4", "6562d66c-6a09-434f-b252-12942d714092",
+                "9701c56b-ddaa-4ff6-82c3-18f1b73059be", "d8254ede-f250-4971-b929-339319e8a3e9", "a7eb2b0c-4e7b-4217-a31c-24b0df5becca");
+        List<String> eventsIdsFromDbToBeNotPublished = List.of("0b4822fe-3c3d-4417-8f49-c5d92a483c0e", "c81fbb95-92a7-407d-9044-44c845bd7f40",
+                "86f1a6e1-85f7-444b-a18f-720c580beda1", "86f1a6e1-85f7-444b-a18f-720c580beda2", "86f1a6e1-85f7-444b-a18f-720c580beda3");
+        List<PublishResult> publishResultsPublished = getPublishResultAsPublished(eventsIdsFromDbToBePublished);
+        List<PublishResult> publishResultsNotPublished = getPublishResultAsNotPublished(eventsIdsFromDbToBeNotPublished);
         List<PublishResult> allPublishResults = Stream.concat(
-                publishResultsPublished.stream(),
-                publishResultsNotPublished.stream()).toList();
-        outboxStorageJpa.saveAllAndFlush(allEntities);
+                publishResultsPublished.stream(), publishResultsNotPublished.stream()
+        ).toList();
 
         // when
-        outboxClaimService.completeClaim(claimToken, allPublishResults);
+        outboxClaimService.completeClaim(claimTokenFromDb, allPublishResults);
 
         // then
         List<OutboxEventEntity> entitiesFromDb = outboxStorageJpa.findAll();
@@ -137,42 +121,31 @@ class OutboxClaimServiceContainerTest extends AbstractIntegrationTest {
             assertThat(entity.getLockedBy()).isNull();
             assertThat(entity.getLockedUntil()).isNull();
             assertThat(entity.getClaimToken()).isNull();
-            if (publishedEventsIds.contains(entity.getEventId())) {
+            assertThat(entity.getAttemptCount()).isOne();
+            if (eventsIdsFromDbToBePublished.contains(entity.getEventId().toString())) {
                 assertThat(entity.getFailedAt()).isNull();
                 assertThat(entity.getPublishedAt()).isNotNull();
+                assertThat(entity.getLastError()).isNull();
             } else {
                 assertThat(entity.getPublishedAt()).isNull();
-                assertThat(entity.getNextAttemptAt()).isNotNull();
                 assertThat(entity.getLastError()).contains("Failed to publish the event");
             }
         });
     }
 
 
-    private List<OutboxEventEntity> getOutboxEventEntityList(int amount) {
-        return IntStream.range(0, amount)
-                .mapToObj(n -> OutboxEventEntity.builder()
-                        .eventId(UUID.randomUUID())
-                        .paymentId(UUID.randomUUID())
-                        .correlationId(UUID.randomUUID())
-                        .createdAt(OffsetDateTime.now().minusMinutes(2))
-                        .payload(SAMPLE_PAYLOAD)
-                        .eventType(PaymentEventType.PAYMENT_CREATED_EVENT.name())
-                        .build())
-                .toList();
-    }
-
-    private List<PublishResult> getPublishResultAsPublished(List<UUID> eventIds) {
+    private List<PublishResult> getPublishResultAsPublished(List<String> eventIds) {
         return eventIds.stream()
+                .map(UUID::fromString)
                 .map(PublishResult::buildPublished)
                 .toList();
     }
 
-    private List<PublishResult> getPublishResultAsNotPublished(List<UUID> eventIds) {
+    private List<PublishResult> getPublishResultAsNotPublished(List<String> eventIds) {
         return eventIds.stream()
-                .map(evntId -> PublishResult.buildNotPublished(
-                        evntId, new IllegalStateException("Failed to publish the event")))
+                .map(UUID::fromString)
+                .map(evntId ->
+                        PublishResult.buildNotPublished(evntId, new IllegalStateException("Failed to publish the event")))
                 .toList();
     }
-
 }
